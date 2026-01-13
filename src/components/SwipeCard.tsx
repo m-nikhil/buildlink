@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Heart, X, MapPin, Briefcase, Sparkles } from 'lucide-react';
+import { UserPlus, X, MapPin, Briefcase, Sparkles } from 'lucide-react';
 import { useConnectionStatus, useSendConnectionRequest } from '@/hooks/useConnections';
 import { useProfile } from '@/hooks/useProfile';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -75,7 +75,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
           {score && (
             <div className="absolute top-4 right-4 flex items-center gap-1 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-primary">{score}%</span>
+              <span className="font-semibold text-primary">{score}% compatible</span>
             </div>
           )}
 
@@ -135,7 +135,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
           {reason && (
             <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-6">
               <p className="text-sm text-center text-muted-foreground">
-                <span className="font-medium text-primary">Why you match:</span> {reason}
+                <span className="font-medium text-primary">Why connect:</span> {reason}
               </p>
             </div>
           )}
@@ -161,10 +161,10 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
               <Button
                 onClick={handleLike}
                 size="lg"
-                className="h-16 w-16 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 shadow-lg"
+                className="h-16 w-16 rounded-full shadow-lg"
                 disabled={sendRequest.isPending}
               >
-                <Heart className="h-8 w-8 fill-current" />
+                <UserPlus className="h-8 w-8" />
               </Button>
             </div>
           )}

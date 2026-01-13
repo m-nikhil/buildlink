@@ -3,7 +3,7 @@ import { useAIMatches } from '@/hooks/useAIMatches';
 import { SwipeCard } from './SwipeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, Heart } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -44,7 +44,7 @@ export function SwipeFeed() {
       <div className="flex flex-col items-center justify-center py-8">
         <div className="flex items-center gap-2 mb-6">
           <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-          <span className="text-muted-foreground">Finding your perfect matches...</span>
+          <span className="text-muted-foreground">Finding professionals for you...</span>
         </div>
         <div className="w-full max-w-sm mx-auto">
           <Skeleton className="h-[500px] w-full rounded-xl" />
@@ -61,19 +61,19 @@ export function SwipeFeed() {
         <Card className="w-full max-w-sm mx-auto text-center">
           <CardContent className="pt-12 pb-8">
             <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-              <Heart className="h-10 w-10 text-primary" />
+              <Users className="h-10 w-10 text-primary" />
             </div>
             <h3 className="text-xl font-semibold mb-2">
-              {matches && matches.length > 0 ? "You've seen everyone!" : "No matches yet"}
+              {matches && matches.length > 0 ? "You've seen everyone!" : "No recommendations yet"}
             </h3>
             <p className="text-muted-foreground mb-6">
               {matches && matches.length > 0 
-                ? "Check back later for new connections"
+                ? "Check back later for new professionals"
                 : "Complete your profile to get better recommendations!"}
             </p>
             <Button onClick={handleRefresh} className="gap-2" disabled={isFetching}>
               <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-              Find More Matches
+              Find More Connections
             </Button>
           </CardContent>
         </Card>
@@ -86,7 +86,7 @@ export function SwipeFeed() {
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-6">
         <span className="text-sm text-muted-foreground">
-          {currentIndex + 1} of {matches.length} matches
+          {currentIndex + 1} of {matches.length} professionals
         </span>
         <Button 
           onClick={handleRefresh} 

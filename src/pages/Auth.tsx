@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Linkedin, Heart, Loader2 } from 'lucide-react';
+import { Linkedin, Handshake, Loader2 } from 'lucide-react';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -40,12 +40,12 @@ export default function Auth() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-2">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 shadow-lg">
-            <Heart className="h-8 w-8 text-white fill-white" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
+            <Handshake className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Spark</h1>
+          <h1 className="text-3xl font-bold tracking-tight">ConnectPro</h1>
           <p className="text-muted-foreground text-center">
-            Find meaningful professional connections
+            Build meaningful professional connections
           </p>
         </div>
 
