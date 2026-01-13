@@ -2,11 +2,15 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+const LINKEDIN_CLIENT_ID = 'YOUR_LINKEDIN_CLIENT_ID'; // This is just for the redirect, actual auth happens server-side
+const LINKEDIN_SCOPES = 'openid profile email';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithLinkedIn: () => Promise<void>;
+  signInWithLinkedIn: () => void;
+  handleLinkedInCallback: (code: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -37,14 +41,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithLinkedIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'linkedin_oidc',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
+  const signInWithLinkedIn = () => {
+    const redirectUri = `${window.location.origin}/auth/callback`;
+    const state = crypto.randomUUID();
+    
+    // Store state for CSRF protection
+    sessionStorage.setItem('linkedin_oauth_state', state);
+    sessionStorage.setItem('linkedin_redirect_uri', redirectUri);
+    
+    const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('client_id', import.meta.env.VITE_LINKEDIN_CLIENT_ID || '');
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('scope', LINKEDIN_SCOPES);
+    
+    window.location.href = authUrl.toString();
+  };
+
+  const handleLinkedInCallback = async (code: string) => {
+    const redirectUri = sessionStorage.getItem('linkedin_redirect_uri') || `${window.location.origin}/auth/callback`;
+    
+    // Call our edge function to exchange the code
+    const { data, error } = await supabase.functions.invoke('linkedin-auth', {
+      body: { code, redirectUri },
     });
-    if (error) throw error;
+
+    if (error) {
+      throw new Error(error.message || 'Failed to authenticate with LinkedIn');
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // Verify the token with Supabase
+    if (data.token && data.type) {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: data.token,
+        type: data.type,
+      });
+
+      if (verifyError) {
+        throw new Error(verifyError.message);
+      }
+    }
+
+    // Clean up session storage
+    sessionStorage.removeItem('linkedin_oauth_state');
+    sessionStorage.removeItem('linkedin_redirect_uri');
   };
 
   const signOut = async () => {
@@ -53,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithLinkedIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signInWithLinkedIn, handleLinkedInCallback, signOut }}>
       {children}
     </AuthContext.Provider>
   );
