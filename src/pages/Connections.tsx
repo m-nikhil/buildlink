@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useConnections, useRespondToConnection } from '@/hooks/useConnections';
+import { useConnections } from '@/hooks/useConnections';
 import { useProfile, useProfiles } from '@/hooks/useProfile';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, X, Clock, Users } from 'lucide-react';
+import { Check, Clock, Users } from 'lucide-react';
 import { Profile } from '@/types/profile';
 
 export default function Connections() {
@@ -18,7 +18,6 @@ export default function Connections() {
   const { data: profile } = useProfile();
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const { data: allProfiles } = useProfiles();
-  const respondToConnection = useRespondToConnection();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,10 +31,6 @@ export default function Connections() {
   const getProfileById = (id: string): Profile | undefined => {
     return allProfiles?.find(p => p.id === id);
   };
-
-  const pendingReceived = connections?.filter(
-    c => c.recipient_id === profile?.id && c.status === 'pending'
-  ) ?? [];
 
   const pendingSent = (connections?.filter(
     c => c.requester_id === profile?.id && c.status === 'pending'
@@ -51,13 +46,9 @@ export default function Connections() {
   };
 
   const ConnectionItem = ({ 
-    connectionProfile, 
-    showActions = false,
-    connectionId 
+    connectionProfile
   }: { 
     connectionProfile: Profile | undefined;
-    showActions?: boolean;
-    connectionId?: string;
   }) => {
     if (!connectionProfile) return null;
 
@@ -73,32 +64,10 @@ export default function Connections() {
           <p className="font-medium truncate">{connectionProfile.full_name || 'Anonymous'}</p>
           <p className="text-sm text-muted-foreground truncate">{connectionProfile.headline}</p>
         </div>
-        {showActions && connectionId && (
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => respondToConnection.mutate({ connectionId, status: 'accepted' })}
-              disabled={respondToConnection.isPending}
-            >
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => respondToConnection.mutate({ connectionId, status: 'rejected' })}
-              disabled={respondToConnection.isPending}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        {!showActions && (
-          <Badge variant="secondary" className="gap-1">
-            <Check className="h-3 w-3" />
-            Connected
-          </Badge>
-        )}
+        <Badge variant="secondary" className="gap-1">
+          <Check className="h-3 w-3" />
+          Connected
+        </Badge>
       </div>
     );
   };
@@ -113,7 +82,7 @@ export default function Connections() {
         </div>
 
         <Tabs defaultValue="connections" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="connections" className="gap-2">
               <Users className="h-4 w-4" />
               Connections
@@ -121,14 +90,13 @@ export default function Connections() {
                 <Badge variant="secondary" className="ml-1">{accepted.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pending" className="gap-2">
+            <TabsTrigger value="sent" className="gap-2">
               <Clock className="h-4 w-4" />
-              Requests
-              {pendingReceived.length > 0 && (
-                <Badge variant="destructive" className="ml-1">{pendingReceived.length}</Badge>
+              Sent
+              {pendingSent.length > 0 && (
+                <Badge variant="outline" className="ml-1">{pendingSent.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="sent">Sent</TabsTrigger>
           </TabsList>
 
           <TabsContent value="connections" className="mt-6">
@@ -160,28 +128,6 @@ export default function Connections() {
                   <Button variant="link" onClick={() => navigate('/')}>
                     Discover people to connect with
                   </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pending" className="mt-6">
-            {pendingReceived.length > 0 ? (
-              <div className="space-y-3">
-                {pendingReceived.map((connection) => (
-                  <ConnectionItem 
-                    key={connection.id} 
-                    connectionProfile={getProfileById(connection.requester_id)}
-                    showActions
-                    connectionId={connection.id}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No pending requests</p>
                 </CardContent>
               </Card>
             )}
