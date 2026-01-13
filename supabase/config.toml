@@ -1,1 +1,7 @@
 project_id = "cxfywiqnylxsdyeesfdb"
+
+[functions.configure-linkedin-auth]
+verify_jwt = false
+
+[functions.ai-match]
+verify_jwt = false
