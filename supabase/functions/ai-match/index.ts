@@ -69,16 +69,25 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are a professional networking matchmaker. Given a user's profile and a list of potential connections, analyze compatibility and return the top matches ranked by relevance.
+    // Build preference context
+    const preferenceContext = `
+User's Match Preferences:
+- Preferred Experience Levels: ${userProfile.preferred_experience_levels?.join(', ') || 'Any'}
+- Preferred Industries: ${userProfile.preferred_industries?.join(', ') || 'Any'}
+- Preferred Goals: ${userProfile.preferred_goals?.join(', ') || 'Any'}
+- Age Range: ${userProfile.age_min || 18} - ${userProfile.age_max || 99}
+`;
+
+    const systemPrompt = `You are a professional matchmaker for a dating-style networking app. Given a user's profile, their preferences, and a list of potential connections, analyze compatibility and return the top matches ranked by relevance.
 
 Consider these factors when matching:
-1. Complementary goals (e.g., mentors match with mentees, hiring managers with job seekers)
-2. Industry alignment or cross-industry synergy potential
-3. Experience level compatibility (mentorship pairs or peer collaboration)
-4. Skill complementarity
-5. Location proximity (when relevant)
+1. How well candidates match the user's stated preferences (experience, industry, goals)
+2. Complementary goals (e.g., mentors match with mentees, hiring managers with job seekers)
+3. Mutual benefit potential - would BOTH parties gain from connecting?
+4. Skill complementarity and potential for collaboration
+5. Location proximity when relevant
 
-Be thoughtful about WHY each match would be valuable for both parties.`;
+Prioritize candidates who closely match the user's preferences. Be thoughtful about WHY each match would be valuable.`;
 
     const userProfileSummary = `
 User Profile:
@@ -90,6 +99,9 @@ User Profile:
 - Looking For: ${userProfile.looking_for?.join(', ') || 'Not specified'}
 - Skills: ${userProfile.skills?.join(', ') || 'Not specified'}
 - Location: ${userProfile.location || 'Not specified'}
+- Age: ${userProfile.age || 'Not specified'}
+
+${preferenceContext}
 `;
 
     const candidatesSummary = otherProfiles.map((p, i) => `
@@ -102,6 +114,7 @@ Candidate ${i + 1} (ID: ${p.id}):
 - Looking For: ${p.looking_for?.join(', ') || 'Not specified'}
 - Skills: ${p.skills?.join(', ') || 'Not specified'}
 - Location: ${p.location || 'Not specified'}
+- Age: ${p.age || 'Not specified'}
 `).join('\n');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

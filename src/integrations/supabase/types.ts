@@ -61,6 +61,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
+          age_max: number | null
+          age_min: number | null
           avatar_url: string | null
           bio: string | null
           created_at: string
@@ -75,11 +78,21 @@ export type Database = {
           linkedin_url: string | null
           location: string | null
           looking_for: Database["public"]["Enums"]["connection_goal"][] | null
+          preferred_experience_levels:
+            | Database["public"]["Enums"]["experience_level"][]
+            | null
+          preferred_goals:
+            | Database["public"]["Enums"]["connection_goal"][]
+            | null
+          preferred_industries: Database["public"]["Enums"]["industry"][] | null
           skills: string[] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          age?: number | null
+          age_max?: number | null
+          age_min?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -94,11 +107,23 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           looking_for?: Database["public"]["Enums"]["connection_goal"][] | null
+          preferred_experience_levels?:
+            | Database["public"]["Enums"]["experience_level"][]
+            | null
+          preferred_goals?:
+            | Database["public"]["Enums"]["connection_goal"][]
+            | null
+          preferred_industries?:
+            | Database["public"]["Enums"]["industry"][]
+            | null
           skills?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          age?: number | null
+          age_max?: number | null
+          age_min?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -113,6 +138,15 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           looking_for?: Database["public"]["Enums"]["connection_goal"][] | null
+          preferred_experience_levels?:
+            | Database["public"]["Enums"]["experience_level"][]
+            | null
+          preferred_goals?:
+            | Database["public"]["Enums"]["connection_goal"][]
+            | null
+          preferred_industries?:
+            | Database["public"]["Enums"]["industry"][]
+            | null
           skills?: string[] | null
           updated_at?: string
           user_id?: string
