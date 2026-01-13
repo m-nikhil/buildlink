@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -11,8 +11,12 @@ export default function AuthCallback() {
   const { handleLinkedInCallback, user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(true);
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double execution in React StrictMode
+    if (processedRef.current) return;
+    
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const errorParam = searchParams.get('error');
@@ -37,6 +41,9 @@ export default function AuthCallback() {
       setProcessing(false);
       return;
     }
+
+    // Mark as processed to prevent double execution
+    processedRef.current = true;
 
     // Process the callback
     handleLinkedInCallback(code)
