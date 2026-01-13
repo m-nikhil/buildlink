@@ -4,10 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { UserPlus, X, MapPin, Briefcase, Sparkles } from 'lucide-react';
+import { UserPlus, X, MapPin, Briefcase, Sparkles, Heart } from 'lucide-react';
 import { useConnectionStatus, useSendConnectionRequest } from '@/hooks/useConnections';
 import { useProfile } from '@/hooks/useProfile';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface SwipeCardProps {
   profile: Profile;
@@ -43,6 +43,9 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
   // Check if already connected
   const isConnected = connection?.status === 'accepted';
   const isPending = connection?.status === 'pending';
+  
+  // Check if they liked us first (they sent a request to us)
+  const theyLikedUs = connection?.requester_id === profile.id && connection?.recipient_id === myProfile?.id;
 
   return (
     <motion.div
@@ -71,6 +74,14 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
             </AvatarFallback>
           </Avatar>
           
+          {/* They Liked You Badge */}
+          {theyLikedUs && (
+            <div className="absolute top-4 left-4 flex items-center gap-1 bg-green-500 text-white px-3 py-1.5 rounded-full shadow-lg animate-pulse">
+              <Heart className="h-4 w-4 fill-current" />
+              <span className="font-semibold text-sm">Likes you!</span>
+            </div>
+          )}
+
           {/* Match Score Badge */}
           {score && (
             <div className="absolute top-4 right-4 flex items-center gap-1 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
@@ -148,7 +159,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
           )}
 
           {/* Action Buttons */}
-          {!isConnected && !isPending && (
+          {!isConnected && (
             <div className="flex justify-center gap-6">
               <Button
                 onClick={handlePass}
@@ -161,7 +172,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
               <Button
                 onClick={handleLike}
                 size="lg"
-                className="h-16 w-16 rounded-full shadow-lg"
+                className={`h-16 w-16 rounded-full shadow-lg ${theyLikedUs ? 'bg-green-500 hover:bg-green-600' : ''}`}
                 disabled={sendRequest.isPending}
               >
                 <UserPlus className="h-8 w-8" />
@@ -169,12 +180,10 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
             </div>
           )}
 
-          {isPending && (
-            <div className="text-center py-4">
-              <Badge variant="secondary" className="text-base px-4 py-2">
-                Request Pending
-              </Badge>
-            </div>
+          {theyLikedUs && !isConnected && (
+            <p className="text-center text-sm text-green-600 mt-3 font-medium">
+              Like back to connect instantly!
+            </p>
           )}
 
           {isConnected && (

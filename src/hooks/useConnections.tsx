@@ -32,6 +32,28 @@ export function useSendConnectionRequest() {
     mutationFn: async ({ recipientId, message }: { recipientId: string; message?: string }) => {
       if (!profile) throw new Error('Profile not found');
       
+      // Check if there's an existing connection request from them to us
+      const { data: existingConnection } = await supabase
+        .from('connections')
+        .select('*')
+        .eq('requester_id', recipientId)
+        .eq('recipient_id', profile.id)
+        .single();
+      
+      // If they already liked us, update to accepted (mutual match!)
+      if (existingConnection) {
+        const { data, error } = await supabase
+          .from('connections')
+          .update({ status: 'accepted' })
+          .eq('id', existingConnection.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return { ...data, isMutualMatch: true } as Connection & { isMutualMatch?: boolean };
+      }
+      
+      // Otherwise create a new pending request
       const { data, error } = await supabase
         .from('connections')
         .insert({
@@ -46,9 +68,13 @@ export function useSendConnectionRequest() {
       if (error) throw error;
       return data as Connection;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });
-      toast.success('Connection request sent!');
+      if ((data as Connection & { isMutualMatch?: boolean }).isMutualMatch) {
+        toast.success("It's a match! You're now connected 🎉");
+      } else {
+        toast.success('Connection request sent!');
+      }
     },
     onError: (error) => {
       if (error.message.includes('duplicate')) {
