@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-const LINKEDIN_CLIENT_ID = 'YOUR_LINKEDIN_CLIENT_ID'; // This is just for the redirect, actual auth happens server-side
+const LINKEDIN_CLIENT_ID = '86jf34hvwupz2k';
 const LINKEDIN_SCOPES = 'openid profile email';
 
 interface AuthContextType {
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
     authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('client_id', import.meta.env.VITE_LINKEDIN_CLIENT_ID || '');
+    authUrl.searchParams.set('client_id', LINKEDIN_CLIENT_ID);
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('state', state);
     authUrl.searchParams.set('scope', LINKEDIN_SCOPES);
