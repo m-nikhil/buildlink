@@ -16,6 +16,13 @@ export interface Profile {
   looking_for: ConnectionGoal[] | null;
   skills: string[] | null;
   location: string | null;
+  age: number | null;
+  // Match preferences
+  preferred_experience_levels: ExperienceLevel[] | null;
+  preferred_industries: Industry[] | null;
+  preferred_goals: ConnectionGoal[] | null;
+  age_min: number | null;
+  age_max: number | null;
   created_at: string;
   updated_at: string;
 }

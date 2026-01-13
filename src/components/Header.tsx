@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Settings, Link as LinkIcon } from 'lucide-react';
+import { LogOut, User, Settings, Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export function Header() {
@@ -36,10 +36,10 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <LinkIcon className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-r from-pink-500 to-rose-500">
+            <Heart className="h-5 w-5 text-white fill-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">ConnectPro</span>
+          <span className="text-xl font-bold tracking-tight">Spark</span>
         </Link>
 
         {user ? (
@@ -49,13 +49,19 @@ export function Header() {
                 to="/" 
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Feed
+                Discover
               </Link>
               <Link 
                 to="/connections" 
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Connections
+                Matches
+              </Link>
+              <Link 
+                to="/settings" 
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Preferences
               </Link>
             </nav>
 
