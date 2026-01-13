@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      connections: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          recipient_id: string
+          requester_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          recipient_id: string
+          requester_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          recipient_id?: string
+          requester_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connections_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          email: string | null
+          experience_level:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          full_name: string | null
+          headline: string | null
+          id: string
+          industry: Database["public"]["Enums"]["industry"] | null
+          linkedin_url: string | null
+          location: string | null
+          looking_for: Database["public"]["Enums"]["connection_goal"][] | null
+          skills: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          industry?: Database["public"]["Enums"]["industry"] | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for?: Database["public"]["Enums"]["connection_goal"][] | null
+          skills?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          industry?: Database["public"]["Enums"]["industry"] | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for?: Database["public"]["Enums"]["connection_goal"][] | null
+          skills?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +127,21 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      connection_goal:
+        | "mentorship"
+        | "collaboration"
+        | "networking"
+        | "hiring"
+        | "job_seeking"
+      experience_level: "entry" | "mid" | "senior" | "executive"
+      industry:
+        | "tech"
+        | "finance"
+        | "healthcare"
+        | "education"
+        | "marketing"
+        | "consulting"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +268,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      connection_goal: [
+        "mentorship",
+        "collaboration",
+        "networking",
+        "hiring",
+        "job_seeking",
+      ],
+      experience_level: ["entry", "mid", "senior", "executive"],
+      industry: [
+        "tech",
+        "finance",
+        "healthcare",
+        "education",
+        "marketing",
+        "consulting",
+        "other",
+      ],
+    },
   },
 } as const
