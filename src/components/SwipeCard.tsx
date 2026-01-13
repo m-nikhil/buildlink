@@ -97,7 +97,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
         {/* Profile Info */}
         <div className="p-6 -mt-16 relative">
           <div className="text-center mb-4">
-            <h2 className="text-2xl font-bold">{profile.full_name || 'Anonymous'}</h2>
+            <h2 className="text-2xl font-bold">{initials}</h2>
             {profile.age && (
               <span className="text-lg text-muted-foreground">, {profile.age}</span>
             )}

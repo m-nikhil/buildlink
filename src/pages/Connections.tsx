@@ -1,17 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useConnections } from '@/hooks/useConnections';
 import { useProfile, useProfiles } from '@/hooks/useProfile';
 import { Header } from '@/components/Header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, Clock, Users } from 'lucide-react';
-import { Profile } from '@/types/profile';
+import { Clock, Users, MessageCircle } from 'lucide-react';
+import { Profile, Connection } from '@/types/profile';
+import { ChatDialog } from '@/components/ChatDialog';
 
 export default function Connections() {
   const { user, loading: authLoading } = useAuth();
@@ -19,6 +20,8 @@ export default function Connections() {
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const { data: allProfiles } = useProfiles();
   const navigate = useNavigate();
+  
+  const [chatConnection, setChatConnection] = useState<{ connectionId: string; profile: Profile } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -45,31 +48,14 @@ export default function Connections() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const ConnectionItem = ({ 
-    connectionProfile
-  }: { 
-    connectionProfile: Profile | undefined;
-  }) => {
-    if (!connectionProfile) return null;
-
-    return (
-      <div className="flex items-center gap-4 p-4 rounded-lg border bg-card">
-        <Avatar className="h-12 w-12">
-          <AvatarImage src={connectionProfile.avatar_url ?? undefined} />
-          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-            {getInitials(connectionProfile.full_name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">{connectionProfile.full_name || 'Anonymous'}</p>
-          <p className="text-sm text-muted-foreground truncate">{connectionProfile.headline}</p>
-        </div>
-        <Badge variant="secondary" className="gap-1">
-          <Check className="h-3 w-3" />
-          Connected
-        </Badge>
-      </div>
-    );
+  const openChat = (connection: Connection) => {
+    const otherProfileId = connection.requester_id === profile?.id 
+      ? connection.recipient_id 
+      : connection.requester_id;
+    const otherProfile = getProfileById(otherProfileId);
+    if (otherProfile) {
+      setChatConnection({ connectionId: connection.id, profile: otherProfile });
+    }
   };
 
   return (
@@ -112,11 +98,29 @@ export default function Connections() {
                   const otherProfileId = connection.requester_id === profile?.id 
                     ? connection.recipient_id 
                     : connection.requester_id;
+                  const otherProfile = getProfileById(otherProfileId);
+                  if (!otherProfile) return null;
+                  
                   return (
-                    <ConnectionItem 
+                    <div 
                       key={connection.id} 
-                      connectionProfile={getProfileById(otherProfileId)} 
-                    />
+                      className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                      onClick={() => openChat(connection)}
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={otherProfile.avatar_url ?? undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {getInitials(otherProfile.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{otherProfile.full_name || 'Anonymous'}</p>
+                        <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
+                      </div>
+                      <Button variant="ghost" size="icon">
+                        <MessageCircle className="h-5 w-5" />
+                      </Button>
+                    </div>
                   );
                 })}
               </div>
@@ -146,7 +150,7 @@ export default function Connections() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">
-                        {getProfileById(connection.recipient_id)?.full_name || 'Anonymous'}
+                        {getInitials(getProfileById(connection.recipient_id)?.full_name ?? null)}
                       </p>
                       <p className="text-sm text-muted-foreground truncate">
                         {getProfileById(connection.recipient_id)?.headline}
@@ -170,6 +174,16 @@ export default function Connections() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Chat Dialog */}
+      {chatConnection && (
+        <ChatDialog
+          open={!!chatConnection}
+          onOpenChange={(open) => !open && setChatConnection(null)}
+          connectionId={chatConnection.connectionId}
+          otherProfile={chatConnection.profile}
+        />
+      )}
     </div>
   );
 }
