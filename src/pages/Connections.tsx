@@ -37,9 +37,11 @@ export default function Connections() {
     c => c.recipient_id === profile?.id && c.status === 'pending'
   ) ?? [];
 
-  const pendingSent = connections?.filter(
+  const pendingSent = (connections?.filter(
     c => c.requester_id === profile?.id && c.status === 'pending'
-  ) ?? [];
+  ) ?? [])
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 50);
 
   const accepted = connections?.filter(c => c.status === 'accepted') ?? [];
 
