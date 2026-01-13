@@ -1,10 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/Header';
 import { UserProfile } from '@/components/UserProfile';
 import { ConnectionFeed } from '@/components/ConnectionFeed';
+import { AIMatchFeed } from '@/components/AIMatchFeed';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sparkles, Users } from 'lucide-react';
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -46,13 +49,34 @@ export default function Index() {
 
           {/* Main Content */}
           <section>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold tracking-tight">Discover Connections</h1>
-              <p className="text-muted-foreground">
-                Find professionals who match your networking goals
-              </p>
-            </div>
-            <ConnectionFeed />
+            <Tabs defaultValue="ai-matches" className="w-full">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">Discover Connections</h1>
+                  <p className="text-muted-foreground">
+                    Find professionals who match your networking goals
+                  </p>
+                </div>
+                <TabsList>
+                  <TabsTrigger value="ai-matches" className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    AI Matches
+                  </TabsTrigger>
+                  <TabsTrigger value="browse" className="gap-2">
+                    <Users className="h-4 w-4" />
+                    Browse All
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="ai-matches">
+                <AIMatchFeed />
+              </TabsContent>
+              
+              <TabsContent value="browse">
+                <ConnectionFeed />
+              </TabsContent>
+            </Tabs>
           </section>
         </div>
       </main>
