@@ -9,8 +9,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Handshake } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -36,9 +37,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <Handshake className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <BuildLinkLogo size="sm" />
           <span className="text-xl font-bold tracking-tight">BuildLink</span>
         </Link>
 
