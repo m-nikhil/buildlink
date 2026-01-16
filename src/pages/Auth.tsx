@@ -43,7 +43,7 @@ export default function Auth() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
             <Handshake className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">ConnectPro</h1>
+          <h1 className="text-3xl font-bold tracking-tight">BuildLink</h1>
           <p className="text-muted-foreground text-center">
             Build meaningful professional connections
           </p>
