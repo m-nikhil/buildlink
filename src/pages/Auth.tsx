@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Linkedin, Handshake, Loader2 } from 'lucide-react';
+import { Linkedin, Loader2 } from 'lucide-react';
+import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -39,13 +40,11 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
-            <Handshake className="h-8 w-8 text-primary-foreground" />
-          </div>
+        <div className="flex flex-col items-center gap-3">
+          <BuildLinkLogo size="lg" />
           <h1 className="text-3xl font-bold tracking-tight">BuildLink</h1>
-          <p className="text-muted-foreground text-center">
-            Build meaningful professional connections
+          <p className="text-muted-foreground text-center max-w-xs">
+            Sometimes the best opportunities come from unexpected connections
           </p>
         </div>
 
