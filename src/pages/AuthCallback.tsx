@@ -48,7 +48,8 @@ export default function AuthCallback() {
     // Process the callback
     handleLinkedInCallback(code)
       .then(() => {
-        navigate('/');
+        // Redirect to profile completion for new users
+        navigate('/profile/complete');
       })
       .catch((err) => {
         console.error('LinkedIn callback error:', err);
