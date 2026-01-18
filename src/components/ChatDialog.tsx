@@ -112,8 +112,9 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
         </DialogHeader>
 
         {/* Status indicators */}
-        <div className="px-4 py-2 bg-muted/50 space-y-1">
-          <div className="flex items-center justify-between text-sm">
+        <div className="px-4 py-3 bg-muted/50 space-y-2">
+          {/* Message count */}
+          <div className="flex items-center justify-center text-sm">
             {isLimitReached ? (
               <span className="text-destructive flex items-center gap-1">
                 <AlertCircle className="h-4 w-4" />
@@ -124,45 +125,45 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 {remainingMessages} messages remaining
               </span>
             )}
-            
-            {/* LinkedIn request button */}
-            {!myLinkedInRequested ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-1 h-7 text-xs"
-                onClick={handleRequestLinkedIn}
-                disabled={requestLinkedIn.isPending}
-              >
-                <Linkedin className="h-3 w-3" />
-                Request LinkedIn
-              </Button>
-            ) : !isMutualLinkedIn ? (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Check className="h-3 w-3 text-green-500" />
-                LinkedIn requested
-              </span>
-            ) : null}
           </div>
+          
+          {/* LinkedIn request button - prominent */}
+          {!myLinkedInRequested ? (
+            <Button 
+              variant="default"
+              className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white"
+              onClick={handleRequestLinkedIn}
+              disabled={requestLinkedIn.isPending}
+            >
+              <Linkedin className="h-5 w-5" />
+              Request LinkedIn Connection
+            </Button>
+          ) : !isMutualLinkedIn ? (
+            <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400">
+              <Check className="h-4 w-4" />
+              <span className="text-sm font-medium">LinkedIn requested</span>
+            </div>
+          ) : null}
           
           {/* Mutual LinkedIn notification */}
           {isMutualLinkedIn && (
-            <div className="text-xs text-green-600 bg-green-50 dark:bg-green-950/30 rounded px-2 py-1 text-center">
-              🎉 Mutual LinkedIn connection! You can now see each other's full profiles.
+            <div className="text-sm font-medium text-green-600 bg-green-50 dark:bg-green-950/30 rounded-lg px-4 py-3 text-center flex items-center justify-center gap-2">
+              <span className="text-lg">🎉</span>
+              <span>It's a match! You can now see each other's full profiles.</span>
             </div>
           )}
           
           {/* Waiting for them notification */}
           {myLinkedInRequested && !theirLinkedInRequested && (
-            <div className="text-xs text-muted-foreground text-center">
+            <div className="text-xs text-muted-foreground text-center py-1">
               Waiting for them to also request LinkedIn connection...
             </div>
           )}
           
           {/* They requested notification */}
           {!myLinkedInRequested && theirLinkedInRequested && (
-            <div className="text-xs text-primary bg-primary/10 rounded px-2 py-1 text-center">
-              They want to connect on LinkedIn! Request to reveal profiles.
+            <div className="text-sm font-medium text-primary bg-primary/10 rounded-lg px-4 py-2 text-center">
+              ✨ They want to connect on LinkedIn! Request to reveal profiles.
             </div>
           )}
         </div>
