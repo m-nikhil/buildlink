@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { UserPlus, X, MapPin, Briefcase, Sparkles, Heart } from 'lucide-react';
 import { useConnectionStatus, useSendConnectionRequest } from '@/hooks/useConnections';
 import { useProfile } from '@/hooks/useProfile';
+import { useConfetti } from '@/hooks/useConfetti';
 import { motion } from 'framer-motion';
 
 interface SwipeCardProps {
@@ -21,6 +22,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
   const connection = useConnectionStatus(profile.id);
   const { data: myProfile } = useProfile();
   const sendRequest = useSendConnectionRequest();
+  const { fireMatch } = useConfetti();
   const [isExiting, setIsExiting] = useState<'left' | 'right' | null>(null);
 
   const initials = profile.full_name
@@ -31,7 +33,16 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
 
   const handleLike = () => {
     setIsExiting('right');
-    sendRequest.mutate({ recipientId: profile.id });
+    sendRequest.mutate(
+      { recipientId: profile.id },
+      {
+        onSuccess: (data) => {
+          if ((data as any).isMutualMatch) {
+            fireMatch();
+          }
+        },
+      }
+    );
     setTimeout(onLike, 300);
   };
 
