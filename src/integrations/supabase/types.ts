@@ -65,6 +65,41 @@ export type Database = {
           },
         ]
       }
+      daily_swipes: {
+        Row: {
+          created_at: string
+          id: string
+          swipe_count: number
+          swipe_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          swipe_count?: number
+          swipe_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          swipe_count?: number
+          swipe_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_swipes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dismissed_profiles: {
         Row: {
           created_at: string
