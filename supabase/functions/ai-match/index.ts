@@ -1,10 +1,33 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Helper function to update the keyset pagination cursor
+async function updateLastCursor(
+  supabase: SupabaseClient,
+  userId: string,
+  swipeDate: string,
+  lastCursor: string
+) {
+  const { error } = await supabase
+    .from('daily_swipes')
+    .upsert({
+      user_id: userId,
+      swipe_date: swipeDate,
+      last_cursor: lastCursor,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,swipe_date'
+    });
+  
+  if (error) {
+    console.error('Failed to update last cursor:', error);
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,12 +72,13 @@ serve(async (req) => {
     }
 
     const DAILY_SWIPE_LIMIT = 5;
+    const CANDIDATE_PAGE_SIZE = 50; // Fetch 50 candidates per page
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Get today's swipe count
+    // Get today's swipe count and last cursor for keyset pagination
     const { data: dailySwipe, error: swipeError } = await supabase
       .from('daily_swipes')
-      .select('swipe_count')
+      .select('swipe_count, last_cursor')
       .eq('user_id', userProfile.id)
       .eq('swipe_date', today)
       .maybeSingle();
@@ -64,6 +88,7 @@ serve(async (req) => {
     }
 
     const currentSwipeCount = dailySwipe?.swipe_count || 0;
+    const lastCursor = dailySwipe?.last_cursor || null;
     const remainingSwipes = Math.max(0, DAILY_SWIPE_LIMIT - currentSwipeCount);
 
     // If no swipes remaining, return early with limit info
@@ -135,19 +160,46 @@ serve(async (req) => {
       });
     }
 
-    // Get all other profiles
-    const { data: otherProfiles, error: profilesError } = await supabase
+    // Get profiles using keyset pagination
+    // Use created_at as cursor - fetch next page after last shown profile
+    let profileQuery = supabase
       .from('profiles')
       .select('*')
-      .neq('user_id', user.id);
+      .neq('user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(CANDIDATE_PAGE_SIZE);
+
+    // Apply keyset pagination if we have a cursor from previous session
+    if (lastCursor) {
+      profileQuery = profileQuery.gt('created_at', lastCursor);
+    }
+
+    const { data: otherProfiles, error: profilesError } = await profileQuery;
 
     if (profilesError) {
       throw profilesError;
     }
 
+    // If no profiles after cursor, wrap around to beginning
+    let finalProfiles = otherProfiles || [];
+    if (finalProfiles.length === 0 && lastCursor) {
+      // Reset cursor - start from beginning
+      const { data: resetProfiles, error: resetError } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(CANDIDATE_PAGE_SIZE);
+      
+      if (resetError) {
+        throw resetError;
+      }
+      finalProfiles = resetProfiles || [];
+    }
+
     // Filter profiles: exclude connected, permanently dismissed, and recently dismissed
     // BUT include profiles who liked you (even if recently dismissed, they get priority)
-    const availableProfiles = otherProfiles?.filter(p => {
+    const availableProfiles = finalProfiles.filter(p => {
       // Always exclude if you already sent them a request or are connected
       if (excludedProfileIds.has(p.id)) return false;
       
@@ -161,7 +213,7 @@ serve(async (req) => {
       if (recentlyDismissedIds.has(p.id)) return false;
       
       return true;
-    }) || [];
+    });
     
     // Mark which profiles liked the user (for priority sorting later)
     const profilesWithLikedFlag = availableProfiles.map(p => ({
@@ -169,8 +221,22 @@ serve(async (req) => {
       _likedYou: likedYouProfileIds.has(p.id)
     }));
 
+    // Track the last profile's created_at for cursor update
+    const lastProfileCreatedAt = finalProfiles.length > 0 
+      ? finalProfiles[finalProfiles.length - 1].created_at 
+      : null;
+
     if (profilesWithLikedFlag.length === 0) {
-      return new Response(JSON.stringify({ matches: [] }), {
+      // Update cursor even if no matches (to progress through profiles)
+      if (lastProfileCreatedAt) {
+        await updateLastCursor(supabase, userProfile.id, today, lastProfileCreatedAt);
+      }
+      return new Response(JSON.stringify({ 
+        matches: [],
+        swipes_used: currentSwipeCount,
+        swipes_remaining: remainingSwipes,
+        daily_limit: DAILY_SWIPE_LIMIT
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -317,6 +383,11 @@ Candidate ${i + 1} (ID: ${p.id})${p._likedYou ? ' [ALREADY LIKED YOU - HIGH PRIO
       .filter((m: any) => m.profile) // Ensure profile exists
       // Sort to put "liked you" profiles first
       .sort((a: any, b: any) => (b.liked_you ? 1 : 0) - (a.liked_you ? 1 : 0));
+
+    // Update the cursor to the last profile we processed
+    if (lastProfileCreatedAt) {
+      await updateLastCursor(supabase, userProfile.id, today, lastProfileCreatedAt);
+    }
 
     return new Response(JSON.stringify({ 
       matches: enrichedMatches,

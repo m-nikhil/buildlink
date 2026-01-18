@@ -69,6 +69,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_cursor: string | null
           swipe_count: number
           swipe_date: string
           updated_at: string
@@ -77,6 +78,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_cursor?: string | null
           swipe_count?: number
           swipe_date?: string
           updated_at?: string
@@ -85,6 +87,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_cursor?: string | null
           swipe_count?: number
           swipe_date?: string
           updated_at?: string
