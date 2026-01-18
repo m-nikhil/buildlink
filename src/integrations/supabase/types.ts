@@ -20,7 +20,9 @@ export type Database = {
           id: string
           message: string | null
           recipient_id: string
+          recipient_linkedin_requested: boolean | null
           requester_id: string
+          requester_linkedin_requested: boolean | null
           status: string | null
           updated_at: string
         }
@@ -29,7 +31,9 @@ export type Database = {
           id?: string
           message?: string | null
           recipient_id: string
+          recipient_linkedin_requested?: boolean | null
           requester_id: string
+          requester_linkedin_requested?: boolean | null
           status?: string | null
           updated_at?: string
         }
@@ -38,7 +42,9 @@ export type Database = {
           id?: string
           message?: string | null
           recipient_id?: string
+          recipient_linkedin_requested?: boolean | null
           requester_id?: string
+          requester_linkedin_requested?: boolean | null
           status?: string | null
           updated_at?: string
         }

@@ -134,6 +134,46 @@ export function useDisconnect() {
   });
 }
 
+export function useRequestLinkedIn() {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async (connectionId: string) => {
+      if (!profile) throw new Error('Profile not found');
+
+      // Fetch connection to determine if user is requester or recipient
+      const { data: connection, error: fetchError } = await supabase
+        .from('connections')
+        .select('*')
+        .eq('id', connectionId)
+        .single();
+
+      if (fetchError || !connection) throw new Error('Connection not found');
+
+      const isRequester = connection.requester_id === profile.id;
+      const updateField = isRequester ? 'requester_linkedin_requested' : 'recipient_linkedin_requested';
+
+      const { data, error } = await supabase
+        .from('connections')
+        .update({ [updateField]: true })
+        .eq('id', connectionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      toast.success('LinkedIn connection requested!');
+    },
+    onError: () => {
+      toast.error('Failed to request LinkedIn connection');
+    },
+  });
+}
+
 export function useConnectionStatus(recipientId: string | undefined) {
   const { data: connections } = useConnections();
   const { data: profile } = useProfile();
