@@ -33,6 +33,8 @@ export interface Connection {
   recipient_id: string;
   status: 'pending' | 'accepted' | 'rejected';
   message: string | null;
+  requester_linkedin_requested: boolean | null;
+  recipient_linkedin_requested: boolean | null;
   created_at: string;
   updated_at: string;
 }
