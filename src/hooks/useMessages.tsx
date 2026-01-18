@@ -5,7 +5,7 @@ import { Message } from '@/types/message';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 
-const MAX_MESSAGES = 15;
+const MAX_MESSAGES = 50;
 
 export function useMessages(connectionId: string | undefined) {
   const queryClient = useQueryClient();
