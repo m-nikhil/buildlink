@@ -48,12 +48,11 @@ serve(async (req) => {
       });
     }
 
-    // Get pending and accepted connections for this user (rejected no longer exists - uses dismiss instead)
+    // Get all connections for this user
     const { data: connections, error: connectionsError } = await supabase
       .from('connections')
       .select('requester_id, recipient_id, status')
-      .or(`requester_id.eq.${userProfile.id},recipient_id.eq.${userProfile.id}`)
-      .in('status', ['pending', 'accepted']);
+      .or(`requester_id.eq.${userProfile.id},recipient_id.eq.${userProfile.id}`);
 
     if (connectionsError) {
       console.error('Connections error:', connectionsError);
@@ -69,14 +68,23 @@ serve(async (req) => {
       console.error('Dismissed profiles error:', dismissedError);
     }
 
-    // Build a set of profile IDs to exclude (already connected or pending)
-    const excludedProfileIds = new Set<string>();
+    // Build sets for different connection states
+    const excludedProfileIds = new Set<string>(); // Profiles to completely exclude
+    const likedYouProfileIds = new Set<string>(); // Profiles who liked you (pending received)
+    
     if (connections) {
       connections.forEach((conn) => {
         if (conn.requester_id === userProfile.id) {
+          // You sent this request - exclude them (pending or accepted)
           excludedProfileIds.add(conn.recipient_id);
-        } else {
-          excludedProfileIds.add(conn.requester_id);
+        } else if (conn.recipient_id === userProfile.id) {
+          if (conn.status === 'accepted') {
+            // Already connected - exclude
+            excludedProfileIds.add(conn.requester_id);
+          } else if (conn.status === 'pending') {
+            // They liked you - include with priority!
+            likedYouProfileIds.add(conn.requester_id);
+          }
         }
       });
     }
@@ -107,14 +115,31 @@ serve(async (req) => {
       throw profilesError;
     }
 
-    // Filter out already connected profiles, permanently dismissed, and recently dismissed
-    const availableProfiles = otherProfiles?.filter(p => 
-      !excludedProfileIds.has(p.id) && 
-      !permanentlyDismissedIds.has(p.id) && 
-      !recentlyDismissedIds.has(p.id)
-    ) || [];
+    // Filter profiles: exclude connected, permanently dismissed, and recently dismissed
+    // BUT include profiles who liked you (even if recently dismissed, they get priority)
+    const availableProfiles = otherProfiles?.filter(p => {
+      // Always exclude if you already sent them a request or are connected
+      if (excludedProfileIds.has(p.id)) return false;
+      
+      // Always exclude permanently dismissed
+      if (permanentlyDismissedIds.has(p.id)) return false;
+      
+      // If they liked you, include them (bypass recent dismiss cooldown)
+      if (likedYouProfileIds.has(p.id)) return true;
+      
+      // Exclude recently dismissed (for regular profiles)
+      if (recentlyDismissedIds.has(p.id)) return false;
+      
+      return true;
+    }) || [];
+    
+    // Mark which profiles liked the user (for priority sorting later)
+    const profilesWithLikedFlag = availableProfiles.map(p => ({
+      ...p,
+      _likedYou: likedYouProfileIds.has(p.id)
+    }));
 
-    if (availableProfiles.length === 0) {
+    if (profilesWithLikedFlag.length === 0) {
       return new Response(JSON.stringify({ matches: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -160,8 +185,8 @@ User Profile:
 ${preferenceContext}
 `;
 
-    const candidatesSummary = availableProfiles.map((p, i) => `
-Candidate ${i + 1} (ID: ${p.id}):
+    const candidatesSummary = profilesWithLikedFlag.map((p, i) => `
+Candidate ${i + 1} (ID: ${p.id})${p._likedYou ? ' [ALREADY LIKED YOU - HIGH PRIORITY]' : ''}:
 - Name: ${p.full_name || 'Not specified'}
 - Headline: ${p.headline || 'Not specified'}
 - Bio: ${p.bio || 'Not specified'}
@@ -246,18 +271,21 @@ Candidate ${i + 1} (ID: ${p.id}):
 
     const matchResults = JSON.parse(toolCall.function.arguments);
     
-    // Enrich matches with full profile data
+    // Enrich matches with full profile data and liked status
     const enrichedMatches = matchResults.matches
       .filter((m: any) => m.score >= 50) // Only return good matches
       .slice(0, 10) // Top 10 matches
       .map((match: any) => {
-        const profile = availableProfiles.find(p => p.id === match.profile_id);
+        const profile = profilesWithLikedFlag.find(p => p.id === match.profile_id);
         return {
           ...match,
-          profile
+          profile: profile ? { ...profile, _likedYou: undefined } : undefined, // Remove internal flag
+          liked_you: profile?._likedYou || false
         };
       })
-      .filter((m: any) => m.profile); // Ensure profile exists
+      .filter((m: any) => m.profile) // Ensure profile exists
+      // Sort to put "liked you" profiles first
+      .sort((a: any, b: any) => (b.liked_you ? 1 : 0) - (a.liked_you ? 1 : 0));
 
     return new Response(JSON.stringify({ matches: enrichedMatches }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
