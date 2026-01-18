@@ -10,23 +10,6 @@ export function useDismissProfile() {
     mutationFn: async (dismissedProfileId: string) => {
       if (!userProfile) throw new Error('User profile not found');
 
-      // Check if there's a pending connection from them to us (they liked us)
-      const { data: pendingConnection } = await supabase
-        .from('connections')
-        .select('id')
-        .eq('requester_id', dismissedProfileId)
-        .eq('recipient_id', userProfile.id)
-        .eq('status', 'pending')
-        .maybeSingle();
-
-      // If they had liked us, delete that connection
-      if (pendingConnection) {
-        await supabase
-          .from('connections')
-          .delete()
-          .eq('id', pendingConnection.id);
-      }
-
       // Check if already dismissed
       const { data: existing, error: fetchError } = await supabase
         .from('dismissed_profiles')
@@ -62,9 +45,8 @@ export function useDismissProfile() {
       }
     },
     onSuccess: () => {
-      // Invalidate matches and connections so they'll be refetched
+      // Invalidate matches so they'll be refetched
       queryClient.invalidateQueries({ queryKey: ['ai-matches'] });
-      queryClient.invalidateQueries({ queryKey: ['connections'] });
     },
   });
 }
