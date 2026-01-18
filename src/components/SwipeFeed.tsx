@@ -1,33 +1,60 @@
 import { useState } from 'react';
 import { useAIMatches } from '@/hooks/useAIMatches';
 import { useDismissProfile } from '@/hooks/useDismissProfile';
+import { useUndoDismiss } from '@/hooks/useUndoDismiss';
 import { SwipeCard } from './SwipeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, Users } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, Users, Undo2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
+
+interface DismissedProfile {
+  profileId: string;
+  index: number;
+}
 
 export function SwipeFeed() {
   const { data: matches, isLoading, error, refetch, isFetching } = useAIMatches();
   const dismissProfile = useDismissProfile();
+  const undoDismiss = useUndoDismiss();
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [lastDismissed, setLastDismissed] = useState<DismissedProfile | null>(null);
 
   const handleRefresh = () => {
     setCurrentIndex(0);
+    setLastDismissed(null);
     queryClient.invalidateQueries({ queryKey: ['ai-matches'] });
     refetch();
   };
 
   const handleLike = () => {
+    setLastDismissed(null); // Clear undo when liking
     setCurrentIndex(prev => prev + 1);
   };
 
   const handlePass = (profileId: string) => {
     // Track the dismissal
     dismissProfile.mutate(profileId);
+    setLastDismissed({ profileId, index: currentIndex });
     setCurrentIndex(prev => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (!lastDismissed) return;
+    
+    undoDismiss.mutate(lastDismissed.profileId, {
+      onSuccess: () => {
+        setCurrentIndex(lastDismissed.index);
+        setLastDismissed(null);
+        toast.success('Profile restored');
+      },
+      onError: () => {
+        toast.error('Failed to undo');
+      },
+    });
   };
 
   if (error) {
@@ -112,6 +139,21 @@ export function SwipeFeed() {
         onPass={() => handlePass(currentMatch.profile_id)}
       />
 
+      {/* Undo Button */}
+      {lastDismissed && (
+        <div className="flex justify-center mt-4">
+          <Button
+            onClick={handleUndo}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={undoDismiss.isPending}
+          >
+            <Undo2 className="h-4 w-4" />
+            Undo
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
