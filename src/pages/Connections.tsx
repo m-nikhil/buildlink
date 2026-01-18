@@ -119,7 +119,7 @@ export default function Connections() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{otherProfile.full_name || 'Anonymous'}</p>
+                            <p className="font-medium truncate">{getInitials(otherProfile.full_name)}</p>
                             <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
                           </div>
                         </div>
