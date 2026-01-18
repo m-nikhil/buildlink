@@ -48,11 +48,12 @@ serve(async (req) => {
       });
     }
 
-    // Get all connections (pending, accepted, or rejected) for this user
+    // Get pending and accepted connections for this user (rejected no longer exists - uses dismiss instead)
     const { data: connections, error: connectionsError } = await supabase
       .from('connections')
-      .select('requester_id, recipient_id')
-      .or(`requester_id.eq.${userProfile.id},recipient_id.eq.${userProfile.id}`);
+      .select('requester_id, recipient_id, status')
+      .or(`requester_id.eq.${userProfile.id},recipient_id.eq.${userProfile.id}`)
+      .in('status', ['pending', 'accepted']);
 
     if (connectionsError) {
       console.error('Connections error:', connectionsError);

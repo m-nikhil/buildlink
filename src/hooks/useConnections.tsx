@@ -88,22 +88,73 @@ export function useSendConnectionRequest() {
 
 export function useRespondToConnection() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
 
   return useMutation({
-    mutationFn: async ({ connectionId, status }: { connectionId: string; status: 'accepted' | 'rejected' }) => {
-      const { data, error } = await supabase
-        .from('connections')
-        .update({ status })
-        .eq('id', connectionId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as Connection;
+    mutationFn: async ({ connectionId, accept }: { connectionId: string; accept: boolean }) => {
+      if (!profile) throw new Error('Profile not found');
+
+      if (accept) {
+        // Accept: update status to accepted
+        const { data, error } = await supabase
+          .from('connections')
+          .update({ status: 'accepted' })
+          .eq('id', connectionId)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return { accepted: true, data: data as Connection };
+      } else {
+        // Decline: get the connection first to know who the requester is
+        const { data: connection, error: fetchError } = await supabase
+          .from('connections')
+          .select('requester_id')
+          .eq('id', connectionId)
+          .single();
+
+        if (fetchError || !connection) throw new Error('Connection not found');
+
+        // Create/update dismiss record for the requester (so they won't see us again immediately)
+        const { data: existingDismiss } = await supabase
+          .from('dismissed_profiles')
+          .select('id, dismiss_count')
+          .eq('user_id', connection.requester_id)
+          .eq('dismissed_profile_id', profile.id)
+          .maybeSingle();
+
+        if (existingDismiss) {
+          await supabase
+            .from('dismissed_profiles')
+            .update({
+              dismiss_count: existingDismiss.dismiss_count + 1,
+              last_dismissed_at: new Date().toISOString(),
+            })
+            .eq('id', existingDismiss.id);
+        } else {
+          await supabase
+            .from('dismissed_profiles')
+            .insert({
+              user_id: connection.requester_id,
+              dismissed_profile_id: profile.id,
+              dismiss_count: 1,
+            });
+        }
+
+        // Delete the connection
+        const { error: deleteError } = await supabase
+          .from('connections')
+          .delete()
+          .eq('id', connectionId);
+
+        if (deleteError) throw deleteError;
+        return { accepted: false };
+      }
     },
-    onSuccess: (data) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });
-      toast.success(`Connection ${data.status === 'accepted' ? 'accepted' : 'declined'}`);
+      queryClient.invalidateQueries({ queryKey: ['ai-matches'] });
+      toast.success(result.accepted ? 'Connection accepted!' : 'Request declined');
     },
     onError: () => {
       toast.error('Failed to respond to connection request');
