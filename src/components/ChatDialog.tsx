@@ -11,7 +11,7 @@ import { useConnections, useRequestLinkedIn } from '@/hooks/useConnections';
 import { Profile, Connection } from '@/types/profile';
 import { cn } from '@/lib/utils';
 
-const MAX_MESSAGES = 15;
+const MAX_MESSAGES = 50;
 
 interface ChatDialogProps {
   open: boolean;
