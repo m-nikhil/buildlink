@@ -139,9 +139,21 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
               Request LinkedIn Connection
             </Button>
           ) : !isMutualLinkedIn ? (
-            <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400">
-              <Check className="h-4 w-4" />
-              <span className="text-sm font-medium">LinkedIn requested</span>
+            <div className="flex flex-col items-center gap-3 py-4 px-4 rounded-xl bg-gradient-to-br from-[#0A66C2]/10 to-[#0A66C2]/5 border border-[#0A66C2]/20">
+              <div className="flex items-center gap-2 text-[#0A66C2]">
+                <div className="h-8 w-8 rounded-full bg-[#0A66C2]/20 flex items-center justify-center">
+                  <Check className="h-5 w-5" />
+                </div>
+                <span className="font-semibold">LinkedIn Request Sent!</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex gap-1">
+                  <span className="h-2 w-2 rounded-full bg-[#0A66C2] animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-[#0A66C2]/60 animate-pulse [animation-delay:150ms]" />
+                  <span className="h-2 w-2 rounded-full bg-[#0A66C2]/30 animate-pulse [animation-delay:300ms]" />
+                </div>
+                <span>Waiting for their response</span>
+              </div>
             </div>
           ) : null}
           
@@ -150,13 +162,6 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
             <div className="text-sm font-medium text-green-600 bg-green-50 dark:bg-green-950/30 rounded-lg px-4 py-3 text-center flex items-center justify-center gap-2">
               <span className="text-lg">🎉</span>
               <span>It's a match! You can now see each other's full profiles.</span>
-            </div>
-          )}
-          
-          {/* Waiting for them notification */}
-          {myLinkedInRequested && !theirLinkedInRequested && (
-            <div className="text-xs text-muted-foreground text-center py-1">
-              Waiting for them to also request LinkedIn connection...
             </div>
           )}
           
