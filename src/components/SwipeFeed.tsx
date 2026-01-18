@@ -108,11 +108,6 @@ export function SwipeFeed() {
         onPass={handlePass}
       />
 
-      {/* Skip hint */}
-      <div className="flex justify-center gap-8 mt-6 text-sm text-muted-foreground">
-        <span>← Pass</span>
-        <span>Like →</span>
-      </div>
     </div>
   );
 }
