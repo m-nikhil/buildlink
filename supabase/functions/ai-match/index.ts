@@ -58,6 +58,16 @@ serve(async (req) => {
       console.error('Connections error:', connectionsError);
     }
 
+    // Get dismissed profiles (max 3 dismisses = permanent hide, or recently dismissed = temporary hide)
+    const { data: dismissedProfiles, error: dismissedError } = await supabase
+      .from('dismissed_profiles')
+      .select('dismissed_profile_id, dismiss_count, last_dismissed_at')
+      .eq('user_id', userProfile.id);
+
+    if (dismissedError) {
+      console.error('Dismissed profiles error:', dismissedError);
+    }
+
     // Build a set of profile IDs to exclude (already connected or pending)
     const excludedProfileIds = new Set<string>();
     if (connections) {
@@ -66,6 +76,22 @@ serve(async (req) => {
           excludedProfileIds.add(conn.recipient_id);
         } else {
           excludedProfileIds.add(conn.requester_id);
+        }
+      });
+    }
+
+    // Profiles dismissed 3+ times are permanently excluded
+    // Profiles dismissed recently (within last hour) are temporarily excluded
+    const permanentlyDismissedIds = new Set<string>();
+    const recentlyDismissedIds = new Set<string>();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    if (dismissedProfiles) {
+      dismissedProfiles.forEach((d) => {
+        if (d.dismiss_count >= 3) {
+          permanentlyDismissedIds.add(d.dismissed_profile_id);
+        } else if (d.last_dismissed_at > oneHourAgo) {
+          recentlyDismissedIds.add(d.dismissed_profile_id);
         }
       });
     }
@@ -80,8 +106,12 @@ serve(async (req) => {
       throw profilesError;
     }
 
-    // Filter out already connected profiles
-    const availableProfiles = otherProfiles?.filter(p => !excludedProfileIds.has(p.id)) || [];
+    // Filter out already connected profiles, permanently dismissed, and recently dismissed
+    const availableProfiles = otherProfiles?.filter(p => 
+      !excludedProfileIds.has(p.id) && 
+      !permanentlyDismissedIds.has(p.id) && 
+      !recentlyDismissedIds.has(p.id)
+    ) || [];
 
     if (availableProfiles.length === 0) {
       return new Response(JSON.stringify({ matches: [] }), {
