@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAIMatches } from '@/hooks/useAIMatches';
+import { useDismissProfile } from '@/hooks/useDismissProfile';
 import { SwipeCard } from './SwipeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export function SwipeFeed() {
   const { data: matches, isLoading, error, refetch, isFetching } = useAIMatches();
+  const dismissProfile = useDismissProfile();
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -22,7 +24,9 @@ export function SwipeFeed() {
     setCurrentIndex(prev => prev + 1);
   };
 
-  const handlePass = () => {
+  const handlePass = (profileId: string) => {
+    // Track the dismissal
+    dismissProfile.mutate(profileId);
     setCurrentIndex(prev => prev + 1);
   };
 
@@ -105,7 +109,7 @@ export function SwipeFeed() {
         score={currentMatch.score}
         reason={currentMatch.reason}
         onLike={handleLike}
-        onPass={handlePass}
+        onPass={() => handlePass(currentMatch.profile_id)}
       />
 
     </div>

@@ -65,6 +65,41 @@ export type Database = {
           },
         ]
       }
+      dismissed_profiles: {
+        Row: {
+          created_at: string
+          dismiss_count: number
+          dismissed_profile_id: string
+          id: string
+          last_dismissed_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismiss_count?: number
+          dismissed_profile_id: string
+          id?: string
+          last_dismissed_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dismiss_count?: number
+          dismissed_profile_id?: string
+          id?: string
+          last_dismissed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dismissed_profiles_dismissed_profile_id_fkey"
+            columns: ["dismissed_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           connection_id: string
