@@ -48,6 +48,28 @@ serve(async (req) => {
       });
     }
 
+    // Get all connections (pending, accepted, or rejected) for this user
+    const { data: connections, error: connectionsError } = await supabase
+      .from('connections')
+      .select('requester_id, recipient_id')
+      .or(`requester_id.eq.${userProfile.id},recipient_id.eq.${userProfile.id}`);
+
+    if (connectionsError) {
+      console.error('Connections error:', connectionsError);
+    }
+
+    // Build a set of profile IDs to exclude (already connected or pending)
+    const excludedProfileIds = new Set<string>();
+    if (connections) {
+      connections.forEach((conn) => {
+        if (conn.requester_id === userProfile.id) {
+          excludedProfileIds.add(conn.recipient_id);
+        } else {
+          excludedProfileIds.add(conn.requester_id);
+        }
+      });
+    }
+
     // Get all other profiles
     const { data: otherProfiles, error: profilesError } = await supabase
       .from('profiles')
@@ -58,7 +80,10 @@ serve(async (req) => {
       throw profilesError;
     }
 
-    if (!otherProfiles || otherProfiles.length === 0) {
+    // Filter out already connected profiles
+    const availableProfiles = otherProfiles?.filter(p => !excludedProfileIds.has(p.id)) || [];
+
+    if (availableProfiles.length === 0) {
       return new Response(JSON.stringify({ matches: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -104,7 +129,7 @@ User Profile:
 ${preferenceContext}
 `;
 
-    const candidatesSummary = otherProfiles.map((p, i) => `
+    const candidatesSummary = availableProfiles.map((p, i) => `
 Candidate ${i + 1} (ID: ${p.id}):
 - Name: ${p.full_name || 'Not specified'}
 - Headline: ${p.headline || 'Not specified'}
@@ -195,7 +220,7 @@ Candidate ${i + 1} (ID: ${p.id}):
       .filter((m: any) => m.score >= 50) // Only return good matches
       .slice(0, 10) // Top 10 matches
       .map((match: any) => {
-        const profile = otherProfiles.find(p => p.id === match.profile_id);
+        const profile = availableProfiles.find(p => p.id === match.profile_id);
         return {
           ...match,
           profile
