@@ -48,7 +48,37 @@ serve(async (req) => {
       });
     }
 
-    // Get all connections for this user
+    const DAILY_SWIPE_LIMIT = 5;
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // Get today's swipe count
+    const { data: dailySwipe, error: swipeError } = await supabase
+      .from('daily_swipes')
+      .select('swipe_count')
+      .eq('user_id', userProfile.id)
+      .eq('swipe_date', today)
+      .maybeSingle();
+
+    if (swipeError) {
+      console.error('Daily swipe error:', swipeError);
+    }
+
+    const currentSwipeCount = dailySwipe?.swipe_count || 0;
+    const remainingSwipes = Math.max(0, DAILY_SWIPE_LIMIT - currentSwipeCount);
+
+    // If no swipes remaining, return early with limit info
+    if (remainingSwipes <= 0) {
+      return new Response(JSON.stringify({ 
+        matches: [], 
+        daily_limit_reached: true,
+        swipes_used: currentSwipeCount,
+        swipes_remaining: 0,
+        daily_limit: DAILY_SWIPE_LIMIT
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { data: connections, error: connectionsError } = await supabase
       .from('connections')
       .select('requester_id, recipient_id, status')
@@ -272,9 +302,10 @@ Candidate ${i + 1} (ID: ${p.id})${p._likedYou ? ' [ALREADY LIKED YOU - HIGH PRIO
     const matchResults = JSON.parse(toolCall.function.arguments);
     
     // Enrich matches with full profile data and liked status
+    // Limit to remaining swipes for the day
     const enrichedMatches = matchResults.matches
       .filter((m: any) => m.score >= 50) // Only return good matches
-      .slice(0, 10) // Top 10 matches
+      .slice(0, remainingSwipes) // Limit to remaining daily swipes
       .map((match: any) => {
         const profile = profilesWithLikedFlag.find(p => p.id === match.profile_id);
         return {
@@ -287,7 +318,12 @@ Candidate ${i + 1} (ID: ${p.id})${p._likedYou ? ' [ALREADY LIKED YOU - HIGH PRIO
       // Sort to put "liked you" profiles first
       .sort((a: any, b: any) => (b.liked_you ? 1 : 0) - (a.liked_you ? 1 : 0));
 
-    return new Response(JSON.stringify({ matches: enrichedMatches }), {
+    return new Response(JSON.stringify({ 
+      matches: enrichedMatches,
+      swipes_used: currentSwipeCount,
+      swipes_remaining: remainingSwipes,
+      daily_limit: DAILY_SWIPE_LIMIT
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useAIMatches } from '@/hooks/useAIMatches';
 import { useDismissProfile } from '@/hooks/useDismissProfile';
 import { useUndoDismiss } from '@/hooks/useUndoDismiss';
+import { useTrackSwipe } from '@/hooks/useTrackSwipe';
 import { SwipeCard } from './SwipeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, Users, Undo2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, RefreshCw, AlertCircle, Users, Undo2, Clock } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -16,12 +18,18 @@ interface DismissedProfile {
 }
 
 export function SwipeFeed() {
-  const { data: matches, isLoading, error, refetch, isFetching } = useAIMatches();
+  const { data, isLoading, error, refetch, isFetching } = useAIMatches();
   const dismissProfile = useDismissProfile();
   const undoDismiss = useUndoDismiss();
+  const trackSwipe = useTrackSwipe();
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lastDismissed, setLastDismissed] = useState<DismissedProfile | null>(null);
+
+  const matches = data?.matches ?? [];
+  const swipesRemaining = data?.swipes_remaining ?? 5;
+  const dailyLimit = data?.daily_limit ?? 5;
+  const dailyLimitReached = data?.daily_limit_reached ?? false;
 
   const handleRefresh = () => {
     setCurrentIndex(0);
@@ -31,13 +39,14 @@ export function SwipeFeed() {
   };
 
   const handleLike = () => {
-    setLastDismissed(null); // Clear undo when liking
+    setLastDismissed(null);
+    trackSwipe.mutate();
     setCurrentIndex(prev => prev + 1);
   };
 
   const handlePass = (profileId: string) => {
-    // Track the dismissal
     dismissProfile.mutate(profileId);
+    trackSwipe.mutate();
     setLastDismissed({ profileId, index: currentIndex });
     setCurrentIndex(prev => prev + 1);
   };
@@ -84,9 +93,31 @@ export function SwipeFeed() {
     );
   }
 
-  const currentMatch = matches?.[currentIndex];
+  // Daily limit reached
+  if (dailyLimitReached) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Card className="w-full max-w-sm mx-auto text-center">
+          <CardContent className="pt-12 pb-8">
+            <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+              <Clock className="h-10 w-10 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Daily limit reached</h3>
+            <p className="text-muted-foreground mb-4">
+              You've used all {dailyLimit} swipes for today. Come back tomorrow for more connections!
+            </p>
+            <Badge variant="secondary" className="text-sm">
+              0 of {dailyLimit} swipes remaining
+            </Badge>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  if (!matches || matches.length === 0 || !currentMatch) {
+  const currentMatch = matches[currentIndex];
+
+  if (matches.length === 0 || !currentMatch) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <Card className="w-full max-w-sm mx-auto text-center">
@@ -95,17 +126,22 @@ export function SwipeFeed() {
               <Users className="h-10 w-10 text-primary" />
             </div>
             <h3 className="text-xl font-semibold mb-2">
-              {matches && matches.length > 0 ? "You've seen everyone!" : "No recommendations yet"}
+              {matches.length > 0 ? "You've seen everyone!" : "No recommendations yet"}
             </h3>
-            <p className="text-muted-foreground mb-6">
-              {matches && matches.length > 0 
+            <p className="text-muted-foreground mb-4">
+              {matches.length > 0 
                 ? "Check back later for new professionals"
                 : "Complete your profile to get better recommendations!"}
             </p>
-            <Button onClick={handleRefresh} className="gap-2" disabled={isFetching}>
-              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-              Find More Connections
-            </Button>
+            <Badge variant="secondary" className="text-sm mb-4">
+              {swipesRemaining} of {dailyLimit} swipes remaining today
+            </Badge>
+            <div>
+              <Button onClick={handleRefresh} className="gap-2" disabled={isFetching}>
+                <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                Find More Connections
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -115,10 +151,13 @@ export function SwipeFeed() {
   return (
     <div className="py-4">
       {/* Progress indicator */}
-      <div className="flex items-center justify-center gap-2 mb-6">
+      <div className="flex items-center justify-center gap-3 mb-6">
         <span className="text-sm text-muted-foreground">
           {currentIndex + 1} of {matches.length} professionals
         </span>
+        <Badge variant="outline" className="text-xs">
+          {swipesRemaining - currentIndex > 0 ? swipesRemaining - currentIndex : 0}/{dailyLimit} swipes left
+        </Badge>
         <Button 
           onClick={handleRefresh} 
           variant="ghost" 
