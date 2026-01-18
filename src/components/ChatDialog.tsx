@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Linkedin, AlertCircle, Check } from 'lucide-react';
+import { Send, Linkedin, AlertCircle, Check, User } from 'lucide-react';
 import { useMessages, useSendMessage, useMessageCount } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { useConnections, useRequestLinkedIn } from '@/hooks/useConnections';
 import { Profile, Connection } from '@/types/profile';
+import { ProfileSheet } from '@/components/ProfileSheet';
 import { cn } from '@/lib/utils';
 
 const MAX_MESSAGES = 50;
@@ -22,6 +23,7 @@ interface ChatDialogProps {
 
 export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: ChatDialogProps) {
   const [message, setMessage] = useState('');
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const { data: messages, isLoading } = useMessages(connectionId);
   const { data: myProfile } = useProfile();
   const { data: connections } = useConnections();
@@ -77,16 +79,25 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md h-[600px] flex flex-col p-0">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={otherProfile.avatar_url ?? undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <button 
+              onClick={() => setProfileSheetOpen(true)}
+              className="relative group"
+            >
+              <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
+                <AvatarImage src={otherProfile.avatar_url ?? undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <User className="h-4 w-4 text-white" />
+              </div>
+            </button>
             <div className="flex-1">
               {isMutualLinkedIn ? (
                 <>
@@ -95,7 +106,12 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 </>
               ) : (
                 <>
-                  <p className="font-semibold">{initials}</p>
+                  <button 
+                    onClick={() => setProfileSheetOpen(true)}
+                    className="font-semibold hover:text-primary transition-colors text-left"
+                  >
+                    {initials}
+                  </button>
                   <p className="text-xs text-muted-foreground font-normal">{otherProfile.headline}</p>
                 </>
               )}
@@ -255,5 +271,13 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
         )}
       </DialogContent>
     </Dialog>
+    
+    <ProfileSheet 
+      open={profileSheetOpen} 
+      onOpenChange={setProfileSheetOpen} 
+      profile={otherProfile}
+      showFullDetails={isMutualLinkedIn}
+    />
+    </>
   );
 }
