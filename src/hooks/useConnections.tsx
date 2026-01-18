@@ -111,6 +111,29 @@ export function useRespondToConnection() {
   });
 }
 
+export function useDisconnect() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (connectionId: string) => {
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('id', connectionId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      queryClient.invalidateQueries({ queryKey: ['ai-matches'] });
+      toast.success('Disconnected successfully');
+    },
+    onError: () => {
+      toast.error('Failed to disconnect');
+    },
+  });
+}
+
 export function useConnectionStatus(recipientId: string | undefined) {
   const { data: connections } = useConnections();
   const { data: profile } = useProfile();

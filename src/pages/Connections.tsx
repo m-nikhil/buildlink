@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useConnections } from '@/hooks/useConnections';
+import { useConnections, useDisconnect } from '@/hooks/useConnections';
 import { useProfile, useProfiles } from '@/hooks/useProfile';
 import { Header } from '@/components/Header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Users, MessageCircle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Clock, Users, MessageCircle, UserMinus } from 'lucide-react';
 import { Profile, Connection } from '@/types/profile';
 import { ChatDialog } from '@/components/ChatDialog';
 
@@ -19,6 +20,7 @@ export default function Connections() {
   const { data: profile } = useProfile();
   const { data: connections, isLoading: connectionsLoading } = useConnections();
   const { data: allProfiles } = useProfiles();
+  const disconnect = useDisconnect();
   const navigate = useNavigate();
   
   const [chatConnection, setChatConnection] = useState<{ connectionId: string; profile: Profile } | null>(null);
@@ -101,27 +103,63 @@ export default function Connections() {
                   const otherProfile = getProfileById(otherProfileId);
                   if (!otherProfile) return null;
                   
-                  return (
-                    <div 
-                      key={connection.id} 
-                      className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
-                      onClick={() => openChat(connection)}
-                    >
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={otherProfile.avatar_url ?? undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {getInitials(otherProfile.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{otherProfile.full_name || 'Anonymous'}</p>
-                        <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
+                    return (
+                      <div 
+                        key={connection.id} 
+                        className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                      >
+                        <div 
+                          className="flex items-center gap-4 flex-1 cursor-pointer"
+                          onClick={() => openChat(connection)}
+                        >
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={otherProfile.avatar_url ?? undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                              {getInitials(otherProfile.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{otherProfile.full_name || 'Anonymous'}</p>
+                            <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => openChat(connection)}
+                        >
+                          <MessageCircle className="h-5 w-5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <UserMinus className="h-5 w-5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Disconnect from {otherProfile.full_name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove your connection and chat history. They won't be notified, but you'll both appear in each other's discover feed again.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => disconnect.mutate(connection.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Disconnect
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
-                      <Button variant="ghost" size="icon">
-                        <MessageCircle className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  );
+                    );
                 })}
               </div>
             ) : (
