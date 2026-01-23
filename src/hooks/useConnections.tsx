@@ -1,43 +1,43 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from './useProfile';
+import { useAuth } from './useAuth';
 import { Connection } from '@/types/profile';
 import { toast } from 'sonner';
 
 export function useConnections() {
-  const { data: profile } = useProfile();
+  const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['connections', profile?.id],
+    queryKey: ['connections', user?.id],
     queryFn: async () => {
-      if (!profile) return [];
+      if (!user) return [];
       
       const { data, error } = await supabase
         .from('connections')
         .select('*')
-        .or(`requester_id.eq.${profile.id},recipient_id.eq.${profile.id}`);
+        .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`);
       
       if (error) throw error;
       return data as Connection[];
     },
-    enabled: !!profile,
+    enabled: !!user,
   });
 }
 
 export function useSendConnectionRequest() {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ recipientId, message }: { recipientId: string; message?: string }) => {
-      if (!profile) throw new Error('Profile not found');
+      if (!user) throw new Error('Not authenticated');
       
       // Check if there's an existing connection request from them to us
       const { data: existingConnection } = await supabase
         .from('connections')
         .select('*')
         .eq('requester_id', recipientId)
-        .eq('recipient_id', profile.id)
+        .eq('recipient_id', user.id)
         .single();
       
       // If they already liked us, update to accepted (mutual match!)
@@ -57,7 +57,7 @@ export function useSendConnectionRequest() {
       const { data, error } = await supabase
         .from('connections')
         .insert({
-          requester_id: profile.id,
+          requester_id: user.id,
           recipient_id: recipientId,
           message,
           status: 'pending',
@@ -88,11 +88,11 @@ export function useSendConnectionRequest() {
 
 export function useRespondToConnection() {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ connectionId, accept }: { connectionId: string; accept: boolean }) => {
-      if (!profile) throw new Error('Profile not found');
+      if (!user) throw new Error('Not authenticated');
 
       if (accept) {
         // Accept: update status to accepted
@@ -120,7 +120,7 @@ export function useRespondToConnection() {
           .from('dismissed_profiles')
           .select('id, dismiss_count')
           .eq('user_id', connection.requester_id)
-          .eq('dismissed_profile_id', profile.id)
+          .eq('dismissed_profile_id', user.id)
           .maybeSingle();
 
         if (existingDismiss) {
@@ -136,7 +136,7 @@ export function useRespondToConnection() {
             .from('dismissed_profiles')
             .insert({
               user_id: connection.requester_id,
-              dismissed_profile_id: profile.id,
+              dismissed_profile_id: user.id,
               dismiss_count: 1,
             });
         }
@@ -187,11 +187,11 @@ export function useDisconnect() {
 
 export function useRequestLinkedIn() {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (connectionId: string) => {
-      if (!profile) throw new Error('Profile not found');
+      if (!user) throw new Error('Not authenticated');
 
       // Fetch connection to determine if user is requester or recipient
       const { data: connection, error: fetchError } = await supabase
@@ -202,7 +202,7 @@ export function useRequestLinkedIn() {
 
       if (fetchError || !connection) throw new Error('Connection not found');
 
-      const isRequester = connection.requester_id === profile.id;
+      const isRequester = connection.requester_id === user.id;
       const updateField = isRequester ? 'requester_linkedin_requested' : 'recipient_linkedin_requested';
 
       const { data, error } = await supabase
@@ -227,12 +227,12 @@ export function useRequestLinkedIn() {
 
 export function useConnectionStatus(recipientId: string | undefined) {
   const { data: connections } = useConnections();
-  const { data: profile } = useProfile();
+  const { user } = useAuth();
 
-  if (!connections || !profile || !recipientId) return null;
+  if (!connections || !user || !recipientId) return null;
 
   return connections.find(
-    c => (c.requester_id === profile.id && c.recipient_id === recipientId) ||
-         (c.recipient_id === profile.id && c.requester_id === recipientId)
+    c => (c.requester_id === user.id && c.recipient_id === recipientId) ||
+         (c.recipient_id === user.id && c.requester_id === recipientId)
   );
 }

@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from './useProfile';
+import { useAuth } from './useAuth';
 
 export function useTrackSwipe() {
   const queryClient = useQueryClient();
-  const { data: userProfile } = useProfile();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async () => {
-      if (!userProfile) throw new Error('User profile not found');
+      if (!user) throw new Error('Not authenticated');
 
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -16,7 +16,7 @@ export function useTrackSwipe() {
       const { data: existing, error: fetchError } = await supabase
         .from('daily_swipes')
         .select('id, swipe_count')
-        .eq('user_id', userProfile.id)
+        .eq('user_id', user.id)
         .eq('swipe_date', today)
         .maybeSingle();
 
@@ -36,7 +36,7 @@ export function useTrackSwipe() {
         const { error: insertError } = await supabase
           .from('daily_swipes')
           .insert({
-            user_id: userProfile.id,
+            user_id: user.id,
             swipe_date: today,
             swipe_count: 1,
           });

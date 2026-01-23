@@ -48,22 +48,7 @@ export type Database = {
           status?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "connections_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "connections_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       daily_swipes: {
         Row: {
@@ -93,15 +78,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "daily_swipes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       dismissed_profiles: {
         Row: {
@@ -128,15 +105,7 @@ export type Database = {
           last_dismissed_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "dismissed_profiles_dismissed_profile_id_fkey"
-            columns: ["dismissed_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       messages: {
         Row: {
@@ -159,115 +128,6 @@ export type Database = {
           created_at?: string
           id?: string
           sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_connection_id_fkey"
-            columns: ["connection_id"]
-            isOneToOne: false
-            referencedRelation: "connections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          age: number | null
-          age_max: number | null
-          age_min: number | null
-          avatar_url: string | null
-          bio: string | null
-          created_at: string
-          email: string | null
-          experience_level:
-            | Database["public"]["Enums"]["experience_level"]
-            | null
-          full_name: string | null
-          headline: string | null
-          id: string
-          industry: Database["public"]["Enums"]["industry"] | null
-          linkedin_url: string | null
-          location: string | null
-          looking_for: Database["public"]["Enums"]["connection_goal"][] | null
-          preferred_experience_levels:
-            | Database["public"]["Enums"]["experience_level"][]
-            | null
-          preferred_goals:
-            | Database["public"]["Enums"]["connection_goal"][]
-            | null
-          preferred_industries: Database["public"]["Enums"]["industry"][] | null
-          skills: string[] | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          age?: number | null
-          age_max?: number | null
-          age_min?: number | null
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string
-          email?: string | null
-          experience_level?:
-            | Database["public"]["Enums"]["experience_level"]
-            | null
-          full_name?: string | null
-          headline?: string | null
-          id?: string
-          industry?: Database["public"]["Enums"]["industry"] | null
-          linkedin_url?: string | null
-          location?: string | null
-          looking_for?: Database["public"]["Enums"]["connection_goal"][] | null
-          preferred_experience_levels?:
-            | Database["public"]["Enums"]["experience_level"][]
-            | null
-          preferred_goals?:
-            | Database["public"]["Enums"]["connection_goal"][]
-            | null
-          preferred_industries?:
-            | Database["public"]["Enums"]["industry"][]
-            | null
-          skills?: string[] | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          age?: number | null
-          age_max?: number | null
-          age_min?: number | null
-          avatar_url?: string | null
-          bio?: string | null
-          created_at?: string
-          email?: string | null
-          experience_level?:
-            | Database["public"]["Enums"]["experience_level"]
-            | null
-          full_name?: string | null
-          headline?: string | null
-          id?: string
-          industry?: Database["public"]["Enums"]["industry"] | null
-          linkedin_url?: string | null
-          location?: string | null
-          looking_for?: Database["public"]["Enums"]["connection_goal"][] | null
-          preferred_experience_levels?:
-            | Database["public"]["Enums"]["experience_level"][]
-            | null
-          preferred_goals?:
-            | Database["public"]["Enums"]["connection_goal"][]
-            | null
-          preferred_industries?:
-            | Database["public"]["Enums"]["industry"][]
-            | null
-          skills?: string[] | null
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

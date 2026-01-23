@@ -38,9 +38,9 @@ export default function Settings() {
 
   useEffect(() => {
     if (profile) {
-      setPreferredExperience(profile.preferred_experience_levels || []);
-      setPreferredIndustries(profile.preferred_industries || []);
-      setPreferredGoals(profile.preferred_goals || []);
+      setPreferredExperience((profile.preferred_experience_levels || []) as ExperienceLevel[]);
+      setPreferredIndustries((profile.preferred_industries || []) as Industry[]);
+      setPreferredGoals((profile.preferred_goals || []) as ConnectionGoal[]);
       setAgeRange([profile.age_min || 18, profile.age_max || 65]);
     }
   }, [profile]);
