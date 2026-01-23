@@ -3,12 +3,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Briefcase, Linkedin } from 'lucide-react';
-import { Profile, EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
+import { EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
+import { FirestoreProfile } from '@/integrations/firebase/types';
 
 interface ProfileSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profile: Profile;
+  profile: FirestoreProfile;
   showFullDetails?: boolean; // When LinkedIn is mutually revealed
 }
 

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from './useProfile';
+import { useAuth } from './useAuth';
 import { Message } from '@/types/message';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
@@ -67,11 +67,11 @@ export function useCanSendMessage(connectionId: string | undefined) {
 
 export function useSendMessage() {
   const queryClient = useQueryClient();
-  const { data: profile } = useProfile();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ connectionId, content }: { connectionId: string; content: string }) => {
-      if (!profile) throw new Error('Profile not found');
+      if (!user) throw new Error('Not authenticated');
       
       // Check message count
       const { count, error: countError } = await supabase
@@ -88,7 +88,7 @@ export function useSendMessage() {
         .from('messages')
         .insert({
           connection_id: connectionId,
-          sender_id: profile.id,
+          sender_id: user.id,
           content,
         })
         .select()

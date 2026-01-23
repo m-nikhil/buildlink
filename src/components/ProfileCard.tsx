@@ -1,4 +1,5 @@
-import { Profile, EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
+import { FirestoreProfile } from '@/integrations/firebase/types';
+import { EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -7,12 +8,12 @@ import { MapPin, Briefcase, UserPlus, Check, Clock, Linkedin } from 'lucide-reac
 import { useSendConnectionRequest, useConnectionStatus } from '@/hooks/useConnections';
 
 interface ProfileCardProps {
-  profile: Profile;
+  profile: FirestoreProfile;
 }
 
 export function ProfileCard({ profile }: ProfileCardProps) {
   const sendRequest = useSendConnectionRequest();
-  const connectionStatus = useConnectionStatus(profile.id);
+  const connectionStatus = useConnectionStatus(profile.user_id);
 
   const getInitials = (name: string | null) => {
     if (!name) return 'U';
@@ -25,7 +26,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
   };
 
   const handleConnect = () => {
-    sendRequest.mutate({ recipientId: profile.id });
+    sendRequest.mutate({ recipientId: profile.user_id });
   };
 
   const renderConnectionButton = () => {

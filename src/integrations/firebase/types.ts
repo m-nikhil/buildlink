@@ -1,41 +1,40 @@
+import { ExperienceLevel, Industry, ConnectionGoal } from '@/types/profile';
+
 // Firestore profile document type - flexible schema
 export interface FirestoreProfile {
-  id: string; // matches Supabase profile ID
+  id: string; // matches auth user ID
   user_id: string;
-  full_name?: string;
-  email?: string;
-  avatar_url?: string;
-  headline?: string;
-  bio?: string;
-  linkedin_url?: string;
-  location?: string;
-  age?: number;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  headline: string | null;
+  bio: string | null;
+  linkedin_url: string | null;
+  location: string | null;
+  age: number | null;
   
   // Indexed fields for filtering
-  experience_level?: string;
-  industry?: string;
-  looking_for?: string[];
-  skills?: string[];
+  experience_level: ExperienceLevel | null;
+  industry: Industry | null;
+  looking_for: ConnectionGoal[];
+  skills: string[];
   
   // Preference fields
-  preferred_experience_levels?: string[];
-  preferred_industries?: string[];
-  preferred_goals?: string[];
-  age_min?: number;
-  age_max?: number;
+  preferred_experience_levels: ExperienceLevel[];
+  preferred_industries: Industry[];
+  preferred_goals: ConnectionGoal[];
+  age_min: number | null;
+  age_max: number | null;
   
   // Metadata
   created_at: string;
   updated_at: string;
-  
-  // Flexible additional fields
-  [key: string]: unknown;
 }
 
 export interface ProfileFilters {
-  experience_level?: string;
-  industry?: string;
-  looking_for?: string;
+  experience_level?: ExperienceLevel;
+  industry?: Industry;
+  looking_for?: ConnectionGoal;
   skills?: string[];
   location?: string;
   age_min?: number;

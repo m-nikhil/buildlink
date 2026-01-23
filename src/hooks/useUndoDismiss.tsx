@@ -1,20 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from './useProfile';
+import { useAuth } from './useAuth';
 
 export function useUndoDismiss() {
   const queryClient = useQueryClient();
-  const { data: userProfile } = useProfile();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (dismissedProfileId: string) => {
-      if (!userProfile) throw new Error('User profile not found');
+      if (!user) throw new Error('Not authenticated');
 
       // Find the dismissal record
       const { data: existing, error: fetchError } = await supabase
         .from('dismissed_profiles')
         .select('id, dismiss_count')
-        .eq('user_id', userProfile.id)
+        .eq('user_id', user.id)
         .eq('dismissed_profile_id', dismissedProfileId)
         .maybeSingle();
 
