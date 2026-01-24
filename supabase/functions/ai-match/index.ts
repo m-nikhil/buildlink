@@ -378,13 +378,22 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const systemPrompt = `You are a professional matchmaker. Rank candidates by compatibility with the user. Return matches with scores and reasons.`;
+    // Calculate new user boost (profiles < 7 days old get [NEW] tag)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const systemPrompt = `You are a professional matchmaker. Rank candidates by compatibility with the user. 
+IMPORTANT: Give bonus points to profiles marked [NEW] - they joined recently and deserve visibility.
+Also prioritize profiles marked [LIKED YOU] as they've already shown interest.
+Return matches with scores (0-100) and reasons.`;
 
     const userProfileSummary = `User: ${userProfile.full_name}, ${userProfile.headline}, ${userProfile.industry}, ${userProfile.experience_level}, Looking for: ${userProfile.looking_for?.join(', ')}`;
 
-    const candidatesSummary = availableProfiles.slice(0, 20).map((p: any, i: number) => 
-      `${i + 1}. ID:${p.user_id} - ${p.full_name}, ${p.headline}, ${p.industry}, ${p.experience_level}${likedYouUserIds.has(p.user_id) ? ' [LIKED YOU]' : ''}`
-    ).join('\n');
+    const candidatesSummary = availableProfiles.slice(0, 20).map((p: any, i: number) => {
+      const isNew = p.created_at && p.created_at > sevenDaysAgo;
+      const likedYou = likedYouUserIds.has(p.user_id);
+      const tags = [isNew && '[NEW]', likedYou && '[LIKED YOU]'].filter(Boolean).join(' ');
+      return `${i + 1}. ID:${p.user_id} - ${p.full_name}, ${p.headline}, ${p.industry}, ${p.experience_level}${tags ? ' ' + tags : ''}`;
+    }).join('\n');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

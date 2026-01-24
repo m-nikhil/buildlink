@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { signInToFirebase, signOutFromFirebase, auth, onAuthStateChanged, type FirebaseUser } from '@/integrations/firebase/client';
+import { signInToFirebase, signOutFromFirebase, auth, onAuthStateChanged, doc, db, setDoc, type FirebaseUser } from '@/integrations/firebase/client';
 
 const LINKEDIN_CLIENT_ID = '86jf34hvwupz2k';
 const LINKEDIN_SCOPES = 'openid profile email';
@@ -24,11 +24,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to update last_active on login
+  const updateLastActive = async (userId: string) => {
+    try {
+      const profileRef = doc(db, 'profiles', userId);
+      await setDoc(profileRef, { 
+        last_active: new Date().toISOString() 
+      }, { merge: true });
+      console.log('[useAuth] Updated last_active');
+    } catch (e) {
+      console.error('[useAuth] Failed to update last_active:', e);
+    }
+  };
+
   // Helper to ensure Firebase is authenticated
   const ensureFirebaseAuth = async (currentSession: Session) => {
     // Check if already authenticated with Firebase
     if (auth.currentUser) {
       console.log('[useAuth] Firebase already authenticated');
+      // Still update last_active even if already authenticated
+      updateLastActive(currentSession.user.id);
       return;
     }
 
@@ -44,6 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data?.firebaseToken) {
         await signInToFirebase(data.firebaseToken);
         console.log('[useAuth] Firebase re-authenticated successfully');
+        // Update last_active after successful auth
+        updateLastActive(currentSession.user.id);
       }
     } catch (e) {
       console.error('[useAuth] Firebase auth error:', e);

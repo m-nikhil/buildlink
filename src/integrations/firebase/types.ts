@@ -29,6 +29,7 @@ export interface FirestoreProfile {
   // Metadata
   created_at: string;
   updated_at: string;
+  last_active: string; // Updated on login/swipe for feed sorting
 }
 
 export interface ProfileFilters {

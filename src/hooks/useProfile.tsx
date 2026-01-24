@@ -82,6 +82,7 @@ export function useUpdateProfile() {
         user_id: user.id,
         email: user.email || existingData.email,
         updated_at: now,
+        last_active: now, // Update activity timestamp
         created_at: existingData.created_at || now,
       };
       
@@ -122,6 +123,7 @@ export function useCreateProfile() {
         email: user.email || profileData.email,
         created_at: now,
         updated_at: now,
+        last_active: now, // New profiles start at top of feed
       };
       
       await setDoc(profileRef, fullProfileData, { merge: true });
