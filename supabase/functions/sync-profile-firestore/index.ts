@@ -93,12 +93,12 @@ async function getAccessToken(): Promise<string> {
     throw new Error('Invalid Firebase service account configuration');
   }
 
-  // Create JWT
+  // Create JWT - use cloud-platform scope for full Firestore access
   const header = { alg: 'RS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
   const claim = {
     iss: serviceAccount.client_email,
-    scope: 'https://www.googleapis.com/auth/datastore',
+    scope: 'https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/datastore',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
     exp: now + 3600,
