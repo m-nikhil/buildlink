@@ -3,16 +3,19 @@ import { useAuth } from './useAuth';
 import { 
   profilesCollection, 
   getDocs,
+  getDoc,
+  setDoc,
+  doc,
+  db,
   query, 
   where,
 } from '@/integrations/firebase/client';
 import { FirestoreProfile } from '@/integrations/firebase/types';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Get current user's profile from Firestore (read-only via client)
+// Get current user's profile from Firestore
 export function useProfile() {
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
   return useQuery({
     queryKey: ['profile', user?.id],
@@ -35,8 +38,8 @@ export function useProfile() {
         return null;
       }
       
-      const doc = snapshot.docs[0];
-      const profile = { ...doc.data(), id: doc.id } as FirestoreProfile;
+      const docSnap = snapshot.docs[0];
+      const profile = { ...docSnap.data(), id: docSnap.id } as FirestoreProfile;
       console.log('[useProfile] Found profile:', profile);
       return profile;
     },
@@ -44,26 +47,47 @@ export function useProfile() {
   });
 }
 
-// Update current user's profile via Edge Function (bypasses Firestore security rules)
+// Update current user's profile directly in Firestore
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
-  const { user, session } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
   return useMutation({
     mutationFn: async (updates: Partial<FirestoreProfile>) => {
-      if (!user || !session) throw new Error('Not authenticated');
+      if (!user) throw new Error('Not authenticated');
+      if (!firebaseUser) throw new Error('Firebase not authenticated - please sign in again');
       
-      const { data, error } = await supabase.functions.invoke('sync-profile-firestore', {
-        body: {
-          action: 'update-profile',
-          profileData: updates,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Get the existing profile to find the document ID
+      const q = query(profilesCollection, where('user_id', '==', user.id));
+      const snapshot = await getDocs(q);
       
-      return data.profile as FirestoreProfile;
+      let docId: string;
+      let existingData: Partial<FirestoreProfile> = {};
+      
+      if (snapshot.empty) {
+        // Create new document with user_id as doc ID
+        docId = user.id;
+      } else {
+        docId = snapshot.docs[0].id;
+        existingData = snapshot.docs[0].data() as FirestoreProfile;
+      }
+      
+      const profileRef = doc(db, 'profiles', docId);
+      const now = new Date().toISOString();
+      
+      const profileData: Partial<FirestoreProfile> = {
+        ...existingData,
+        ...updates,
+        id: docId,
+        user_id: user.id,
+        email: user.email || existingData.email,
+        updated_at: now,
+        created_at: existingData.created_at || now,
+      };
+      
+      await setDoc(profileRef, profileData, { merge: true });
+      
+      return profileData as FirestoreProfile;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -71,36 +95,44 @@ export function useUpdateProfile() {
       toast.success('Profile updated successfully');
     },
     onError: (error) => {
+      console.error('[useUpdateProfile] Error:', error);
       toast.error('Failed to update profile: ' + error.message);
     },
   });
 }
 
-// Create profile for new user via Edge Function
+// Create profile for new user directly in Firestore
 export function useCreateProfile() {
   const queryClient = useQueryClient();
-  const { user, session } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
   return useMutation({
     mutationFn: async (profileData: Partial<FirestoreProfile>) => {
-      if (!user || !session) throw new Error('Not authenticated');
+      if (!user) throw new Error('Not authenticated');
+      if (!firebaseUser) throw new Error('Firebase not authenticated - please sign in again');
       
-      const { data, error } = await supabase.functions.invoke('sync-profile-firestore', {
-        body: {
-          action: 'update-profile',
-          profileData,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const docId = user.id;
+      const profileRef = doc(db, 'profiles', docId);
+      const now = new Date().toISOString();
       
-      return data.profile as FirestoreProfile;
+      const fullProfileData: Partial<FirestoreProfile> = {
+        ...profileData,
+        id: docId,
+        user_id: user.id,
+        email: user.email || profileData.email,
+        created_at: now,
+        updated_at: now,
+      };
+      
+      await setDoc(profileRef, fullProfileData, { merge: true });
+      
+      return fullProfileData as FirestoreProfile;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
     onError: (error) => {
+      console.error('[useCreateProfile] Error:', error);
       toast.error('Failed to create profile: ' + error.message);
     },
   });
@@ -135,9 +167,9 @@ export function useProfiles(filters?: {
       
       const snapshot = await getDocs(q);
       
-      let profiles = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
+      let profiles = snapshot.docs.map(docSnap => ({
+        ...docSnap.data(),
+        id: docSnap.id,
       })) as FirestoreProfile[];
       
       // Exclude current user
