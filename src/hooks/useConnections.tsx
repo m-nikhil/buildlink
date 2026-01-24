@@ -1,76 +1,168 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { 
+  db,
+  connectionsCollection,
+  getConnectionRef,
+  getDismissedProfileRef,
+  getDocs, 
+  getDoc,
+  setDoc,
+  deleteDoc,
+  query, 
+  where,
+  onSnapshot,
+} from '@/integrations/firebase/client';
 import { useAuth } from './useAuth';
-import { Connection } from '@/types/profile';
+import { FirestoreConnection, FirestoreDismissedProfile } from '@/integrations/firebase/types';
 import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
+
+// Generate unique connection ID
+const generateConnectionId = () => crypto.randomUUID();
 
 export function useConnections() {
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
+  const [connections, setConnections] = useState<FirestoreConnection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  return useQuery({
-    queryKey: ['connections', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
+  useEffect(() => {
+    if (!user || !firebaseUser) {
+      setConnections([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Subscribe to connections where user is requester or recipient
+    // Firestore doesn't support OR queries across fields, so we need two queries
+    const fetchConnections = async () => {
+      try {
+        const requesterQuery = query(connectionsCollection, where('requester_id', '==', user.id));
+        const recipientQuery = query(connectionsCollection, where('recipient_id', '==', user.id));
+
+        const [requesterSnapshot, recipientSnapshot] = await Promise.all([
+          getDocs(requesterQuery),
+          getDocs(recipientQuery),
+        ]);
+
+        const allConnections: FirestoreConnection[] = [];
+        const seenIds = new Set<string>();
+
+        requesterSnapshot.docs.forEach(doc => {
+          if (!seenIds.has(doc.id)) {
+            seenIds.add(doc.id);
+            allConnections.push({ ...doc.data(), id: doc.id } as FirestoreConnection);
+          }
+        });
+
+        recipientSnapshot.docs.forEach(doc => {
+          if (!seenIds.has(doc.id)) {
+            seenIds.add(doc.id);
+            allConnections.push({ ...doc.data(), id: doc.id } as FirestoreConnection);
+          }
+        });
+
+        setConnections(allConnections);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch connections'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchConnections();
+  }, [user?.id, firebaseUser]);
+
+  return { 
+    data: connections, 
+    isLoading, 
+    error,
+    refetch: async () => {
+      if (!user || !firebaseUser) return;
       
-      const { data, error } = await supabase
-        .from('connections')
-        .select('*')
-        .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`);
-      
-      if (error) throw error;
-      return data as Connection[];
-    },
-    enabled: !!user,
-  });
+      const requesterQuery = query(connectionsCollection, where('requester_id', '==', user.id));
+      const recipientQuery = query(connectionsCollection, where('recipient_id', '==', user.id));
+
+      const [requesterSnapshot, recipientSnapshot] = await Promise.all([
+        getDocs(requesterQuery),
+        getDocs(recipientQuery),
+      ]);
+
+      const allConnections: FirestoreConnection[] = [];
+      const seenIds = new Set<string>();
+
+      requesterSnapshot.docs.forEach(doc => {
+        if (!seenIds.has(doc.id)) {
+          seenIds.add(doc.id);
+          allConnections.push({ ...doc.data(), id: doc.id } as FirestoreConnection);
+        }
+      });
+
+      recipientSnapshot.docs.forEach(doc => {
+        if (!seenIds.has(doc.id)) {
+          seenIds.add(doc.id);
+          allConnections.push({ ...doc.data(), id: doc.id } as FirestoreConnection);
+        }
+      });
+
+      setConnections(allConnections);
+    }
+  };
 }
 
 export function useSendConnectionRequest() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ recipientId, message }: { recipientId: string; message?: string }) => {
-      if (!user) throw new Error('Not authenticated');
+      if (!user || !firebaseUser) throw new Error('Not authenticated');
       
       // Check if there's an existing connection request from them to us
-      const { data: existingConnection } = await supabase
-        .from('connections')
-        .select('*')
-        .eq('requester_id', recipientId)
-        .eq('recipient_id', user.id)
-        .single();
+      const existingQuery = query(
+        connectionsCollection, 
+        where('requester_id', '==', recipientId),
+        where('recipient_id', '==', user.id)
+      );
+      const existingSnapshot = await getDocs(existingQuery);
       
       // If they already liked us, update to accepted (mutual match!)
-      if (existingConnection) {
-        const { data, error } = await supabase
-          .from('connections')
-          .update({ status: 'accepted' })
-          .eq('id', existingConnection.id)
-          .select()
-          .single();
+      if (!existingSnapshot.empty) {
+        const existingDoc = existingSnapshot.docs[0];
+        const existingConnection = { ...existingDoc.data(), id: existingDoc.id } as FirestoreConnection;
         
-        if (error) throw error;
-        return { ...data, isMutualMatch: true } as Connection & { isMutualMatch?: boolean };
+        await setDoc(getConnectionRef(existingConnection.id), {
+          ...existingConnection,
+          status: 'accepted',
+          updated_at: new Date().toISOString(),
+        });
+        
+        return { ...existingConnection, status: 'accepted' as const, isMutualMatch: true };
       }
       
       // Otherwise create a new pending request
-      const { data, error } = await supabase
-        .from('connections')
-        .insert({
-          requester_id: user.id,
-          recipient_id: recipientId,
-          message,
-          status: 'pending',
-        })
-        .select()
-        .single();
+      const connectionId = generateConnectionId();
+      const newConnection: FirestoreConnection = {
+        id: connectionId,
+        requester_id: user.id,
+        recipient_id: recipientId,
+        status: 'pending',
+        message: message || null,
+        requester_linkedin_requested: false,
+        recipient_linkedin_requested: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
       
-      if (error) throw error;
-      return data as Connection;
+      await setDoc(getConnectionRef(connectionId), newConnection);
+      return newConnection;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });
-      if ((data as Connection & { isMutualMatch?: boolean }).isMutualMatch) {
+      if ((data as FirestoreConnection & { isMutualMatch?: boolean }).isMutualMatch) {
         toast.success("It's a match! You're now connected 🎉");
       } else {
         toast.success('Connection request sent!');
@@ -88,66 +180,57 @@ export function useSendConnectionRequest() {
 
 export function useRespondToConnection() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ connectionId, accept }: { connectionId: string; accept: boolean }) => {
-      if (!user) throw new Error('Not authenticated');
+      if (!user || !firebaseUser) throw new Error('Not authenticated');
+
+      const connectionRef = getConnectionRef(connectionId);
+      const connectionSnap = await getDoc(connectionRef);
+      
+      if (!connectionSnap.exists()) {
+        throw new Error('Connection not found');
+      }
+      
+      const connection = { ...connectionSnap.data(), id: connectionSnap.id } as FirestoreConnection;
 
       if (accept) {
         // Accept: update status to accepted
-        const { data, error } = await supabase
-          .from('connections')
-          .update({ status: 'accepted' })
-          .eq('id', connectionId)
-          .select()
-          .single();
+        await setDoc(connectionRef, {
+          ...connection,
+          status: 'accepted',
+          updated_at: new Date().toISOString(),
+        });
         
-        if (error) throw error;
-        return { accepted: true, data: data as Connection };
+        return { accepted: true, data: { ...connection, status: 'accepted' as const } };
       } else {
-        // Decline: get the connection first to know who the requester is
-        const { data: connection, error: fetchError } = await supabase
-          .from('connections')
-          .select('requester_id')
-          .eq('id', connectionId)
-          .single();
+        // Decline: create/update dismiss record for the requester
+        const dismissId = `${connection.requester_id}_${user.id}`;
+        const dismissRef = getDismissedProfileRef(dismissId);
+        const dismissSnap = await getDoc(dismissRef);
 
-        if (fetchError || !connection) throw new Error('Connection not found');
-
-        // Create/update dismiss record for the requester (so they won't see us again immediately)
-        const { data: existingDismiss } = await supabase
-          .from('dismissed_profiles')
-          .select('id, dismiss_count')
-          .eq('user_id', connection.requester_id)
-          .eq('dismissed_profile_id', user.id)
-          .maybeSingle();
-
-        if (existingDismiss) {
-          await supabase
-            .from('dismissed_profiles')
-            .update({
-              dismiss_count: existingDismiss.dismiss_count + 1,
-              last_dismissed_at: new Date().toISOString(),
-            })
-            .eq('id', existingDismiss.id);
+        if (dismissSnap.exists()) {
+          const existingDismiss = dismissSnap.data() as FirestoreDismissedProfile;
+          await setDoc(dismissRef, {
+            ...existingDismiss,
+            dismiss_count: existingDismiss.dismiss_count + 1,
+            last_dismissed_at: new Date().toISOString(),
+          });
         } else {
-          await supabase
-            .from('dismissed_profiles')
-            .insert({
-              user_id: connection.requester_id,
-              dismissed_profile_id: user.id,
-              dismiss_count: 1,
-            });
+          const newDismiss: FirestoreDismissedProfile = {
+            id: dismissId,
+            user_id: connection.requester_id,
+            dismissed_profile_id: user.id,
+            dismiss_count: 1,
+            last_dismissed_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+          };
+          await setDoc(dismissRef, newDismiss);
         }
 
         // Delete the connection
-        const { error: deleteError } = await supabase
-          .from('connections')
-          .delete()
-          .eq('id', connectionId);
-
-        if (deleteError) throw deleteError;
+        await deleteDoc(connectionRef);
         return { accepted: false };
       }
     },
@@ -164,15 +247,13 @@ export function useRespondToConnection() {
 
 export function useDisconnect() {
   const queryClient = useQueryClient();
+  const { firebaseUser } = useAuth();
 
   return useMutation({
     mutationFn: async (connectionId: string) => {
-      const { error } = await supabase
-        .from('connections')
-        .delete()
-        .eq('id', connectionId);
+      if (!firebaseUser) throw new Error('Not authenticated');
       
-      if (error) throw error;
+      await deleteDoc(getConnectionRef(connectionId));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });
@@ -187,33 +268,27 @@ export function useDisconnect() {
 
 export function useRequestLinkedIn() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
   return useMutation({
     mutationFn: async (connectionId: string) => {
-      if (!user) throw new Error('Not authenticated');
+      if (!user || !firebaseUser) throw new Error('Not authenticated');
 
-      // Fetch connection to determine if user is requester or recipient
-      const { data: connection, error: fetchError } = await supabase
-        .from('connections')
-        .select('*')
-        .eq('id', connectionId)
-        .single();
+      const connectionRef = getConnectionRef(connectionId);
+      const connectionSnap = await getDoc(connectionRef);
 
-      if (fetchError || !connection) throw new Error('Connection not found');
+      if (!connectionSnap.exists()) throw new Error('Connection not found');
 
+      const connection = { ...connectionSnap.data(), id: connectionSnap.id } as FirestoreConnection;
       const isRequester = connection.requester_id === user.id;
-      const updateField = isRequester ? 'requester_linkedin_requested' : 'recipient_linkedin_requested';
+      
+      await setDoc(connectionRef, {
+        ...connection,
+        [isRequester ? 'requester_linkedin_requested' : 'recipient_linkedin_requested']: true,
+        updated_at: new Date().toISOString(),
+      });
 
-      const { data, error } = await supabase
-        .from('connections')
-        .update({ [updateField]: true })
-        .eq('id', connectionId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return connection;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });

@@ -1,34 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Firestore REST API helper
-async function firestoreQuery(
-  projectId: string,
-  accessToken: string,
-  collectionPath: string
-) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionPath}`;
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Firestore API error: ${response.status} - ${errorText}`);
-  }
-
-  return response.json();
-}
 
 // Get access token using service account
 async function getAccessToken(): Promise<string> {
@@ -99,6 +74,112 @@ async function getAccessToken(): Promise<string> {
   return tokenData.access_token;
 }
 
+// Firestore REST API helper for fetching a collection
+async function firestoreQuery(
+  projectId: string,
+  accessToken: string,
+  collectionPath: string
+) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionPath}`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Firestore API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
+
+// Firestore REST API helper for running a structured query
+async function firestoreStructuredQuery(
+  projectId: string,
+  accessToken: string,
+  collectionId: string,
+  fieldFilters: { field: string; op: string; value: any }[]
+) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  
+  const structuredQuery: any = {
+    from: [{ collectionId }],
+  };
+
+  if (fieldFilters.length === 1) {
+    const filter = fieldFilters[0];
+    structuredQuery.where = {
+      fieldFilter: {
+        field: { fieldPath: filter.field },
+        op: filter.op,
+        value: filter.value,
+      },
+    };
+  } else if (fieldFilters.length > 1) {
+    structuredQuery.where = {
+      compositeFilter: {
+        op: 'AND',
+        filters: fieldFilters.map(f => ({
+          fieldFilter: {
+            field: { fieldPath: f.field },
+            op: f.op,
+            value: f.value,
+          },
+        })),
+      },
+    };
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ structuredQuery }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Firestore query error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
+
+// Firestore REST API helper for fetching a single document
+async function firestoreGetDoc(
+  projectId: string,
+  accessToken: string,
+  documentPath: string
+): Promise<any | null> {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${documentPath}`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Firestore API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
+
 // Parse Firestore document to plain object
 function parseFirestoreDoc(doc: any) {
   const fields = doc.fields || {};
@@ -123,20 +204,31 @@ function parseFirestoreDoc(doc: any) {
   return result;
 }
 
-async function updateLastCursor(
-  supabase: SupabaseClient,
-  userId: string,
-  swipeDate: string,
-  lastCursor: string
-) {
-  await supabase
-    .from('daily_swipes')
-    .upsert({
-      user_id: userId,
-      swipe_date: swipeDate,
-      last_cursor: lastCursor,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,swipe_date' });
+// Parse Firestore query results
+function parseQueryResults(results: any[]): any[] {
+  return results
+    .filter(r => r.document) // Filter out empty results
+    .map(r => parseFirestoreDoc(r.document));
+}
+
+// Verify Supabase JWT and extract user ID
+async function verifySupabaseToken(authHeader: string): Promise<string | null> {
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    
+    // Check expiration
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+    
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -153,14 +245,9 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Verify Supabase token and get user ID
+    const userId = await verifySupabaseToken(authHeader);
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -170,21 +257,23 @@ serve(async (req) => {
     const DAILY_SWIPE_LIMIT = 5;
     const today = new Date().toISOString().split('T')[0];
 
-    // Get profiles from Firestore
+    // Get Firebase access token
     const projectId = Deno.env.get('FIREBASE_PROJECT_ID');
     if (!projectId) throw new Error('FIREBASE_PROJECT_ID not configured');
     
     const accessToken = await getAccessToken();
+
+    // Fetch all profiles from Firestore
     const firestoreData = await firestoreQuery(projectId, accessToken, 'profiles');
     
     const allProfiles = (firestoreData.documents || [])
       .map(parseFirestoreDoc)
-      .filter((p: any) => p.user_id !== user.id);
+      .filter((p: any) => p.user_id !== userId);
 
     // Get current user's profile from Firestore
     const userProfile = (firestoreData.documents || [])
       .map(parseFirestoreDoc)
-      .find((p: any) => p.user_id === user.id);
+      .find((p: any) => p.user_id === userId);
 
     if (!userProfile) {
       return new Response(JSON.stringify({ error: 'Profile not found' }), {
@@ -193,14 +282,11 @@ serve(async (req) => {
       });
     }
 
-    // Get daily swipe count
-    const { data: dailySwipe } = await supabase
-      .from('daily_swipes')
-      .select('swipe_count')
-      .eq('user_id', user.id)
-      .eq('swipe_date', today)
-      .maybeSingle();
-
+    // Get daily swipe count from Firestore
+    const swipeId = `${userId}_${today}`;
+    const swipeDoc = await firestoreGetDoc(projectId, accessToken, `daily_swipes/${swipeId}`);
+    const dailySwipe = swipeDoc ? parseFirestoreDoc(swipeDoc) : null;
+    
     const currentSwipeCount = dailySwipe?.swipe_count || 0;
     const remainingSwipes = Math.max(0, DAILY_SWIPE_LIMIT - currentSwipeCount);
 
@@ -216,24 +302,44 @@ serve(async (req) => {
       });
     }
 
-    // Get connections and dismissed profiles
-    const { data: connections } = await supabase
-      .from('connections')
-      .select('requester_id, recipient_id, status')
-      .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`);
+    // Get connections from Firestore (need to query both directions)
+    const connectionsAsRequester = await firestoreStructuredQuery(
+      projectId,
+      accessToken,
+      'connections',
+      [{ field: 'requester_id', op: 'EQUAL', value: { stringValue: userId } }]
+    );
+    
+    const connectionsAsRecipient = await firestoreStructuredQuery(
+      projectId,
+      accessToken,
+      'connections',
+      [{ field: 'recipient_id', op: 'EQUAL', value: { stringValue: userId } }]
+    );
 
-    const { data: dismissedProfiles } = await supabase
-      .from('dismissed_profiles')
-      .select('dismissed_profile_id, dismiss_count, last_dismissed_at')
-      .eq('user_id', user.id);
+    const allConnections = [
+      ...parseQueryResults(connectionsAsRequester),
+      ...parseQueryResults(connectionsAsRecipient),
+    ];
 
+    // Get dismissed profiles from Firestore
+    const dismissedResults = await firestoreStructuredQuery(
+      projectId,
+      accessToken,
+      'dismissed_profiles',
+      [{ field: 'user_id', op: 'EQUAL', value: { stringValue: userId } }]
+    );
+    
+    const dismissedProfiles = parseQueryResults(dismissedResults);
+
+    // Build exclusion and "liked you" sets
     const excludedUserIds = new Set<string>();
     const likedYouUserIds = new Set<string>();
     
-    connections?.forEach((conn) => {
-      if (conn.requester_id === user.id) {
+    allConnections.forEach((conn: any) => {
+      if (conn.requester_id === userId) {
         excludedUserIds.add(conn.recipient_id);
-      } else if (conn.recipient_id === user.id) {
+      } else if (conn.recipient_id === userId) {
         if (conn.status === 'accepted') {
           excludedUserIds.add(conn.requester_id);
         } else if (conn.status === 'pending') {
@@ -242,10 +348,10 @@ serve(async (req) => {
       }
     });
 
+    // Permanently dismissed (3+ times)
     const permanentlyDismissedIds = new Set<string>();
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     
-    dismissedProfiles?.forEach((d) => {
+    dismissedProfiles.forEach((d: any) => {
       if (d.dismiss_count >= 3) {
         permanentlyDismissedIds.add(d.dismissed_profile_id);
       }
@@ -254,7 +360,6 @@ serve(async (req) => {
     const availableProfiles = allProfiles.filter((p: any) => {
       if (excludedUserIds.has(p.user_id)) return false;
       if (permanentlyDismissedIds.has(p.user_id)) return false;
-      if (likedYouUserIds.has(p.user_id)) return true;
       return true;
     });
 
@@ -269,6 +374,7 @@ serve(async (req) => {
       });
     }
 
+    // Call AI for ranking
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
