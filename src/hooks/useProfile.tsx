@@ -17,18 +17,28 @@ export function useProfile() {
   return useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
-      if (!user) return null;
+      if (!user) {
+        console.log('[useProfile] No user, returning null');
+        return null;
+      }
+      
+      console.log('[useProfile] Fetching profile for user:', user.id);
       
       // Query by user_id field
       const q = query(profilesCollection, where('user_id', '==', user.id));
       const snapshot = await getDocs(q);
       
+      console.log('[useProfile] Snapshot empty:', snapshot.empty, 'docs:', snapshot.docs.length);
+      
       if (snapshot.empty) {
+        console.log('[useProfile] No profile found');
         return null;
       }
       
       const doc = snapshot.docs[0];
-      return { ...doc.data(), id: doc.id } as FirestoreProfile;
+      const profile = { ...doc.data(), id: doc.id } as FirestoreProfile;
+      console.log('[useProfile] Found profile:', profile);
+      return profile;
     },
     enabled: !!user,
   });
