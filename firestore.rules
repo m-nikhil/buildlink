@@ -8,18 +8,18 @@ service cloud.firestore {
       // Anyone authenticated can read profiles (for the feed)
       allow read: if request.auth != null;
       
-      // Users can only create/update their own profile
-      // The document ID must match their user ID, and user_id field must match
+      // Users can create their own profile
+      // The user_id field must match their Firebase Auth UID (which equals Supabase user ID)
       allow create: if request.auth != null 
-                    && request.auth.uid == profileId
                     && request.resource.data.user_id == request.auth.uid;
       
+      // Users can update their own profile (user_id field must match)
       allow update: if request.auth != null 
-                    && request.auth.uid == resource.data.user_id;
+                    && resource.data.user_id == request.auth.uid;
       
       // Users can only delete their own profile
       allow delete: if request.auth != null 
-                    && request.auth.uid == resource.data.user_id;
+                    && resource.data.user_id == request.auth.uid;
     }
     
     // Deny access to all other collections by default

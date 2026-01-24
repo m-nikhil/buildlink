@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { signInToFirebase, signOutFromFirebase, auth, onAuthStateChanged, type FirebaseUser } from '@/integrations/firebase/client';
 
 const LINKEDIN_CLIENT_ID = '86jf34hvwupz2k';
 const LINKEDIN_SCOPES = 'openid profile email';
@@ -8,6 +9,7 @@ const LINKEDIN_SCOPES = 'openid profile email';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  firebaseUser: FirebaseUser | null;
   loading: boolean;
   signInWithLinkedIn: () => void;
   handleLinkedInCallback: (code: string) => Promise<void>;
@@ -41,7 +43,17 @@ async function ensureFirestoreProfile(session: Session): Promise<void> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Listen to Firebase auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      setFirebaseUser(fbUser);
+      console.log('[useAuth] Firebase user state changed:', fbUser?.uid || 'null');
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -56,6 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             ensureFirestoreProfile(session);
           }, 0);
+        }
+        
+        // Sign out from Firebase if Supabase session ends
+        if (!session && event === 'SIGNED_OUT') {
+          try {
+            await signOutFromFirebase();
+            console.log('[useAuth] Signed out from Firebase');
+          } catch (e) {
+            console.error('[useAuth] Firebase sign out error:', e);
+          }
         }
         
         setLoading(false);
@@ -124,18 +146,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Sign in to Firebase with the custom token
+    if (data.firebaseToken) {
+      try {
+        await signInToFirebase(data.firebaseToken);
+        console.log('[useAuth] Signed in to Firebase successfully');
+      } catch (firebaseError) {
+        console.error('[useAuth] Firebase sign-in failed:', firebaseError);
+        // Continue even if Firebase auth fails - Supabase auth is primary
+      }
+    }
+
     // Clean up session storage
     sessionStorage.removeItem('linkedin_oauth_state');
     sessionStorage.removeItem('linkedin_redirect_uri');
   };
 
   const signOut = async () => {
+    // Sign out from both Supabase and Firebase
+    try {
+      await signOutFromFirebase();
+    } catch (e) {
+      console.error('[useAuth] Firebase sign out error:', e);
+    }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithLinkedIn, handleLinkedInCallback, signOut }}>
+    <AuthContext.Provider value={{ user, session, firebaseUser, loading, signInWithLinkedIn, handleLinkedInCallback, signOut }}>
       {children}
     </AuthContext.Provider>
   );
