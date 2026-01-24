@@ -1,15 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  profilesCollection, 
-  getProfileRef,
-  getDocs,
-  setDoc,
-  query, 
-  where,
-} from '@/integrations/firebase/client';
-import { FirestoreProfile } from '@/integrations/firebase/types';
 
 const LINKEDIN_CLIENT_ID = '86jf34hvwupz2k';
 const LINKEDIN_SCOPES = 'openid profile email';
@@ -25,43 +16,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper to ensure Firestore profile exists
-async function ensureFirestoreProfile(user: User): Promise<void> {
+// Helper to ensure Firestore profile exists via Edge Function
+async function ensureFirestoreProfile(session: Session): Promise<void> {
   try {
-    const q = query(profilesCollection, where('user_id', '==', user.id));
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) {
-      // Create new profile in Firestore
-      const profileId = user.id;
-      const docRef = getProfileRef(profileId);
-      
-      const newProfile: FirestoreProfile = {
-        id: profileId,
-        user_id: user.id,
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-        email: user.email || null,
-        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-        headline: null,
-        bio: null,
-        linkedin_url: null,
-        experience_level: null,
-        industry: null,
-        looking_for: [],
-        skills: [],
-        location: null,
-        age: null,
-        preferred_experience_levels: [],
-        preferred_industries: [],
-        preferred_goals: [],
-        age_min: 18,
-        age_max: 99,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      
-      await setDoc(docRef, newProfile);
-      console.log('Created Firestore profile for user:', user.id);
+    const { data, error } = await supabase.functions.invoke('sync-profile-firestore', {
+      body: { action: 'ensure-profile' },
+    });
+
+    if (error) {
+      console.error('Error ensuring Firestore profile via Edge Function:', error);
+      return;
+    }
+
+    if (data?.created) {
+      console.log('Created Firestore profile for user:', session.user.id);
+    } else {
+      console.log('Firestore profile already exists for user:', session.user.id);
     }
   } catch (error) {
     console.error('Error ensuring Firestore profile:', error);
@@ -80,11 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Auto-create Firestore profile on sign-in
-        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        // Auto-create Firestore profile on sign-in via Edge Function
+        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           // Use setTimeout to avoid blocking the auth flow
           setTimeout(() => {
-            ensureFirestoreProfile(session.user);
+            ensureFirestoreProfile(session);
           }, 0);
         }
         
@@ -97,9 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Also ensure profile exists on initial load
-      if (session?.user) {
-        ensureFirestoreProfile(session.user);
+      // Also ensure profile exists on initial load via Edge Function
+      if (session) {
+        ensureFirestoreProfile(session);
       }
       
       setLoading(false);
