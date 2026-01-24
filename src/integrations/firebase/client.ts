@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, startAfter, DocumentSnapshot, QueryConstraint } from 'firebase/firestore';
+import { getAuth, signInWithCustomToken, signOut as firebaseSignOut, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 
 // Firebase config - these are publishable keys (safe to expose in client code)
 const firebaseConfig = {
@@ -13,12 +14,22 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 
 // Collection references
 export const profilesCollection = collection(db, 'profiles');
 
 // Helper to get profile document reference
 export const getProfileRef = (profileId: string) => doc(db, 'profiles', profileId);
+
+// Firebase Auth helpers
+export const signInToFirebase = async (customToken: string) => {
+  return signInWithCustomToken(auth, customToken);
+};
+
+export const signOutFromFirebase = async () => {
+  return firebaseSignOut(auth);
+};
 
 export {
   collection,
@@ -31,6 +42,8 @@ export {
   orderBy,
   limit,
   startAfter,
+  onAuthStateChanged,
   type DocumentSnapshot,
-  type QueryConstraint
+  type QueryConstraint,
+  type FirebaseUser,
 };
