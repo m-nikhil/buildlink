@@ -24,6 +24,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to ensure Firebase is authenticated
+  const ensureFirebaseAuth = async (currentSession: Session) => {
+    // Check if already authenticated with Firebase
+    if (auth.currentUser) {
+      console.log('[useAuth] Firebase already authenticated');
+      return;
+    }
+
+    try {
+      console.log('[useAuth] Requesting Firebase token...');
+      const { data, error } = await supabase.functions.invoke('firebase-token');
+      
+      if (error) {
+        console.error('[useAuth] Failed to get Firebase token:', error);
+        return;
+      }
+
+      if (data?.firebaseToken) {
+        await signInToFirebase(data.firebaseToken);
+        console.log('[useAuth] Firebase re-authenticated successfully');
+      }
+    } catch (e) {
+      console.error('[useAuth] Firebase auth error:', e);
+    }
+  };
+
   // Listen to Firebase auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
@@ -39,6 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Ensure Firebase auth on sign-in or token refresh
+        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          setTimeout(() => ensureFirebaseAuth(session), 0);
+        }
         
         // Sign out from Firebase if Supabase session ends
         if (!session && event === 'SIGNED_OUT') {
@@ -58,6 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Ensure Firebase auth for existing session
+      if (session) {
+        ensureFirebaseAuth(session);
+      }
+      
       setLoading(false);
     });
 
