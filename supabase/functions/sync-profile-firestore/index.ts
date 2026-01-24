@@ -34,6 +34,26 @@ async function firestoreRequest(
   return response.json();
 }
 
+// Check if a document exists in Firestore
+async function firestoreDocExists(
+  projectId: string,
+  accessToken: string,
+  docPath: string
+): Promise<boolean> {
+  const baseUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+  const url = `${baseUrl}${docPath}`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  return response.ok;
+}
+
 // Convert profile to Firestore document format
 function profileToFirestoreFields(profile: Record<string, unknown>) {
   const fields: Record<string, unknown> = {};
@@ -168,7 +188,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, profileId } = await req.json();
+    const { action, profileData } = await req.json();
     const projectId = Deno.env.get('FIREBASE_PROJECT_ID');
     
     if (!projectId) {
@@ -177,74 +197,86 @@ serve(async (req) => {
 
     const accessToken = await getAccessToken();
 
-    if (action === 'sync-single') {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', profileId)
-        .single();
-
-      if (profileError || !profile) {
-        return new Response(JSON.stringify({ error: 'Profile not found' }), {
-          status: 404,
+    // Action: ensure-profile - Create profile if it doesn't exist
+    if (action === 'ensure-profile') {
+      const profileId = user.id;
+      
+      // Check if profile already exists
+      const exists = await firestoreDocExists(projectId, accessToken, `/profiles/${profileId}`);
+      
+      if (exists) {
+        return new Response(JSON.stringify({ success: true, created: false, message: 'Profile already exists' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      const fields = profileToFirestoreFields({
-        ...profile,
+      // Create new profile
+      const newProfile = {
+        id: profileId,
+        user_id: user.id,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        email: user.email || null,
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        headline: null,
+        bio: null,
+        linkedin_url: null,
+        experience_level: null,
+        industry: null,
+        looking_for: [],
+        skills: [],
+        location: null,
+        age: null,
+        preferred_experience_levels: [],
+        preferred_industries: [],
+        preferred_goals: [],
+        age_min: 18,
+        age_max: 99,
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      const fields = profileToFirestoreFields(newProfile);
 
       await firestoreRequest(
         projectId,
         accessToken,
         'PATCH',
-        `/profiles/${profile.id}?updateMask.fieldPaths=*`,
+        `/profiles/${profileId}?updateMask.fieldPaths=*`,
         { fields }
       );
 
-      return new Response(JSON.stringify({ success: true, synced: 1 }), {
+      return new Response(JSON.stringify({ success: true, created: true, profile: newProfile }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (action === 'sync-all') {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
+    // Action: update-profile - Update existing profile
+    if (action === 'update-profile') {
+      const profileId = user.id;
+      
+      const updatedData = {
+        ...profileData,
+        id: profileId,
+        user_id: user.id,
+        updated_at: new Date().toISOString(),
+      };
 
-      if (profilesError) {
-        throw profilesError;
-      }
+      const fields = profileToFirestoreFields(updatedData);
 
-      let synced = 0;
-      for (const profile of profiles || []) {
-        const fields = profileToFirestoreFields({
-          ...profile,
-          updated_at: new Date().toISOString(),
-        });
+      await firestoreRequest(
+        projectId,
+        accessToken,
+        'PATCH',
+        `/profiles/${profileId}?updateMask.fieldPaths=*`,
+        { fields }
+      );
 
-        try {
-          await firestoreRequest(
-            projectId,
-            accessToken,
-            'PATCH',
-            `/profiles/${profile.id}?updateMask.fieldPaths=*`,
-            { fields }
-          );
-          synced++;
-        } catch (e) {
-          console.error(`Failed to sync profile ${profile.id}:`, e);
-        }
-      }
-
-      return new Response(JSON.stringify({ success: true, synced }), {
+      return new Response(JSON.stringify({ success: true, profile: updatedData }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
+    return new Response(JSON.stringify({ error: 'Invalid action. Use ensure-profile or update-profile' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
