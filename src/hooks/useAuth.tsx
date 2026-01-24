@@ -18,28 +18,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper to ensure Firestore profile exists via Edge Function
-async function ensureFirestoreProfile(session: Session): Promise<void> {
-  try {
-    const { data, error } = await supabase.functions.invoke('sync-profile-firestore', {
-      body: { action: 'ensure-profile' },
-    });
-
-    if (error) {
-      console.error('Error ensuring Firestore profile via Edge Function:', error);
-      return;
-    }
-
-    if (data?.created) {
-      console.log('Created Firestore profile for user:', session.user.id);
-    } else {
-      console.log('Firestore profile already exists for user:', session.user.id);
-    }
-  } catch (error) {
-    console.error('Error ensuring Firestore profile:', error);
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -62,14 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Auto-create Firestore profile on sign-in via Edge Function
-        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          // Use setTimeout to avoid blocking the auth flow
-          setTimeout(() => {
-            ensureFirestoreProfile(session);
-          }, 0);
-        }
-        
         // Sign out from Firebase if Supabase session ends
         if (!session && event === 'SIGNED_OUT') {
           try {
@@ -88,12 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
-      // Also ensure profile exists on initial load via Edge Function
-      if (session) {
-        ensureFirestoreProfile(session);
-      }
-      
       setLoading(false);
     });
 
