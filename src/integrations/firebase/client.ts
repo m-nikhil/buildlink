@@ -8,8 +8,9 @@ const firebaseConfig = {
   authDomain: "buildlink-566a8.firebaseapp.com",
   projectId: "buildlink-566a8",
   storageBucket: "buildlink-566a8.firebasestorage.app",
-  messagingSenderId: "1090069908680",
-  appId: "1:1090069908680:web:a2e8f57a08dfe2f8a14e95",
+  messagingSenderId: "238512275029",
+  appId: "1:238512275029:web:d84fc7949af554b4761edc",
+  measurementId: "G-XJC3QD9PTW",
 };
 
 const app = initializeApp(firebaseConfig);
