@@ -197,7 +197,7 @@ serve(async (req) => {
 
     const accessToken = await getAccessToken();
 
-    // Action: ensure-profile - Create profile if it doesn't exist
+    // Action: ensure-profile - Create profile if it doesn't exist, or update with latest auth data
     if (action === 'ensure-profile') {
       const profileId = user.id;
       
@@ -205,7 +205,26 @@ serve(async (req) => {
       const exists = await firestoreDocExists(projectId, accessToken, `/profiles/${profileId}`);
       
       if (exists) {
-        return new Response(JSON.stringify({ success: true, created: false, message: 'Profile already exists' }), {
+        // Profile exists - update with latest auth metadata
+        const updateData = {
+          id: profileId,
+          user_id: user.id,
+          email: user.email || null,
+          updated_at: new Date().toISOString(),
+        };
+
+        const fields = profileToFirestoreFields(updateData);
+        const fieldPaths = Object.keys(updateData).map(k => `updateMask.fieldPaths=${k}`).join('&');
+
+        await firestoreRequest(
+          projectId,
+          accessToken,
+          'PATCH',
+          `/profiles/${profileId}?${fieldPaths}`,
+          { fields }
+        );
+
+        return new Response(JSON.stringify({ success: true, created: false, message: 'Profile updated' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
