@@ -46,8 +46,8 @@ export function useFirestoreProfiles(
         constraints.push(where('looking_for', 'array-contains', filters.looking_for));
       }
 
-      // Order by created_at for consistent pagination
-      constraints.push(orderBy('created_at', 'asc'));
+      // Order by last_active descending (active users first, new users start at top)
+      constraints.push(orderBy('last_active', 'desc'));
       
       // Apply keyset pagination cursor
       if (cursor?.lastDoc) {
@@ -85,10 +85,10 @@ export function useFirestoreProfiles(
         });
       }
 
-      // Get last document for next page cursor
+      // Get last document for next page cursor (using last_active now)
       const lastVisible = snapshot.docs[snapshot.docs.length - 1];
       const nextCursor = lastVisible ? {
-        lastDoc: lastVisible.data().created_at
+        lastDoc: lastVisible.data().last_active
       } : undefined;
 
       return {
