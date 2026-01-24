@@ -1,13 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, startAfter, DocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 
+// Firebase config - these are publishable keys (safe to expose in client code)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDMr6VvCKfaC-n7QhQfFIH2pxwI8mPjC5w",
+  authDomain: "buildlink-566a8.firebaseapp.com",
+  projectId: "buildlink-566a8",
+  storageBucket: "buildlink-566a8.firebasestorage.app",
+  messagingSenderId: "1090069908680",
+  appId: "1:1090069908680:web:a2e8f57a08dfe2f8a14e95",
 };
 
 const app = initializeApp(firebaseConfig);
