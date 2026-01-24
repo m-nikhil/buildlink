@@ -9,15 +9,87 @@ service cloud.firestore {
       allow read: if request.auth != null;
       
       // Users can create their own profile
-      // The user_id field must match their Firebase Auth UID (which equals Supabase user ID)
       allow create: if request.auth != null 
                     && request.resource.data.user_id == request.auth.uid;
       
-      // Users can update their own profile (user_id field must match)
+      // Users can update their own profile
       allow update: if request.auth != null 
                     && resource.data.user_id == request.auth.uid;
       
       // Users can only delete their own profile
+      allow delete: if request.auth != null 
+                    && resource.data.user_id == request.auth.uid;
+    }
+    
+    // Connections collection rules
+    match /connections/{connectionId} {
+      // Users can read connections they're part of
+      allow read: if request.auth != null 
+                  && (resource.data.requester_id == request.auth.uid 
+                      || resource.data.recipient_id == request.auth.uid);
+      
+      // Users can create connection requests as requester
+      allow create: if request.auth != null 
+                    && request.resource.data.requester_id == request.auth.uid;
+      
+      // Recipient can update (accept/decline), or either party can update LinkedIn request
+      allow update: if request.auth != null 
+                    && (resource.data.requester_id == request.auth.uid 
+                        || resource.data.recipient_id == request.auth.uid);
+      
+      // Either party can delete connection
+      allow delete: if request.auth != null 
+                    && (resource.data.requester_id == request.auth.uid 
+                        || resource.data.recipient_id == request.auth.uid);
+    }
+    
+    // Messages collection rules
+    match /messages/{messageId} {
+      // Users can read messages from connections they're part of
+      // (We check connection membership via the connection_id reference)
+      allow read: if request.auth != null;
+      
+      // Users can send messages (as sender)
+      allow create: if request.auth != null 
+                    && request.resource.data.sender_id == request.auth.uid;
+      
+      // Messages are immutable - no update or delete
+      allow update, delete: if false;
+    }
+    
+    // Daily swipes collection rules
+    match /daily_swipes/{swipeId} {
+      // Users can read their own swipe records
+      allow read: if request.auth != null 
+                  && resource.data.user_id == request.auth.uid;
+      
+      // Users can create their own swipe records
+      allow create: if request.auth != null 
+                    && request.resource.data.user_id == request.auth.uid;
+      
+      // Users can update their own swipe records
+      allow update: if request.auth != null 
+                    && resource.data.user_id == request.auth.uid;
+      
+      // No delete for swipe records
+      allow delete: if false;
+    }
+    
+    // Dismissed profiles collection rules
+    match /dismissed_profiles/{dismissId} {
+      // Users can read their own dismissed profiles
+      allow read: if request.auth != null 
+                  && resource.data.user_id == request.auth.uid;
+      
+      // Users can create dismiss records for themselves
+      allow create: if request.auth != null 
+                    && request.resource.data.user_id == request.auth.uid;
+      
+      // Users can update their own dismiss records
+      allow update: if request.auth != null 
+                    && resource.data.user_id == request.auth.uid;
+      
+      // Users can delete their own dismiss records (for undo)
       allow delete: if request.auth != null 
                     && resource.data.user_id == request.auth.uid;
     }

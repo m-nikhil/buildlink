@@ -44,3 +44,46 @@ export interface ProfileFilters {
 export interface PaginationCursor {
   lastDoc?: string; // created_at timestamp for keyset pagination
 }
+
+// Connection document type
+export interface FirestoreConnection {
+  id: string;
+  requester_id: string;
+  recipient_id: string;
+  status: 'pending' | 'accepted';
+  message: string | null;
+  requester_linkedin_requested: boolean;
+  recipient_linkedin_requested: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Message document type
+export interface FirestoreMessage {
+  id: string;
+  connection_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+}
+
+// Daily swipes document type
+export interface FirestoreDailySwipe {
+  id: string; // Format: {user_id}_{date}
+  user_id: string;
+  swipe_date: string; // YYYY-MM-DD
+  swipe_count: number;
+  last_cursor: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Dismissed profile document type
+export interface FirestoreDismissedProfile {
+  id: string; // Format: {user_id}_{dismissed_profile_id}
+  user_id: string;
+  dismissed_profile_id: string;
+  dismiss_count: number;
+  last_dismissed_at: string;
+  created_at: string;
+}

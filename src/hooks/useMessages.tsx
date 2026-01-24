@@ -1,58 +1,68 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+  db,
+  messagesCollection,
+  connectionsCollection,
+  getMessageRef,
+  getDocs, 
+  setDoc,
+  query, 
+  where,
+  orderBy,
+  onSnapshot,
+  type Unsubscribe,
+} from '@/integrations/firebase/client';
 import { useAuth } from './useAuth';
-import { Message } from '@/types/message';
+import { FirestoreMessage, FirestoreConnection } from '@/integrations/firebase/types';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const MAX_MESSAGES = 50;
 
 export function useMessages(connectionId: string | undefined) {
-  const queryClient = useQueryClient();
+  const { firebaseUser } = useAuth();
+  const [messages, setMessages] = useState<FirestoreMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const query = useQuery({
-    queryKey: ['messages', connectionId],
-    queryFn: async () => {
-      if (!connectionId) return [];
-      
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('connection_id', connectionId)
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data as Message[];
-    },
-    enabled: !!connectionId,
-  });
-
-  // Subscribe to realtime updates
   useEffect(() => {
-    if (!connectionId) return;
+    if (!connectionId || !firebaseUser) {
+      setMessages([]);
+      setIsLoading(false);
+      return;
+    }
 
-    const channel = supabase
-      .channel(`messages-${connectionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `connection_id=eq.${connectionId}`
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['messages', connectionId] });
-        }
-      )
-      .subscribe();
+    setIsLoading(true);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [connectionId, queryClient]);
+    // Real-time subscription to messages
+    const messagesQuery = query(
+      messagesCollection,
+      where('connection_id', '==', connectionId),
+      orderBy('created_at', 'asc')
+    );
 
-  return query;
+    const unsubscribe: Unsubscribe = onSnapshot(
+      messagesQuery,
+      (snapshot) => {
+        const msgs = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+        })) as FirestoreMessage[];
+        setMessages(msgs);
+        setIsLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error('Messages subscription error:', err);
+        setError(err);
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [connectionId, firebaseUser]);
+
+  return { data: messages, isLoading, error };
 }
 
 export function useMessageCount(connectionId: string | undefined) {
@@ -67,38 +77,52 @@ export function useCanSendMessage(connectionId: string | undefined) {
 
 export function useSendMessage() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ connectionId, content }: { connectionId: string; content: string }) => {
-      if (!user) throw new Error('Not authenticated');
+      if (!user || !firebaseUser) throw new Error('Not authenticated');
       
       // Check message count
-      const { count, error: countError } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('connection_id', connectionId);
+      const messagesQuery = query(
+        messagesCollection,
+        where('connection_id', '==', connectionId)
+      );
+      const messagesSnapshot = await getDocs(messagesQuery);
       
-      if (countError) throw countError;
-      if ((count ?? 0) >= MAX_MESSAGES) {
+      if (messagesSnapshot.size >= MAX_MESSAGES) {
         throw new Error('Message limit reached');
       }
       
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          connection_id: connectionId,
-          sender_id: user.id,
-          content,
-        })
-        .select()
-        .single();
+      // Verify user is part of this connection
+      const connectionQuery = query(
+        connectionsCollection,
+        where('status', '==', 'accepted')
+      );
+      const connectionsSnapshot = await getDocs(connectionQuery);
       
-      if (error) throw error;
-      return data as Message;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['messages', variables.connectionId] });
+      const connection = connectionsSnapshot.docs.find(doc => {
+        const data = doc.data() as FirestoreConnection;
+        return doc.id === connectionId && 
+          (data.requester_id === user.id || data.recipient_id === user.id);
+      });
+      
+      if (!connection) {
+        throw new Error('Connection not found or not accepted');
+      }
+      
+      // Create message
+      const messageId = crypto.randomUUID();
+      const newMessage: FirestoreMessage = {
+        id: messageId,
+        connection_id: connectionId,
+        sender_id: user.id,
+        content,
+        created_at: new Date().toISOString(),
+      };
+      
+      await setDoc(getMessageRef(messageId), newMessage);
+      return newMessage;
     },
     onError: (error) => {
       if (error.message === 'Message limit reached') {

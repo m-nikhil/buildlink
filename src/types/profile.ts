@@ -27,17 +27,8 @@ export interface Profile {
   updated_at: string;
 }
 
-export interface Connection {
-  id: string;
-  requester_id: string;
-  recipient_id: string;
-  status: 'pending' | 'accepted';
-  message: string | null;
-  requester_linkedin_requested: boolean | null;
-  recipient_linkedin_requested: boolean | null;
-  created_at: string;
-  updated_at: string;
-}
+// Re-export FirestoreConnection as Connection for backwards compatibility
+export type { FirestoreConnection as Connection } from '@/integrations/firebase/types';
 
 export const EXPERIENCE_LABELS: Record<ExperienceLevel, string> = {
   entry: 'Entry Level',
