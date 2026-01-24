@@ -236,12 +236,13 @@ serve(async (req) => {
       };
 
       const fields = profileToFirestoreFields(newProfile);
+      const fieldPaths = Object.keys(newProfile).map(k => `updateMask.fieldPaths=${k}`).join('&');
 
       await firestoreRequest(
         projectId,
         accessToken,
         'PATCH',
-        `/profiles/${profileId}?updateMask.fieldPaths=*`,
+        `/profiles/${profileId}?${fieldPaths}`,
         { fields }
       );
 
@@ -262,12 +263,13 @@ serve(async (req) => {
       };
 
       const fields = profileToFirestoreFields(updatedData);
+      const fieldPaths = Object.keys(updatedData).map(k => `updateMask.fieldPaths=${k}`).join('&');
 
       await firestoreRequest(
         projectId,
         accessToken,
         'PATCH',
-        `/profiles/${profileId}?updateMask.fieldPaths=*`,
+        `/profiles/${profileId}?${fieldPaths}`,
         { fields }
       );
 
