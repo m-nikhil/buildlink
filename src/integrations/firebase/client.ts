@@ -4,7 +4,7 @@ import { getAuth, signInWithCustomToken, signOut as firebaseSignOut, onAuthState
 
 // Firebase config - these are publishable keys (safe to expose in client code)
 const firebaseConfig = {
-  apiKey: "AIzaSyDMr6VvCKfaC-n7QhQfFIH2pxwI8mPjC5w",
+  apiKey: "AIzaSyBZOBC-STxmST9r94c3HK_4ZaD9U7rfSsQ",
   authDomain: "buildlink-566a8.firebaseapp.com",
   projectId: "buildlink-566a8",
   storageBucket: "buildlink-566a8.firebasestorage.app",
