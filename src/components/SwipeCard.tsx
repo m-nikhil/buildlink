@@ -33,8 +33,11 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
 
   const handleLike = () => {
     setIsExiting('right');
+    // Use user_id (Firebase UID) for connection requests, not document id
+    const recipientId = profile.user_id || profile.id;
+    console.log('[SwipeCard] Sending connection request to:', recipientId);
     sendRequest.mutate(
-      { recipientId: profile.id },
+      { recipientId },
       {
         onSuccess: (data) => {
           if ((data as any).isMutualMatch) {
