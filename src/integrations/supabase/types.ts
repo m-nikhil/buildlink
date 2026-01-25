@@ -14,7 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      connections: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          recipient_id: string
+          recipient_linkedin_requested: boolean | null
+          requester_id: string
+          requester_linkedin_requested: boolean | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          recipient_id: string
+          recipient_linkedin_requested?: boolean | null
+          requester_id: string
+          requester_linkedin_requested?: boolean | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          recipient_id?: string
+          recipient_linkedin_requested?: boolean | null
+          requester_id?: string
+          requester_linkedin_requested?: boolean | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      daily_swipes: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_cursor: string | null
+          swipe_count: number | null
+          swipe_date: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_cursor?: string | null
+          swipe_count?: number | null
+          swipe_date?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_cursor?: string | null
+          swipe_count?: number | null
+          swipe_date?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dismissed_profiles: {
+        Row: {
+          created_at: string | null
+          dismiss_count: number | null
+          dismissed_profile_id: string
+          id: string
+          last_dismissed_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dismiss_count?: number | null
+          dismissed_profile_id: string
+          id?: string
+          last_dismissed_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dismiss_count?: number | null
+          dismissed_profile_id?: string
+          id?: string
+          last_dismissed_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          connection_id: string
+          content: string
+          created_at: string | null
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          connection_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          connection_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          age_max: number | null
+          age_min: number | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          experience_level: string | null
+          full_name: string | null
+          headline: string | null
+          id: string
+          industry: string | null
+          last_active: string | null
+          linkedin_url: string | null
+          location: string | null
+          looking_for: string[] | null
+          preferred_experience_levels: string[] | null
+          preferred_goals: string[] | null
+          preferred_industries: string[] | null
+          skills: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          age_max?: number | null
+          age_min?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          experience_level?: string | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          industry?: string | null
+          last_active?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for?: string[] | null
+          preferred_experience_levels?: string[] | null
+          preferred_goals?: string[] | null
+          preferred_industries?: string[] | null
+          skills?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          age_max?: number | null
+          age_min?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          experience_level?: string | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          industry?: string | null
+          last_active?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          looking_for?: string[] | null
+          preferred_experience_levels?: string[] | null
+          preferred_goals?: string[] | null
+          preferred_industries?: string[] | null
+          skills?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
