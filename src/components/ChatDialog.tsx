@@ -6,9 +6,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Linkedin, AlertCircle, Check, User } from 'lucide-react';
 import { useMessages, useSendMessage, useMessageCount } from '@/hooks/useMessages';
-import { useProfile, Profile } from '@/hooks/useProfile';
-import { useConnections, useRequestLinkedIn, Connection } from '@/hooks/useConnections';
-import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { useConnections, useRequestLinkedIn } from '@/hooks/useConnections';
+import { Profile, Connection } from '@/types/profile';
 import { ProfileSheet } from '@/components/ProfileSheet';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +25,7 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
   const [message, setMessage] = useState('');
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const { data: messages, isLoading } = useMessages(connectionId);
-  const { user } = useAuth();
+  const { data: myProfile } = useProfile();
   const { data: connections } = useConnections();
   const sendMessage = useSendMessage();
   const requestLinkedIn = useRequestLinkedIn();
@@ -38,7 +38,7 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
   // Find the connection to check LinkedIn request status
   const connection = connections?.find(c => c.id === connectionId) as Connection | undefined;
   
-  const isRequester = connection?.requester_id === user?.id;
+  const isRequester = connection?.requester_id === myProfile?.id;
   const myLinkedInRequested = isRequester 
     ? connection?.requester_linkedin_requested 
     : connection?.recipient_linkedin_requested;
@@ -201,7 +201,7 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
               </div>
             ) : (
               messages?.map((msg) => {
-                const isMe = msg.sender_id === user?.id;
+                const isMe = msg.sender_id === myProfile?.id;
                 return (
                   <div
                     key={msg.id}

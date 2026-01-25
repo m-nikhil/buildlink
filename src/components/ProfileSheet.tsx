@@ -3,15 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Briefcase, Linkedin } from 'lucide-react';
-import { 
-  ExperienceLevel, 
-  Industry, 
-  ConnectionGoal,
-  EXPERIENCE_LABELS, 
-  GOAL_LABELS, 
-  INDUSTRY_LABELS 
-} from '@/types/profile';
-import { Profile } from '@/hooks/useProfile';
+import { Profile, EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
 
 interface ProfileSheetProps {
   open: boolean;
@@ -65,7 +57,7 @@ export function ProfileSheet({ open, onOpenChange, profile, showFullDetails = fa
             {profile.industry && (
               <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full">
                 <Briefcase className="h-4 w-4" />
-                {INDUSTRY_LABELS[profile.industry as Industry]}
+                {INDUSTRY_LABELS[profile.industry]}
               </span>
             )}
           </div>
@@ -86,12 +78,12 @@ export function ProfileSheet({ open, onOpenChange, profile, showFullDetails = fa
             <div className="flex flex-wrap gap-2">
               {profile.experience_level && (
                 <Badge variant="secondary">
-                  {EXPERIENCE_LABELS[profile.experience_level as ExperienceLevel]}
+                  {EXPERIENCE_LABELS[profile.experience_level]}
                 </Badge>
               )}
               {profile.looking_for?.map((goal) => (
                 <Badge key={goal} variant="outline">
-                  {GOAL_LABELS[goal as ConnectionGoal]}
+                  {GOAL_LABELS[goal]}
                 </Badge>
               ))}
             </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,6 @@ import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { Loader2, X, Sparkles, ArrowRight } from 'lucide-react';
 import { ExperienceLevel, Industry, ConnectionGoal, EXPERIENCE_LABELS, INDUSTRY_LABELS, GOAL_LABELS } from '@/types/profile';
 import { toast } from 'sonner';
-import { debug } from '@/lib/debug';
 
 export default function ProfileComplete() {
   const navigate = useNavigate();
@@ -115,9 +115,9 @@ export default function ProfileComplete() {
         bio: profile.bio || '',
         country: locationParts[1] || '',
         city: locationParts[0] || '',
-        experience_level: (profile.experience_level || '') as ExperienceLevel | '',
-        industry: (profile.industry || '') as Industry | '',
-        looking_for: (profile.looking_for || []) as ConnectionGoal[],
+        experience_level: profile.experience_level || '',
+        industry: profile.industry || '',
+        looking_for: profile.looking_for || [],
         skills: profile.skills || [],
         linkedin_url: profile.linkedin_url || '',
       });
@@ -196,7 +196,7 @@ export default function ProfileComplete() {
       toast.success('Profile completed! Welcome to BuildLink');
       navigate('/');
     } catch (error) {
-      debug.error('Error completing profile:', error);
+      console.error('Error completing profile:', error);
     }
   };
 

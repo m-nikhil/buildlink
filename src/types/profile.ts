@@ -31,12 +31,12 @@ export interface Connection {
   id: string;
   requester_id: string;
   recipient_id: string;
-  status: 'pending' | 'accepted';
+  status: 'pending' | 'accepted' | 'rejected';
   message: string | null;
   requester_linkedin_requested: boolean | null;
   recipient_linkedin_requested: boolean | null;
-  created_at: string | null;
-  updated_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export const EXPERIENCE_LABELS: Record<ExperienceLevel, string> = {

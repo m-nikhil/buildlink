@@ -1,241 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Get access token using service account
-async function getAccessToken(): Promise<string> {
-  const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') || '{}');
-  
-  if (!serviceAccount.client_email || !serviceAccount.private_key) {
-    throw new Error('Invalid Firebase service account configuration');
-  }
-
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const now = Math.floor(Date.now() / 1000);
-  const claim = {
-    iss: serviceAccount.client_email,
-    scope: 'https://www.googleapis.com/auth/datastore',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  };
-
-  const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const claimB64 = btoa(JSON.stringify(claim)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const unsignedToken = `${headerB64}.${claimB64}`;
-
-  const privateKey = serviceAccount.private_key;
-  const base64 = privateKey
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/\n/g, '');
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  const key = await crypto.subtle.importKey(
-    'pkcs8',
-    bytes.buffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    key,
-    encoder.encode(unsignedToken)
-  );
-
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-
-  const jwt = `${unsignedToken}.${signatureB64}`;
-
-  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-  });
-
-  if (!tokenResponse.ok) {
-    throw new Error('Failed to get access token');
-  }
-
-  const tokenData = await tokenResponse.json();
-  return tokenData.access_token;
-}
-
-// Firestore REST API helper for fetching a collection
-async function firestoreQuery(
-  projectId: string,
-  accessToken: string,
-  collectionPath: string
-) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collectionPath}`;
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Firestore API error: ${response.status} - ${errorText}`);
-  }
-
-  return response.json();
-}
-
-// Firestore REST API helper for running a structured query
-async function firestoreStructuredQuery(
-  projectId: string,
-  accessToken: string,
-  collectionId: string,
-  fieldFilters: { field: string; op: string; value: any }[]
-) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
-  
-  const structuredQuery: any = {
-    from: [{ collectionId }],
-  };
-
-  if (fieldFilters.length === 1) {
-    const filter = fieldFilters[0];
-    structuredQuery.where = {
-      fieldFilter: {
-        field: { fieldPath: filter.field },
-        op: filter.op,
-        value: filter.value,
-      },
-    };
-  } else if (fieldFilters.length > 1) {
-    structuredQuery.where = {
-      compositeFilter: {
-        op: 'AND',
-        filters: fieldFilters.map(f => ({
-          fieldFilter: {
-            field: { fieldPath: f.field },
-            op: f.op,
-            value: f.value,
-          },
-        })),
-      },
-    };
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ structuredQuery }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Firestore query error: ${response.status} - ${errorText}`);
-  }
-
-  return response.json();
-}
-
-// Firestore REST API helper for fetching a single document
-async function firestoreGetDoc(
-  projectId: string,
-  accessToken: string,
-  documentPath: string
-): Promise<any | null> {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${documentPath}`;
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Firestore API error: ${response.status} - ${errorText}`);
-  }
-
-  return response.json();
-}
-
-// Parse Firestore document to plain object
-function parseFirestoreDoc(doc: any) {
-  const fields = doc.fields || {};
-  const result: any = { id: doc.name?.split('/').pop() };
-  
-  for (const [key, value] of Object.entries(fields)) {
-    const v = value as any;
-    if (v.stringValue !== undefined) result[key] = v.stringValue;
-    else if (v.integerValue !== undefined) result[key] = parseInt(v.integerValue);
-    else if (v.doubleValue !== undefined) result[key] = v.doubleValue;
-    else if (v.booleanValue !== undefined) result[key] = v.booleanValue;
-    else if (v.nullValue !== undefined) result[key] = null;
-    else if (v.arrayValue !== undefined) {
-      result[key] = (v.arrayValue.values || []).map((av: any) => {
-        if (av.stringValue !== undefined) return av.stringValue;
-        if (av.integerValue !== undefined) return parseInt(av.integerValue);
-        return av.stringValue || null;
-      });
-    }
-  }
-  
-  return result;
-}
-
-// Parse Firestore query results
-function parseQueryResults(results: any[]): any[] {
-  return results
-    .filter(r => r.document) // Filter out empty results
-    .map(r => parseFirestoreDoc(r.document));
-}
-
-// Verify Supabase JWT and extract user ID using getClaims
-async function verifySupabaseToken(authHeader: string): Promise<string | null> {
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    
-    const token = authHeader.replace('Bearer ', '');
-    const { data, error } = await supabase.auth.getUser(token);
-    
-    if (error || !data.user) {
-      console.error('Auth verification failed:', error?.message);
-      return null;
-    }
-    
-    return data.user.id;
-  } catch (err) {
-    console.error('Token verification error:', err);
-    return null;
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -251,161 +20,127 @@ serve(async (req) => {
       });
     }
 
-    // Verify Supabase token and get user ID
-    const userId = await verifySupabaseToken(authHeader);
-    if (!userId) {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const DAILY_SWIPE_LIMIT = 5;
-    const today = new Date().toISOString().split('T')[0];
+    // Get current user's profile
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
 
-    // Get Firebase access token
-    const projectId = Deno.env.get('FIREBASE_PROJECT_ID');
-    if (!projectId) throw new Error('FIREBASE_PROJECT_ID not configured');
-    
-    const accessToken = await getAccessToken();
-
-    // Fetch all profiles from Firestore
-    const firestoreData = await firestoreQuery(projectId, accessToken, 'profiles');
-    
-    const allProfiles = (firestoreData.documents || [])
-      .map(parseFirestoreDoc)
-      .filter((p: any) => p.user_id !== userId);
-
-    // Get current user's profile from Firestore
-    const userProfile = (firestoreData.documents || [])
-      .map(parseFirestoreDoc)
-      .find((p: any) => p.user_id === userId);
-
-    if (!userProfile) {
+    if (profileError || !userProfile) {
       return new Response(JSON.stringify({ error: 'Profile not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get daily swipe count from Firestore
-    const swipeId = `${userId}_${today}`;
-    const swipeDoc = await firestoreGetDoc(projectId, accessToken, `daily_swipes/${swipeId}`);
-    const dailySwipe = swipeDoc ? parseFirestoreDoc(swipeDoc) : null;
-    
-    const currentSwipeCount = dailySwipe?.swipe_count || 0;
-    const remainingSwipes = Math.max(0, DAILY_SWIPE_LIMIT - currentSwipeCount);
+    // Get all connections (pending, accepted, or rejected) for this user
+    const { data: connections, error: connectionsError } = await supabase
+      .from('connections')
+      .select('requester_id, recipient_id')
+      .or(`requester_id.eq.${userProfile.id},recipient_id.eq.${userProfile.id}`);
 
-    if (remainingSwipes <= 0) {
-      return new Response(JSON.stringify({ 
-        matches: [], 
-        daily_limit_reached: true,
-        swipes_used: currentSwipeCount,
-        swipes_remaining: 0,
-        daily_limit: DAILY_SWIPE_LIMIT
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (connectionsError) {
+      console.error('Connections error:', connectionsError);
+    }
+
+    // Build a set of profile IDs to exclude (already connected or pending)
+    const excludedProfileIds = new Set<string>();
+    if (connections) {
+      connections.forEach((conn) => {
+        if (conn.requester_id === userProfile.id) {
+          excludedProfileIds.add(conn.recipient_id);
+        } else {
+          excludedProfileIds.add(conn.requester_id);
+        }
       });
     }
 
-    // Get connections from Firestore (need to query both directions)
-    const connectionsAsRequester = await firestoreStructuredQuery(
-      projectId,
-      accessToken,
-      'connections',
-      [{ field: 'requester_id', op: 'EQUAL', value: { stringValue: userId } }]
-    );
-    
-    const connectionsAsRecipient = await firestoreStructuredQuery(
-      projectId,
-      accessToken,
-      'connections',
-      [{ field: 'recipient_id', op: 'EQUAL', value: { stringValue: userId } }]
-    );
+    // Get all other profiles
+    const { data: otherProfiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .neq('user_id', user.id);
 
-    const allConnections = [
-      ...parseQueryResults(connectionsAsRequester),
-      ...parseQueryResults(connectionsAsRecipient),
-    ];
+    if (profilesError) {
+      throw profilesError;
+    }
 
-    // Get dismissed profiles from Firestore
-    const dismissedResults = await firestoreStructuredQuery(
-      projectId,
-      accessToken,
-      'dismissed_profiles',
-      [{ field: 'user_id', op: 'EQUAL', value: { stringValue: userId } }]
-    );
-    
-    const dismissedProfiles = parseQueryResults(dismissedResults);
-
-    // Build exclusion and "liked you" sets
-    const excludedUserIds = new Set<string>();
-    const likedYouUserIds = new Set<string>();
-    
-    allConnections.forEach((conn: any) => {
-      if (conn.requester_id === userId) {
-        excludedUserIds.add(conn.recipient_id);
-      } else if (conn.recipient_id === userId) {
-        if (conn.status === 'accepted') {
-          excludedUserIds.add(conn.requester_id);
-        } else if (conn.status === 'pending') {
-          likedYouUserIds.add(conn.requester_id);
-        }
-      }
-    });
-
-    // Filter dismissed profiles: permanently (3+ times) OR within 1-hour cooldown
-    const dismissedIdsToExclude = new Set<string>();
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    
-    dismissedProfiles.forEach((d: any) => {
-      // Permanently dismissed (3+ strikes)
-      if (d.dismiss_count >= 3) {
-        dismissedIdsToExclude.add(d.dismissed_profile_id);
-      }
-      // Recently dismissed (within 1-hour cooldown)
-      else if (d.last_dismissed_at && d.last_dismissed_at > oneHourAgo) {
-        dismissedIdsToExclude.add(d.dismissed_profile_id);
-      }
-    });
-
-    const availableProfiles = allProfiles.filter((p: any) => {
-      if (excludedUserIds.has(p.user_id)) return false;
-      if (dismissedIdsToExclude.has(p.user_id)) return false;
-      return true;
-    });
+    // Filter out already connected profiles
+    const availableProfiles = otherProfiles?.filter(p => !excludedProfileIds.has(p.id)) || [];
 
     if (availableProfiles.length === 0) {
-      return new Response(JSON.stringify({ 
-        matches: [],
-        swipes_used: currentSwipeCount,
-        swipes_remaining: remainingSwipes,
-        daily_limit: DAILY_SWIPE_LIMIT
-      }), {
+      return new Response(JSON.stringify({ matches: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Call AI for ranking
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
+    }
 
-    // Calculate new user boost (profiles < 7 days old get [NEW] tag)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    // Build preference context
+    const preferenceContext = `
+User's Match Preferences:
+- Preferred Experience Levels: ${userProfile.preferred_experience_levels?.join(', ') || 'Any'}
+- Preferred Industries: ${userProfile.preferred_industries?.join(', ') || 'Any'}
+- Preferred Goals: ${userProfile.preferred_goals?.join(', ') || 'Any'}
+- Age Range: ${userProfile.age_min || 18} - ${userProfile.age_max || 99}
+`;
 
-    const systemPrompt = `You are a professional matchmaker. Rank candidates by compatibility with the user. 
-IMPORTANT: Give bonus points to profiles marked [NEW] - they joined recently and deserve visibility.
-Also prioritize profiles marked [LIKED YOU] as they've already shown interest.
-Return matches with scores (0-100) and reasons.`;
+    const systemPrompt = `You are a professional matchmaker for a dating-style networking app. Given a user's profile, their preferences, and a list of potential connections, analyze compatibility and return the top matches ranked by relevance.
 
-    const userProfileSummary = `User: ${userProfile.full_name}, ${userProfile.headline}, ${userProfile.industry}, ${userProfile.experience_level}, Looking for: ${userProfile.looking_for?.join(', ')}`;
+Consider these factors when matching:
+1. How well candidates match the user's stated preferences (experience, industry, goals)
+2. Complementary goals (e.g., mentors match with mentees, hiring managers with job seekers)
+3. Mutual benefit potential - would BOTH parties gain from connecting?
+4. Skill complementarity and potential for collaboration
+5. Location proximity when relevant
 
-    const candidatesSummary = availableProfiles.slice(0, 20).map((p: any, i: number) => {
-      const isNew = p.created_at && p.created_at > sevenDaysAgo;
-      const likedYou = likedYouUserIds.has(p.user_id);
-      const tags = [isNew && '[NEW]', likedYou && '[LIKED YOU]'].filter(Boolean).join(' ');
-      return `${i + 1}. ID:${p.user_id} - ${p.full_name}, ${p.headline}, ${p.industry}, ${p.experience_level}${tags ? ' ' + tags : ''}`;
-    }).join('\n');
+Prioritize candidates who closely match the user's preferences. Be thoughtful about WHY each match would be valuable.`;
+
+    const userProfileSummary = `
+User Profile:
+- Name: ${userProfile.full_name || 'Not specified'}
+- Headline: ${userProfile.headline || 'Not specified'}
+- Bio: ${userProfile.bio || 'Not specified'}
+- Industry: ${userProfile.industry || 'Not specified'}
+- Experience Level: ${userProfile.experience_level || 'Not specified'}
+- Looking For: ${userProfile.looking_for?.join(', ') || 'Not specified'}
+- Skills: ${userProfile.skills?.join(', ') || 'Not specified'}
+- Location: ${userProfile.location || 'Not specified'}
+- Age: ${userProfile.age || 'Not specified'}
+
+${preferenceContext}
+`;
+
+    const candidatesSummary = availableProfiles.map((p, i) => `
+Candidate ${i + 1} (ID: ${p.id}):
+- Name: ${p.full_name || 'Not specified'}
+- Headline: ${p.headline || 'Not specified'}
+- Bio: ${p.bio || 'Not specified'}
+- Industry: ${p.industry || 'Not specified'}
+- Experience Level: ${p.experience_level || 'Not specified'}
+- Looking For: ${p.looking_for?.join(', ') || 'Not specified'}
+- Skills: ${p.skills?.join(', ') || 'Not specified'}
+- Location: ${p.location || 'Not specified'}
+- Age: ${p.age || 'Not specified'}
+`).join('\n');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -417,71 +152,90 @@ Return matches with scores (0-100) and reasons.`;
         model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `${userProfileSummary}\n\nCandidates:\n${candidatesSummary}` }
+          { role: 'user', content: `${userProfileSummary}\n\nPotential Connections:\n${candidatesSummary}` }
         ],
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'rank_matches',
-            parameters: {
-              type: 'object',
-              properties: {
-                matches: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      profile_id: { type: 'string' },
-                      score: { type: 'number' },
-                      reason: { type: 'string' }
-                    },
-                    required: ['profile_id', 'score', 'reason']
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'rank_matches',
+              description: 'Return ranked list of profile matches with compatibility scores and reasons',
+              parameters: {
+                type: 'object',
+                properties: {
+                  matches: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        profile_id: { type: 'string', description: 'The ID of the matched profile' },
+                        score: { type: 'number', description: 'Compatibility score from 0-100' },
+                        reason: { type: 'string', description: 'Brief explanation of why this is a good match (1-2 sentences)' }
+                      },
+                      required: ['profile_id', 'score', 'reason'],
+                      additionalProperties: false
+                    }
                   }
-                }
-              },
-              required: ['matches']
+                },
+                required: ['matches'],
+                additionalProperties: false
+              }
             }
           }
-        }],
+        ],
         tool_choice: { type: 'function', function: { name: 'rank_matches' } }
       }),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits.' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const errorText = await response.text();
-      throw new Error('AI service error: ' + errorText);
+      console.error('AI Gateway error:', response.status, errorText);
+      throw new Error('AI service error');
     }
 
     const aiResponse = await response.json();
-    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-    const matchResults = JSON.parse(toolCall?.function?.arguments || '{"matches":[]}');
+    console.log('AI Response:', JSON.stringify(aiResponse));
 
+    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) {
+      throw new Error('Invalid AI response format');
+    }
+
+    const matchResults = JSON.parse(toolCall.function.arguments);
+    
+    // Enrich matches with full profile data
     const enrichedMatches = matchResults.matches
-      .filter((m: any) => m.score >= 50)
-      .slice(0, remainingSwipes)
+      .filter((m: any) => m.score >= 50) // Only return good matches
+      .slice(0, 10) // Top 10 matches
       .map((match: any) => {
-        const profile = availableProfiles.find((p: any) => p.user_id === match.profile_id);
+        const profile = availableProfiles.find(p => p.id === match.profile_id);
         return {
           ...match,
-          profile,
-          liked_you: likedYouUserIds.has(match.profile_id)
+          profile
         };
       })
-      .filter((m: any) => m.profile)
-      .sort((a: any, b: any) => (b.liked_you ? 1 : 0) - (a.liked_you ? 1 : 0));
+      .filter((m: any) => m.profile); // Ensure profile exists
 
-    return new Response(JSON.stringify({ 
-      matches: enrichedMatches,
-      swipes_used: currentSwipeCount,
-      swipes_remaining: remainingSwipes,
-      daily_limit: DAILY_SWIPE_LIMIT
-    }), {
+    return new Response(JSON.stringify({ matches: enrichedMatches }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('AI Match error:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Internal error' }), {
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

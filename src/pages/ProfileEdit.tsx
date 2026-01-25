@@ -60,9 +60,9 @@ export default function ProfileEdit() {
         bio: profile.bio ?? '',
         location: profile.location ?? '',
         linkedin_url: profile.linkedin_url ?? '',
-        experience_level: (profile.experience_level ?? '') as ExperienceLevel | '',
-        industry: (profile.industry ?? '') as Industry | '',
-        looking_for: (profile.looking_for ?? []) as ConnectionGoal[],
+        experience_level: profile.experience_level ?? '',
+        industry: profile.industry ?? '',
+        looking_for: profile.looking_for ?? [],
         skills: profile.skills ?? [],
       });
     }

@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { debug } from '@/lib/debug';
 
 const LINKEDIN_CLIENT_ID = '86jf34hvwupz2k';
 const LINKEDIN_SCOPES = 'openid profile email';
@@ -22,51 +21,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper to update last_active on login
-  const updateLastActive = async (userId: string) => {
-    try {
-      await supabase
-        .from('profiles')
-        .update({ last_active: new Date().toISOString() })
-        .eq('user_id', userId);
-      debug.log('[useAuth] Updated last_active');
-    } catch (e) {
-      debug.error('[useAuth] Failed to update last_active:', e);
-    }
-  };
-
   useEffect(() => {
-    debug.log('[useAuth] Setting up auth listener...');
-    
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        debug.log('[useAuth] Auth state changed:', event, session?.user?.id || 'no user');
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Update last_active on sign-in
-        if (session && event === 'SIGNED_IN') {
-          setTimeout(() => updateLastActive(session.user.id), 0);
-        }
-        
         setLoading(false);
       }
     );
 
-    debug.log('[useAuth] Checking for existing session...');
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      debug.log('[useAuth] getSession result:', session?.user?.id || 'no session', error || 'no error');
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
-      // Update last_active for existing session
-      if (session) {
-        updateLastActive(session.user.id);
-      }
-      
-      setLoading(false);
-    }).catch(err => {
-      debug.error('[useAuth] getSession error:', err);
       setLoading(false);
     });
 
