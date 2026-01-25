@@ -18,6 +18,33 @@ export interface AIMatchResponse {
   daily_limit_reached?: boolean;
 }
 
+// Map technical errors to user-friendly messages
+function getUserFriendlyError(error: Error | null, data: any): string {
+  const message = error?.message?.toLowerCase() || '';
+  
+  if (message.includes('non-2xx') || message.includes('500') || message.includes('internal')) {
+    return 'Our matching service is temporarily unavailable. Please try again in a moment.';
+  }
+  
+  if (message.includes('unauthorized') || message.includes('401') || message.includes('auth')) {
+    return 'Please sign in again to see your matches.';
+  }
+  
+  if (message.includes('timeout') || message.includes('network') || message.includes('fetch')) {
+    return 'Connection issue. Please check your internet and try again.';
+  }
+  
+  if (data?.error) {
+    // Server returned a specific error message
+    if (data.error.includes('profile')) {
+      return 'Complete your profile to get personalized matches.';
+    }
+    return data.error;
+  }
+  
+  return 'Unable to load matches right now. Please try again.';
+}
+
 export function useAIMatches() {
   return useQuery({
     queryKey: ['ai-matches'],
@@ -25,11 +52,13 @@ export function useAIMatches() {
       const { data, error } = await supabase.functions.invoke('ai-match');
       
       if (error) {
-        throw new Error(error.message || 'Failed to get AI matches');
+        console.error('[useAIMatches] Edge function error:', error);
+        throw new Error(getUserFriendlyError(error, data));
       }
       
-      if (data.error) {
-        throw new Error(data.error);
+      if (data?.error) {
+        console.error('[useAIMatches] API error:', data.error);
+        throw new Error(getUserFriendlyError(null, data));
       }
       
       return {
