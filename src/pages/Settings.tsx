@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import {
@@ -28,7 +27,6 @@ export default function Settings() {
   const [preferredExperience, setPreferredExperience] = useState<ExperienceLevel[]>([]);
   const [preferredIndustries, setPreferredIndustries] = useState<Industry[]>([]);
   const [preferredGoals, setPreferredGoals] = useState<ConnectionGoal[]>([]);
-  const [ageRange, setAgeRange] = useState<[number, number]>([18, 65]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -41,7 +39,6 @@ export default function Settings() {
       setPreferredExperience(profile.preferred_experience_levels || []);
       setPreferredIndustries(profile.preferred_industries || []);
       setPreferredGoals(profile.preferred_goals || []);
-      setAgeRange([profile.age_min || 18, profile.age_max || 65]);
     }
   }, [profile]);
 
@@ -50,8 +47,6 @@ export default function Settings() {
       preferred_experience_levels: preferredExperience,
       preferred_industries: preferredIndustries,
       preferred_goals: preferredGoals,
-      age_min: ageRange[0],
-      age_max: ageRange[1],
     });
   };
 
@@ -160,29 +155,7 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Age Range */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Age Range</CardTitle>
-              <CardDescription>Preferred age range for connections</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span>{ageRange[0]} years</span>
-                <span>{ageRange[1]} years</span>
-              </div>
-              <Slider
-                value={ageRange}
-                onValueChange={(value) => setAgeRange(value as [number, number])}
-                min={18}
-                max={99}
-                step={1}
-                className="w-full"
-              />
-            </CardContent>
-          </Card>
-
-          <Button 
+          <Button
             onClick={handleSave} 
             className="w-full gap-2"
             disabled={updateProfile.isPending}
