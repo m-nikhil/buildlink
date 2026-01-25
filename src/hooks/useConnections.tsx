@@ -134,32 +134,27 @@ export function useSendConnectionRequest() {
 
   return useMutation({
     mutationFn: async ({ recipientId, message }: { recipientId: string; message?: string }) => {
+      // Import Firebase auth directly to get current state
+      const { auth: firebaseAuth } = await import('@/integrations/firebase/client');
+      
       console.log('[useSendConnectionRequest] Starting mutation...', { recipientId, message });
       console.log('[useSendConnectionRequest] Auth state:', { 
         supabaseUser: user?.id || 'null', 
-        firebaseUser: firebaseUser?.uid || 'null',
-        firebaseCurrentUser: (await import('@/integrations/firebase/client')).auth.currentUser?.uid || 'null'
+        firebaseUserFromState: firebaseUser?.uid || 'null',
+        firebaseCurrentUser: firebaseAuth.currentUser?.uid || 'null'
       });
       
       if (!user) {
         throw new Error('Not authenticated with Supabase');
       }
       
-      if (!firebaseUser) {
-        // Try to use auth.currentUser as fallback
-        const { auth } = await import('@/integrations/firebase/client');
-        if (!auth.currentUser) {
-          throw new Error('Not authenticated with Firebase. Please refresh and try again.');
-        }
-        console.log('[useSendConnectionRequest] Using auth.currentUser as fallback');
-      }
-      
-      // Use Firebase UID for Firestore operations (must match auth.uid in rules)
-      const { auth: firebaseAuth } = await import('@/integrations/firebase/client');
-      const currentUserId = firebaseUser?.uid || firebaseAuth.currentUser?.uid;
+      // Get Firebase UID - prefer currentUser as it's more reliable than React state
+      const currentUserId = firebaseAuth.currentUser?.uid || firebaseUser?.uid;
       
       if (!currentUserId) {
-        throw new Error('Firebase user ID not available');
+        console.error('[useSendConnectionRequest] Firebase not authenticated!');
+        console.error('[useSendConnectionRequest] firebaseAuth.currentUser:', firebaseAuth.currentUser);
+        throw new Error('Not authenticated with Firebase. Please refresh the page and try again.');
       }
       
       console.log('[useSendConnectionRequest] Using Firebase UID:', currentUserId);
