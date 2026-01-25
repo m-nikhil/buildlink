@@ -22,7 +22,9 @@ const SEED_ACCOUNTS = [
   { email: 'michael.b@example.com', name: 'Michael Brown' },
 ];
 
-const isDev = import.meta.env.DEV;
+// Show test accounts in dev mode OR preview environments (not production)
+const isProduction = window.location.hostname === 'linkbuild.lovable.app';
+const isDev = import.meta.env.DEV || !isProduction;
 
 export default function Auth() {
   const navigate = useNavigate();
