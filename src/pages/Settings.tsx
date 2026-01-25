@@ -118,13 +118,13 @@ export default function Settings() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Industry</CardTitle>
-              <CardDescription>What industries interest you?</CardDescription>
+              <CardDescription>What industries interest you? (3 preferred)</CardDescription>
             </CardHeader>
             <CardContent>
               <IndustryMultiSelect
                 value={preferredIndustries}
                 onChange={setPreferredIndustries}
-                placeholder="Select preferred industries..."
+                placeholder="Select up to 3 industries..."
               />
             </CardContent>
           </Card>
