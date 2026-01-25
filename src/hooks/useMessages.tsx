@@ -88,7 +88,7 @@ export function useSendMessage() {
         .from('messages')
         .insert({
           connection_id: connectionId,
-          sender_id: profile.id,
+          sender_id: profile.user_id,
           content,
         })
         .select()
