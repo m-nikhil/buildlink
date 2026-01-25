@@ -201,7 +201,11 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
               </div>
             ) : (
               messages?.map((msg) => {
-                const isMe = msg.sender_id === myProfile?.id;
+                const isMe = msg.sender_id === myProfile?.user_id;
+                const messageTime = new Date(msg.created_at).toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                });
                 return (
                   <div
                     key={msg.id}
@@ -215,10 +219,16 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                         "max-w-[80%] px-4 py-2 rounded-2xl",
                         isMe
                           ? "bg-primary text-primary-foreground rounded-br-md"
-                          : "bg-muted rounded-bl-md"
+                          : "bg-secondary text-secondary-foreground rounded-bl-md"
                       )}
                     >
                       <p className="text-sm">{msg.content}</p>
+                      <p className={cn(
+                        "text-[10px] mt-1",
+                        isMe ? "text-primary-foreground/70" : "text-muted-foreground"
+                      )}>
+                        {messageTime}
+                      </p>
                     </div>
                   </div>
                 );
