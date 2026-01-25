@@ -1,46 +1,53 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  getDailySwipeRef,
-  getDoc,
-  setDoc,
-} from '@/integrations/firebase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { FirestoreDailySwipe } from '@/integrations/firebase/types';
+import { debug } from '@/lib/debug';
 
 export function useTrackSwipe() {
   const queryClient = useQueryClient();
-  const { user, firebaseUser } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async () => {
-      if (!user || !firebaseUser) throw new Error('Not authenticated');
+      if (!user) throw new Error('Not authenticated');
 
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const swipeId = `${user.id}_${today}`;
-      const swipeRef = getDailySwipeRef(swipeId);
-      const swipeSnap = await getDoc(swipeRef);
 
-      if (swipeSnap.exists()) {
+      // Check if we have a record for today
+      const { data: existing } = await supabase
+        .from('daily_swipes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('swipe_date', today)
+        .maybeSingle();
+
+      if (existing) {
         // Increment swipe count
-        const existing = swipeSnap.data() as FirestoreDailySwipe;
-        await setDoc(swipeRef, {
-          ...existing,
-          swipe_count: existing.swipe_count + 1,
-          updated_at: new Date().toISOString(),
-        });
-        return existing.swipe_count + 1;
+        const newCount = (existing.swipe_count || 0) + 1;
+        const { error } = await supabase
+          .from('daily_swipes')
+          .update({ swipe_count: newCount })
+          .eq('id', existing.id);
+
+        if (error) {
+          debug.error('[useTrackSwipe] Update error:', error);
+          throw error;
+        }
+        return newCount;
       } else {
         // Create new record for today
-        const newSwipe: FirestoreDailySwipe = {
-          id: swipeId,
-          user_id: user.id,
-          swipe_date: today,
-          swipe_count: 1,
-          last_cursor: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        await setDoc(swipeRef, newSwipe);
+        const { error } = await supabase
+          .from('daily_swipes')
+          .insert({
+            user_id: user.id,
+            swipe_date: today,
+            swipe_count: 1,
+          });
+
+        if (error) {
+          debug.error('[useTrackSwipe] Insert error:', error);
+          throw error;
+        }
         return 1;
       }
     },

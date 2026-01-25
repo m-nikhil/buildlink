@@ -6,11 +6,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Linkedin, AlertCircle, Check, User } from 'lucide-react';
 import { useMessages, useSendMessage, useMessageCount } from '@/hooks/useMessages';
-import { useProfile } from '@/hooks/useProfile';
-import { useConnections, useRequestLinkedIn } from '@/hooks/useConnections';
+import { useProfile, Profile } from '@/hooks/useProfile';
+import { useConnections, useRequestLinkedIn, Connection } from '@/hooks/useConnections';
 import { useAuth } from '@/hooks/useAuth';
-import { FirestoreProfile } from '@/integrations/firebase/types';
-import { Connection } from '@/types/profile';
 import { ProfileSheet } from '@/components/ProfileSheet';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +18,7 @@ interface ChatDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   connectionId: string;
-  otherProfile: FirestoreProfile;
+  otherProfile: Profile;
 }
 
 export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: ChatDialogProps) {

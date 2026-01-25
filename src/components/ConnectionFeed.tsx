@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useProfiles } from '@/hooks/useProfile';
+import { useProfiles, Profile } from '@/hooks/useProfile';
 import { ProfileCard } from './ProfileCard';
 import {
   Select,

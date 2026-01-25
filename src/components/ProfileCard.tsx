@@ -1,5 +1,12 @@
-import { FirestoreProfile } from '@/integrations/firebase/types';
-import { EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
+import { Profile } from '@/hooks/useProfile';
+import { 
+  ExperienceLevel, 
+  Industry, 
+  ConnectionGoal,
+  EXPERIENCE_LABELS, 
+  GOAL_LABELS, 
+  INDUSTRY_LABELS 
+} from '@/types/profile';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +15,7 @@ import { MapPin, Briefcase, UserPlus, Check, Clock, Linkedin } from 'lucide-reac
 import { useSendConnectionRequest, useConnectionStatus } from '@/hooks/useConnections';
 
 interface ProfileCardProps {
-  profile: FirestoreProfile;
+  profile: Profile;
 }
 
 export function ProfileCard({ profile }: ProfileCardProps) {
@@ -91,14 +98,14 @@ export function ProfileCard({ profile }: ProfileCardProps) {
             {profile.industry && (
               <span className="flex items-center gap-1">
                 <Briefcase className="h-3 w-3" />
-                {INDUSTRY_LABELS[profile.industry]}
+                {INDUSTRY_LABELS[profile.industry as Industry]}
               </span>
             )}
           </div>
 
           {profile.experience_level && (
             <Badge variant="secondary" className="mt-3">
-              {EXPERIENCE_LABELS[profile.experience_level]}
+              {EXPERIENCE_LABELS[profile.experience_level as ExperienceLevel]}
             </Badge>
           )}
 
@@ -106,7 +113,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
             <div className="flex flex-wrap gap-1.5 justify-center mt-3">
               {profile.looking_for.map((goal) => (
                 <Badge key={goal} variant="outline" className="text-xs">
-                  {GOAL_LABELS[goal]}
+                  {GOAL_LABELS[goal as ConnectionGoal]}
                 </Badge>
               ))}
             </div>
