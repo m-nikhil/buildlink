@@ -11,12 +11,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import {
   ExperienceLevel,
-  Industry,
   ConnectionGoal,
   EXPERIENCE_LABELS,
-  INDUSTRY_LABELS,
   GOAL_LABELS,
 } from '@/types/profile';
+import { IndustryMultiSelect } from '@/components/IndustryMultiSelect';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -25,7 +24,7 @@ export default function Settings() {
   const updateProfile = useUpdateProfile();
 
   const [preferredExperience, setPreferredExperience] = useState<ExperienceLevel[]>([]);
-  const [preferredIndustries, setPreferredIndustries] = useState<Industry[]>([]);
+  const [preferredIndustries, setPreferredIndustries] = useState<string[]>([]);
   const [preferredGoals, setPreferredGoals] = useState<ConnectionGoal[]>([]);
 
   useEffect(() => {
@@ -56,7 +55,7 @@ export default function Settings() {
     );
   };
 
-  const toggleIndustry = (industry: Industry) => {
+  const toggleIndustry = (industry: string) => {
     setPreferredIndustries(prev =>
       prev.includes(industry) ? prev.filter(i => i !== industry) : [...prev, industry]
     );
@@ -121,17 +120,12 @@ export default function Settings() {
               <CardTitle className="text-lg">Industry</CardTitle>
               <CardDescription>What industries interest you?</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              {(Object.entries(INDUSTRY_LABELS) as [Industry, string][]).map(([value, label]) => (
-                <div key={value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`ind-${value}`}
-                    checked={preferredIndustries.includes(value)}
-                    onCheckedChange={() => toggleIndustry(value)}
-                  />
-                  <Label htmlFor={`ind-${value}`} className="cursor-pointer">{label}</Label>
-                </div>
-              ))}
+            <CardContent>
+              <IndustryMultiSelect
+                value={preferredIndustries}
+                onChange={setPreferredIndustries}
+                placeholder="Select preferred industries..."
+              />
             </CardContent>
           </Card>
 

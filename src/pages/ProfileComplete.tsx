@@ -13,7 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { Loader2, X, Sparkles, ArrowRight } from 'lucide-react';
-import { ExperienceLevel, Industry, ConnectionGoal, EXPERIENCE_LABELS, INDUSTRY_LABELS, GOAL_LABELS } from '@/types/profile';
+import { ExperienceLevel, ConnectionGoal, EXPERIENCE_LABELS, GOAL_LABELS } from '@/types/profile';
+import { IndustrySelect } from '@/components/IndustrySelect';
 import { toast } from 'sonner';
 
 export default function ProfileComplete() {
@@ -30,7 +31,7 @@ export default function ProfileComplete() {
     country: '',
     city: '',
     experience_level: '' as ExperienceLevel | '',
-    industry: '' as Industry | '',
+    industry: '' as string,
     looking_for: [] as ConnectionGoal[],
     skills: [] as string[],
     linkedin_url: '',
@@ -187,7 +188,7 @@ export default function ProfileComplete() {
         bio: formData.bio,
         location,
         experience_level: formData.experience_level as ExperienceLevel,
-        industry: formData.industry as Industry,
+        industry: formData.industry || null,
         looking_for: formData.looking_for,
         skills: formData.skills,
         linkedin_url: formData.linkedin_url,
@@ -365,21 +366,11 @@ export default function ProfileComplete() {
 
                 <div className="space-y-2">
                   <Label>Industry *</Label>
-                  <Select
-                    value={formData.industry}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, industry: value as Industry }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(INDUSTRY_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <IndustrySelect
+                    value={formData.industry || null}
+                    onChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}
+                    placeholder="Select your industry"
+                  />
                 </div>
 
                 <div className="space-y-2">

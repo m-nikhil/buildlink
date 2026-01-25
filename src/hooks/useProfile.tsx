@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { Profile, ExperienceLevel, Industry, ConnectionGoal } from '@/types/profile';
+import { Profile, ExperienceLevel, ConnectionGoal } from '@/types/profile';
 import { toast } from 'sonner';
 
 export function useProfile() {
@@ -55,7 +55,7 @@ export function useUpdateProfile() {
 
 export function useProfiles(filters?: {
   experienceLevel?: ExperienceLevel;
-  industry?: Industry;
+  industry?: string;
   lookingFor?: ConnectionGoal;
 }) {
   const { user } = useAuth();
