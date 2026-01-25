@@ -143,35 +143,64 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
             )}
           </div>
           
-          {/* LinkedIn request button - prominent */}
-          {!myLinkedInRequested ? (
-            <Button 
-              variant="default"
-              className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white"
-              onClick={handleRequestLinkedIn}
-              disabled={requestLinkedIn.isPending}
-            >
-              <Linkedin className="h-5 w-5" />
-              Request LinkedIn Connection
-            </Button>
-          ) : !isMutualLinkedIn ? (
-            <div className="flex flex-col items-center gap-3 py-4 px-4 rounded-xl bg-gradient-to-br from-[#0A66C2]/10 to-[#0A66C2]/5 border border-[#0A66C2]/20">
-              <div className="flex items-center gap-2 text-[#0A66C2]">
-                <div className="h-8 w-8 rounded-full bg-[#0A66C2]/20 flex items-center justify-center">
-                  <Check className="h-5 w-5" />
+          {/* LinkedIn request flow */}
+          {!isMutualLinkedIn && (
+            <>
+              {/* They requested, I haven't - show Accept button */}
+              {!myLinkedInRequested && theirLinkedInRequested && (
+                <div className="flex flex-col items-center gap-3 py-4 px-4 rounded-xl bg-gradient-to-br from-[#0A66C2]/10 to-[#0A66C2]/5 border border-[#0A66C2]/20">
+                  <div className="flex items-center gap-2 text-[#0A66C2]">
+                    <Linkedin className="h-5 w-5" />
+                    <span className="font-semibold">They want to connect on LinkedIn!</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Accept to reveal both profiles
+                  </p>
+                  <Button 
+                    className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white"
+                    onClick={handleRequestLinkedIn}
+                    disabled={requestLinkedIn.isPending}
+                  >
+                    <Check className="h-5 w-5" />
+                    Accept LinkedIn Request
+                  </Button>
                 </div>
-                <span className="font-semibold">LinkedIn Request Sent!</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="flex gap-1">
-                  <span className="h-2 w-2 rounded-full bg-[#0A66C2] animate-pulse" />
-                  <span className="h-2 w-2 rounded-full bg-[#0A66C2]/60 animate-pulse [animation-delay:150ms]" />
-                  <span className="h-2 w-2 rounded-full bg-[#0A66C2]/30 animate-pulse [animation-delay:300ms]" />
+              )}
+
+              {/* I haven't requested, they haven't either - show Request button */}
+              {!myLinkedInRequested && !theirLinkedInRequested && (
+                <Button 
+                  variant="default"
+                  className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white"
+                  onClick={handleRequestLinkedIn}
+                  disabled={requestLinkedIn.isPending}
+                >
+                  <Linkedin className="h-5 w-5" />
+                  Request LinkedIn Connection
+                </Button>
+              )}
+
+              {/* I requested, they haven't - show waiting state */}
+              {myLinkedInRequested && !theirLinkedInRequested && (
+                <div className="flex flex-col items-center gap-3 py-4 px-4 rounded-xl bg-gradient-to-br from-[#0A66C2]/10 to-[#0A66C2]/5 border border-[#0A66C2]/20">
+                  <div className="flex items-center gap-2 text-[#0A66C2]">
+                    <div className="h-8 w-8 rounded-full bg-[#0A66C2]/20 flex items-center justify-center">
+                      <Check className="h-5 w-5" />
+                    </div>
+                    <span className="font-semibold">LinkedIn Request Sent!</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex gap-1">
+                      <span className="h-2 w-2 rounded-full bg-[#0A66C2] animate-pulse" />
+                      <span className="h-2 w-2 rounded-full bg-[#0A66C2]/60 animate-pulse [animation-delay:150ms]" />
+                      <span className="h-2 w-2 rounded-full bg-[#0A66C2]/30 animate-pulse [animation-delay:300ms]" />
+                    </div>
+                    <span>Waiting for their response</span>
+                  </div>
                 </div>
-                <span>Waiting for their response</span>
-              </div>
-            </div>
-          ) : null}
+              )}
+            </>
+          )}
           
           {/* Mutual LinkedIn - show profile details */}
           {isMutualLinkedIn && (
@@ -196,13 +225,6 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                   </a>
                 </Button>
               )}
-            </div>
-          )}
-          
-          {/* They requested notification */}
-          {!myLinkedInRequested && theirLinkedInRequested && (
-            <div className="text-sm font-medium text-primary bg-primary/10 rounded-lg px-4 py-2 text-center">
-              ✨ They want to connect on LinkedIn! Request to reveal profiles.
             </div>
           )}
         </div>
