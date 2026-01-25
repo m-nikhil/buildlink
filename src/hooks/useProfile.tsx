@@ -3,7 +3,6 @@ import { useAuth } from './useAuth';
 import { 
   profilesCollection, 
   getDocs,
-  getDoc,
   setDoc,
   doc,
   db,
@@ -12,6 +11,7 @@ import {
 } from '@/integrations/firebase/client';
 import { FirestoreProfile } from '@/integrations/firebase/types';
 import { toast } from 'sonner';
+import { debug } from '@/lib/debug';
 
 // Get current user's profile from Firestore
 export function useProfile() {
@@ -21,26 +21,25 @@ export function useProfile() {
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user) {
-        console.log('[useProfile] No user, returning null');
+        debug.log('[useProfile] No user, returning null');
         return null;
       }
       
-      console.log('[useProfile] Fetching profile for user:', user.id);
+      debug.log('[useProfile] Fetching profile for user:', user.id);
       
-      // Query by user_id field
       const q = query(profilesCollection, where('user_id', '==', user.id));
       const snapshot = await getDocs(q);
       
-      console.log('[useProfile] Snapshot empty:', snapshot.empty, 'docs:', snapshot.docs.length);
+      debug.log('[useProfile] Snapshot empty:', snapshot.empty, 'docs:', snapshot.docs.length);
       
       if (snapshot.empty) {
-        console.log('[useProfile] No profile found');
+        debug.log('[useProfile] No profile found');
         return null;
       }
       
       const docSnap = snapshot.docs[0];
       const profile = { ...docSnap.data(), id: docSnap.id } as FirestoreProfile;
-      console.log('[useProfile] Found profile:', profile);
+      debug.log('[useProfile] Found profile:', profile);
       return profile;
     },
     enabled: !!user,
@@ -96,7 +95,7 @@ export function useUpdateProfile() {
       toast.success('Profile updated successfully');
     },
     onError: (error) => {
-      console.error('[useUpdateProfile] Error:', error);
+      debug.error('[useUpdateProfile] Error:', error);
       toast.error('Failed to update profile: ' + error.message);
     },
   });
@@ -134,7 +133,7 @@ export function useCreateProfile() {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
     onError: (error) => {
-      console.error('[useCreateProfile] Error:', error);
+      debug.error('[useCreateProfile] Error:', error);
       toast.error('Failed to create profile: ' + error.message);
     },
   });

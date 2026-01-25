@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  db,
   connectionsCollection,
   getConnectionRef,
   getDismissedProfileRef,
@@ -10,12 +9,12 @@ import {
   deleteDoc,
   query, 
   where,
-  onSnapshot,
 } from '@/integrations/firebase/client';
 import { useAuth } from './useAuth';
 import { FirestoreConnection, FirestoreDismissedProfile } from '@/integrations/firebase/types';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
+import { debug } from '@/lib/debug';
 
 // Generate unique connection ID
 const generateConnectionId = () => crypto.randomUUID();
@@ -68,7 +67,7 @@ export function useConnections() {
         setConnections(allConnections);
         setError(null);
       } catch (err) {
-        console.error('[useConnections] Error fetching:', err);
+        debug.error('[useConnections] Error fetching:', err);
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         
         // Make error message user-friendly
@@ -137,8 +136,8 @@ export function useSendConnectionRequest() {
       // Import Firebase auth directly to get current state
       const { auth: firebaseAuth } = await import('@/integrations/firebase/client');
       
-      console.log('[useSendConnectionRequest] Starting mutation...', { recipientId, message });
-      console.log('[useSendConnectionRequest] Auth state:', { 
+      debug.log('[useSendConnectionRequest] Starting mutation...', { recipientId, message });
+      debug.log('[useSendConnectionRequest] Auth state:', { 
         supabaseUser: user?.id || 'null', 
         firebaseUserFromState: firebaseUser?.uid || 'null',
         firebaseCurrentUser: firebaseAuth.currentUser?.uid || 'null'
@@ -152,28 +151,27 @@ export function useSendConnectionRequest() {
       const currentUserId = firebaseAuth.currentUser?.uid || firebaseUser?.uid;
       
       if (!currentUserId) {
-        console.error('[useSendConnectionRequest] Firebase not authenticated!');
-        console.error('[useSendConnectionRequest] firebaseAuth.currentUser:', firebaseAuth.currentUser);
+        debug.error('[useSendConnectionRequest] Firebase not authenticated!');
+        debug.error('[useSendConnectionRequest] firebaseAuth.currentUser:', firebaseAuth.currentUser);
         throw new Error('Not authenticated with Firebase. Please refresh the page and try again.');
       }
       
-      console.log('[useSendConnectionRequest] Using Firebase UID:', currentUserId);
+      debug.log('[useSendConnectionRequest] Using Firebase UID:', currentUserId);
       
-      // Check if there's an existing connection request from them to us
-      console.log('[useSendConnectionRequest] Checking for existing request...');
+      debug.log('[useSendConnectionRequest] Checking for existing request...');
       const existingQuery = query(
         connectionsCollection, 
         where('requester_id', '==', recipientId),
         where('recipient_id', '==', currentUserId)
       );
       const existingSnapshot = await getDocs(existingQuery);
-      console.log('[useSendConnectionRequest] Existing requests found:', existingSnapshot.size);
+      debug.log('[useSendConnectionRequest] Existing requests found:', existingSnapshot.size);
       
       // If they already liked us, update to accepted (mutual match!)
       if (!existingSnapshot.empty) {
         const existingDoc = existingSnapshot.docs[0];
         const existingConnection = { ...existingDoc.data(), id: existingDoc.id } as FirestoreConnection;
-        console.log('[useSendConnectionRequest] Mutual match! Accepting connection...');
+        debug.log('[useSendConnectionRequest] Mutual match! Accepting connection...');
         
         await setDoc(getConnectionRef(existingConnection.id), {
           ...existingConnection,
@@ -198,20 +196,20 @@ export function useSendConnectionRequest() {
         updated_at: new Date().toISOString(),
       };
       
-      console.log('[useSendConnectionRequest] Creating new connection:', newConnection);
+      debug.log('[useSendConnectionRequest] Creating new connection:', newConnection);
       
       try {
         await setDoc(getConnectionRef(connectionId), newConnection);
-        console.log('[useSendConnectionRequest] Connection created successfully!');
+        debug.log('[useSendConnectionRequest] Connection created successfully!');
       } catch (err) {
-        console.error('[useSendConnectionRequest] Firestore setDoc error:', err);
+        debug.error('[useSendConnectionRequest] Firestore setDoc error:', err);
         throw err;
       }
       
       return newConnection;
     },
     onSuccess: (data) => {
-      console.log('[useSendConnectionRequest] Success:', data);
+      debug.log('[useSendConnectionRequest] Success:', data);
       queryClient.invalidateQueries({ queryKey: ['connections'] });
       if ((data as FirestoreConnection & { isMutualMatch?: boolean }).isMutualMatch) {
         toast.success("It's a match! You're now connected 🎉");
@@ -220,9 +218,9 @@ export function useSendConnectionRequest() {
       }
     },
     onError: (error) => {
-      console.error('[useSendConnectionRequest] Error:', error);
-      console.error('[useSendConnectionRequest] Error message:', error.message);
-      console.error('[useSendConnectionRequest] Error stack:', error.stack);
+      debug.error('[useSendConnectionRequest] Error:', error);
+      debug.error('[useSendConnectionRequest] Error message:', error.message);
+      debug.error('[useSendConnectionRequest] Error stack:', error.stack);
       if (error.message.includes('duplicate')) {
         toast.error('Connection request already sent');
       } else {
