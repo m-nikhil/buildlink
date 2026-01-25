@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -211,22 +212,27 @@ function parseQueryResults(results: any[]): any[] {
     .map(r => parseFirestoreDoc(r.document));
 }
 
-// Verify Supabase JWT and extract user ID
+// Verify Supabase JWT and extract user ID using getClaims
 async function verifySupabaseToken(authHeader: string): Promise<string | null> {
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
     const token = authHeader.replace('Bearer ', '');
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    const { data, error } = await supabase.auth.getUser(token);
     
-    const payload = JSON.parse(atob(parts[1]));
-    
-    // Check expiration
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+    if (error || !data.user) {
+      console.error('Auth verification failed:', error?.message);
       return null;
     }
     
-    return payload.sub || null;
-  } catch {
+    return data.user.id;
+  } catch (err) {
+    console.error('Token verification error:', err);
     return null;
   }
 }
