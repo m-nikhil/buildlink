@@ -77,9 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    console.log('[useAuth] Setting up auth listener...');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[useAuth] Auth state changed:', event, session?.user?.id || 'no user');
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -103,7 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    console.log('[useAuth] Checking for existing session...');
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      console.log('[useAuth] getSession result:', session?.user?.id || 'no session', error || 'no error');
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -112,6 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ensureFirebaseAuth(session);
       }
       
+      setLoading(false);
+    }).catch(err => {
+      console.error('[useAuth] getSession error:', err);
       setLoading(false);
     });
 
