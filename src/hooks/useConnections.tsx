@@ -134,23 +134,32 @@ export function useSendConnectionRequest() {
 
   return useMutation({
     mutationFn: async ({ recipientId, message }: { recipientId: string; message?: string }) => {
-      if (!user || !firebaseUser) throw new Error('Not authenticated');
+      console.log('[useSendConnectionRequest] Starting mutation...', { recipientId, message });
+      
+      if (!user || !firebaseUser) {
+        console.error('[useSendConnectionRequest] Not authenticated:', { user: !!user, firebaseUser: !!firebaseUser });
+        throw new Error('Not authenticated');
+      }
       
       // Use Firebase UID for Firestore operations (must match auth.uid in rules)
       const currentUserId = firebaseUser.uid;
+      console.log('[useSendConnectionRequest] Using Firebase UID:', currentUserId);
       
       // Check if there's an existing connection request from them to us
+      console.log('[useSendConnectionRequest] Checking for existing request...');
       const existingQuery = query(
         connectionsCollection, 
         where('requester_id', '==', recipientId),
         where('recipient_id', '==', currentUserId)
       );
       const existingSnapshot = await getDocs(existingQuery);
+      console.log('[useSendConnectionRequest] Existing requests found:', existingSnapshot.size);
       
       // If they already liked us, update to accepted (mutual match!)
       if (!existingSnapshot.empty) {
         const existingDoc = existingSnapshot.docs[0];
         const existingConnection = { ...existingDoc.data(), id: existingDoc.id } as FirestoreConnection;
+        console.log('[useSendConnectionRequest] Mutual match! Accepting connection...');
         
         await setDoc(getConnectionRef(existingConnection.id), {
           ...existingConnection,
@@ -175,7 +184,16 @@ export function useSendConnectionRequest() {
         updated_at: new Date().toISOString(),
       };
       
-      await setDoc(getConnectionRef(connectionId), newConnection);
+      console.log('[useSendConnectionRequest] Creating new connection:', newConnection);
+      
+      try {
+        await setDoc(getConnectionRef(connectionId), newConnection);
+        console.log('[useSendConnectionRequest] Connection created successfully!');
+      } catch (err) {
+        console.error('[useSendConnectionRequest] Firestore setDoc error:', err);
+        throw err;
+      }
+      
       return newConnection;
     },
     onSuccess: (data) => {
