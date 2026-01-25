@@ -24,12 +24,17 @@ export function AIMatchFeed() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-destructive mb-4">{error.message}</p>
-        <Button onClick={handleRefresh} variant="outline" className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Try Again
-        </Button>
+        <Card className="max-w-sm mx-auto">
+          <CardContent className="pt-8 pb-6">
+            <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="font-semibold mb-2">Couldn't load matches</h3>
+            <p className="text-muted-foreground text-sm mb-4">{error.message}</p>
+            <Button onClick={handleRefresh} variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

@@ -67,7 +67,20 @@ export function useConnections() {
         setConnections(allConnections);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch connections'));
+        console.error('[useConnections] Error fetching:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        
+        // Make error message user-friendly
+        let userFriendlyMessage = 'Unable to load connections. Please try again.';
+        if (errorMessage.includes('index') || errorMessage.includes('requires an index')) {
+          userFriendlyMessage = 'Setting up your connections... Please refresh in a moment.';
+        } else if (errorMessage.includes('permission') || errorMessage.includes('PERMISSION_DENIED')) {
+          userFriendlyMessage = 'Please sign in again to view your connections.';
+        } else if (errorMessage.includes('network') || errorMessage.includes('offline')) {
+          userFriendlyMessage = 'Check your internet connection and try again.';
+        }
+        
+        setError(new Error(userFriendlyMessage));
       } finally {
         setIsLoading(false);
       }
