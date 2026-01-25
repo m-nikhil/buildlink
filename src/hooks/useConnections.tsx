@@ -197,6 +197,7 @@ export function useSendConnectionRequest() {
       return newConnection;
     },
     onSuccess: (data) => {
+      console.log('[useSendConnectionRequest] Success:', data);
       queryClient.invalidateQueries({ queryKey: ['connections'] });
       if ((data as FirestoreConnection & { isMutualMatch?: boolean }).isMutualMatch) {
         toast.success("It's a match! You're now connected 🎉");
@@ -205,10 +206,13 @@ export function useSendConnectionRequest() {
       }
     },
     onError: (error) => {
+      console.error('[useSendConnectionRequest] Error:', error);
+      console.error('[useSendConnectionRequest] Error message:', error.message);
+      console.error('[useSendConnectionRequest] Error stack:', error.stack);
       if (error.message.includes('duplicate')) {
         toast.error('Connection request already sent');
       } else {
-        toast.error('Failed to send connection request');
+        toast.error(`Failed to send connection request: ${error.message}`);
       }
     },
   });
