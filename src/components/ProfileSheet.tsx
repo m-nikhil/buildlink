@@ -111,13 +111,6 @@ export function ProfileSheet({ open, onOpenChange, profile, showFullDetails = fa
             </div>
           )}
 
-          {/* Age - only if available */}
-          {profile.age && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Age</h4>
-              <p className="text-sm text-muted-foreground">{profile.age} years old</p>
-            </div>
-          )}
 
           {/* Full name hint when not revealed */}
           {!showFullDetails && (
