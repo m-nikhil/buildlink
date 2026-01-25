@@ -18,7 +18,7 @@ interface SwipeCardProps {
 }
 
 export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardProps) {
-  const connection = useConnectionStatus(profile.id);
+  const connection = useConnectionStatus(profile.user_id);
   const { data: myProfile } = useProfile();
   const sendRequest = useSendConnectionRequest();
   const [isExiting, setIsExiting] = useState<'left' | 'right' | null>(null);
@@ -31,7 +31,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
 
   const handleLike = () => {
     setIsExiting('right');
-    sendRequest.mutate({ recipientId: profile.id });
+    sendRequest.mutate({ recipientId: profile.user_id });
     setTimeout(onLike, 300);
   };
 
@@ -45,7 +45,7 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
   const isPending = connection?.status === 'pending';
   
   // Check if they liked us first (they sent a request to us)
-  const theyLikedUs = connection?.requester_id === profile.id && connection?.recipient_id === myProfile?.id;
+  const theyLikedUs = connection?.requester_id === profile.user_id && connection?.recipient_id === myProfile?.user_id;
 
   return (
     <motion.div
