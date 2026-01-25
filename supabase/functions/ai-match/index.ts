@@ -228,7 +228,6 @@ Candidate ${i + 1} (ID: ${p.id}):
     
     // Enrich matches with full profile data and likes_you flag
     let enrichedMatches = matchResults.matches
-      .filter((m: any) => m.score >= 50) // Only return good matches
       .slice(0, 10) // Top 10 matches
       .map((match: any) => {
         const profile = availableProfiles.find(p => p.id === match.profile_id);
