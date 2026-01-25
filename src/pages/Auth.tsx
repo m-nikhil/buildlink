@@ -10,16 +10,16 @@ import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { supabase } from '@/integrations/supabase/client';
 
 const SEED_ACCOUNTS = [
-  { email: 'sarah.chen@buildlink.test', name: 'Sarah Chen' },
-  { email: 'marcus.j@buildlink.test', name: 'Marcus Johnson' },
-  { email: 'emily.r@buildlink.test', name: 'Emily Rodriguez' },
-  { email: 'david.kim@buildlink.test', name: 'David Kim' },
-  { email: 'priya.p@buildlink.test', name: 'Priya Patel' },
-  { email: 'james.w@buildlink.test', name: 'James Wilson' },
-  { email: 'lisa.t@buildlink.test', name: 'Lisa Thompson' },
-  { email: 'alex.r@buildlink.test', name: 'Alex Rivera' },
-  { email: 'nicole.z@buildlink.test', name: 'Nicole Zhang' },
-  { email: 'michael.b@buildlink.test', name: 'Michael Brown' },
+  { email: 'sarah.chen@example.com', name: 'Sarah Chen' },
+  { email: 'marcus.j@example.com', name: 'Marcus Johnson' },
+  { email: 'emily.r@example.com', name: 'Emily Rodriguez' },
+  { email: 'david.kim@example.com', name: 'David Kim' },
+  { email: 'priya.p@example.com', name: 'Priya Patel' },
+  { email: 'james.w@example.com', name: 'James Wilson' },
+  { email: 'lisa.t@example.com', name: 'Lisa Thompson' },
+  { email: 'alex.r@example.com', name: 'Alex Rivera' },
+  { email: 'nicole.z@example.com', name: 'Nicole Zhang' },
+  { email: 'michael.b@example.com', name: 'Michael Brown' },
 ];
 
 const isDev = import.meta.env.DEV;
@@ -55,13 +55,24 @@ export default function Auth() {
     
     setIsSeedLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: selectedSeed,
-        password: 'TestPassword123!',
+      // Call edge function to get magic link token
+      const { data, error } = await supabase.functions.invoke('dev-login', {
+        body: { email: selectedSeed },
       });
       
-      if (error) {
-        toast.error(`Login failed: ${error.message}`);
+      if (error || data.error) {
+        toast.error(data?.error || error?.message || 'Login failed');
+        return;
+      }
+
+      // Verify the OTP token
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: 'magiclink',
+      });
+      
+      if (verifyError) {
+        toast.error(`Verification failed: ${verifyError.message}`);
       }
     } catch (error) {
       toast.error('Failed to sign in with test account');

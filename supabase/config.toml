@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.linkedin-auth]
 verify_jwt = false
+
+[functions.dev-login]
+verify_jwt = false
+
+[functions.seed-profiles]
+verify_jwt = false
