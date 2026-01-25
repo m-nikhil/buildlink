@@ -12,7 +12,7 @@ interface ProfileCardProps {
 
 export function ProfileCard({ profile }: ProfileCardProps) {
   const sendRequest = useSendConnectionRequest();
-  const connectionStatus = useConnectionStatus(profile.id);
+  const connectionStatus = useConnectionStatus(profile.user_id);
 
   const getInitials = (name: string | null) => {
     if (!name) return 'U';
@@ -25,7 +25,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
   };
 
   const handleConnect = () => {
-    sendRequest.mutate({ recipientId: profile.id });
+    sendRequest.mutate({ recipientId: profile.user_id });
   };
 
   const renderConnectionButton = () => {

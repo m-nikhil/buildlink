@@ -14,7 +14,7 @@ interface AIMatchCardProps {
 }
 
 export function AIMatchCard({ profile, score, reason }: AIMatchCardProps) {
-  const connection = useConnectionStatus(profile.id);
+  const connection = useConnectionStatus(profile.user_id);
   const { data: myProfile } = useProfile();
   const sendRequest = useSendConnectionRequest();
 
@@ -25,7 +25,7 @@ export function AIMatchCard({ profile, score, reason }: AIMatchCardProps) {
     .toUpperCase() || '?';
 
   const handleConnect = () => {
-    sendRequest.mutate({ recipientId: profile.id });
+    sendRequest.mutate({ recipientId: profile.user_id });
   };
 
   // Determine connection status
@@ -33,7 +33,7 @@ export function AIMatchCard({ profile, score, reason }: AIMatchCardProps) {
     if (!connection) return 'none';
     if (connection.status === 'accepted') return 'connected';
     if (connection.status === 'pending') {
-      if (connection.requester_id === myProfile?.id) return 'pending_sent';
+      if (connection.requester_id === myProfile?.user_id) return 'pending_sent';
       return 'pending_received';
     }
     return 'none';
