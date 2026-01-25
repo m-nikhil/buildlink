@@ -12,13 +12,13 @@ export interface Profile {
   bio: string | null;
   linkedin_url: string | null;
   experience_level: ExperienceLevel | null;
-  industry: Industry | null;
+  industry: string | null; // Now uses dynamic industry IDs from src/data/industries.ts
   looking_for: ConnectionGoal[] | null;
   skills: string[] | null;
   location: string | null;
   // Match preferences
   preferred_experience_levels: ExperienceLevel[] | null;
-  preferred_industries: Industry[] | null;
+  preferred_industries: string[] | null; // Now uses dynamic industry IDs
   preferred_goals: ConnectionGoal[] | null;
   created_at: string;
   updated_at: string;

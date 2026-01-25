@@ -21,12 +21,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Save, Loader2, Plus, X, Camera } from 'lucide-react';
 import {
   ExperienceLevel,
-  Industry,
   ConnectionGoal,
   EXPERIENCE_LABELS,
-  INDUSTRY_LABELS,
   GOAL_LABELS,
 } from '@/types/profile';
+import { IndustrySelect } from '@/components/IndustrySelect';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -46,7 +45,7 @@ export default function ProfileEdit() {
     location: '',
     linkedin_url: '',
     experience_level: '' as ExperienceLevel | '',
-    industry: '' as Industry | '',
+    industry: '' as string,
     looking_for: [] as ConnectionGoal[],
     skills: [] as string[],
   });
@@ -305,21 +304,11 @@ export default function ProfileEdit() {
 
                 <div className="space-y-2">
                   <Label>Industry</Label>
-                  <Select
-                    value={formData.industry}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, industry: value as Industry }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(INDUSTRY_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <IndustrySelect
+                    value={formData.industry || null}
+                    onChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}
+                    placeholder="Select industry"
+                  />
                 </div>
               </div>
 
