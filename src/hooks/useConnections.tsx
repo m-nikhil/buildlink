@@ -32,16 +32,21 @@ export function useSendConnectionRequest() {
     mutationFn: async ({ recipientId, message }: { recipientId: string; message?: string }) => {
       if (!user) throw new Error('Not authenticated');
       
-      // Check if there's an existing connection request from them to us
-      const { data: existingConnection } = await supabase
+      // Check if there's an existing connection in either direction
+      const { data: existingConnections } = await supabase
         .from('connections')
         .select('*')
-        .eq('requester_id', recipientId)
-        .eq('recipient_id', user.id)
-        .maybeSingle();
+        .or(`and(requester_id.eq.${user.id},recipient_id.eq.${recipientId}),and(requester_id.eq.${recipientId},recipient_id.eq.${user.id})`);
+      
+      const existingConnection = existingConnections?.[0];
+      
+      // If we already sent a request, return it
+      if (existingConnection && existingConnection.requester_id === user.id) {
+        return existingConnection as Connection;
+      }
       
       // If they already liked us, update to accepted (mutual match!)
-      if (existingConnection) {
+      if (existingConnection && existingConnection.requester_id === recipientId) {
         const { data, error } = await supabase
           .from('connections')
           .update({ status: 'accepted' })
