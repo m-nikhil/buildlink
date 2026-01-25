@@ -13,11 +13,12 @@ interface SwipeCardProps {
   profile: Profile;
   score?: number;
   reason?: string;
+  likesYou?: boolean;
   onLike: () => void;
   onPass: () => void;
 }
 
-export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardProps) {
+export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: SwipeCardProps) {
   const connection = useConnectionStatus(profile.user_id);
   const { data: myProfile } = useProfile();
   const sendRequest = useSendConnectionRequest();
@@ -42,10 +43,9 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
 
   // Check if already connected
   const isConnected = connection?.status === 'accepted';
-  const isPending = connection?.status === 'pending';
   
-  // Check if they liked us first (they sent a request to us)
-  const theyLikedUs = connection?.requester_id === profile.user_id && connection?.recipient_id === myProfile?.user_id;
+  // Use the likesYou prop from AI match, or fallback to checking connection
+  const theyLikedUs = likesYou || (connection?.requester_id === profile.user_id && connection?.recipient_id === myProfile?.user_id && connection?.status === 'pending');
 
   return (
     <motion.div

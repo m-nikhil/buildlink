@@ -7,6 +7,7 @@ export interface AIMatch {
   score: number;
   reason: string;
   profile: Profile;
+  likes_you?: boolean;
 }
 
 export function useAIMatches() {

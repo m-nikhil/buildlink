@@ -104,6 +104,7 @@ export function SwipeFeed() {
         profile={currentMatch.profile}
         score={currentMatch.score}
         reason={currentMatch.reason}
+        likesYou={currentMatch.likes_you}
         onLike={handleLike}
         onPass={handlePass}
       />

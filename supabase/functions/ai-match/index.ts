@@ -48,24 +48,35 @@ serve(async (req) => {
       });
     }
 
-    // Get all connections (pending, accepted, or rejected) for this user
+    // Get all connections for this user (connections use user_id, not profile.id)
     const { data: connections, error: connectionsError } = await supabase
       .from('connections')
-      .select('requester_id, recipient_id')
-      .or(`requester_id.eq.${userProfile.id},recipient_id.eq.${userProfile.id}`);
+      .select('requester_id, recipient_id, status')
+      .or(`requester_id.eq.${userProfile.user_id},recipient_id.eq.${userProfile.user_id}`);
 
     if (connectionsError) {
       console.error('Connections error:', connectionsError);
     }
 
-    // Build a set of profile IDs to exclude (already connected or pending)
-    const excludedProfileIds = new Set<string>();
+    // Build a set of user_ids to exclude (users we've already swiped on or are connected with)
+    // BUT keep users that have liked us (pending where we are recipient) so user can swipe to match
+    const excludedUserIds = new Set<string>();
+    const likesUserIds = new Set<string>(); // User IDs that have liked the current user
+    
     if (connections) {
       connections.forEach((conn) => {
-        if (conn.requester_id === userProfile.id) {
-          excludedProfileIds.add(conn.recipient_id);
-        } else {
-          excludedProfileIds.add(conn.requester_id);
+        if (conn.requester_id === userProfile.user_id) {
+          // We initiated this - exclude them (we already swiped)
+          excludedUserIds.add(conn.recipient_id);
+        } else if (conn.recipient_id === userProfile.user_id) {
+          // They initiated - check status
+          if (conn.status === 'pending') {
+            // They liked us but we haven't responded - SHOW them with badge
+            likesUserIds.add(conn.requester_id);
+          } else {
+            // Already accepted/rejected - exclude
+            excludedUserIds.add(conn.requester_id);
+          }
         }
       });
     }
@@ -80,8 +91,8 @@ serve(async (req) => {
       throw profilesError;
     }
 
-    // Filter out already connected profiles
-    const availableProfiles = otherProfiles?.filter(p => !excludedProfileIds.has(p.id)) || [];
+    // Filter out already connected profiles (use user_id for comparison)
+    const availableProfiles = otherProfiles?.filter(p => !excludedUserIds.has(p.user_id)) || [];
 
     if (availableProfiles.length === 0) {
       return new Response(JSON.stringify({ matches: [] }), {
@@ -215,18 +226,43 @@ Candidate ${i + 1} (ID: ${p.id}):
 
     const matchResults = JSON.parse(toolCall.function.arguments);
     
-    // Enrich matches with full profile data
-    const enrichedMatches = matchResults.matches
+    // Enrich matches with full profile data and likes_you flag
+    let enrichedMatches = matchResults.matches
       .filter((m: any) => m.score >= 50) // Only return good matches
       .slice(0, 10) // Top 10 matches
       .map((match: any) => {
         const profile = availableProfiles.find(p => p.id === match.profile_id);
         return {
           ...match,
-          profile
+          profile,
+          likes_you: likesUserIds.has(profile?.user_id || '')
         };
       })
       .filter((m: any) => m.profile); // Ensure profile exists
+
+    // IMPORTANT: Add profiles that liked the user but weren't returned by AI (or scored too low)
+    const matchedProfileIds = new Set(enrichedMatches.map((m: any) => m.profile?.id));
+    const profilesThatLikedUs = availableProfiles.filter(p => 
+      likesUserIds.has(p.user_id) && !matchedProfileIds.has(p.id)
+    );
+    
+    // Add these profiles with a default score and mark them as likes_you
+    for (const profile of profilesThatLikedUs) {
+      enrichedMatches.push({
+        profile_id: profile.id,
+        score: 85, // Give a good default score since they showed interest
+        reason: "This person has shown interest in connecting with you!",
+        profile,
+        likes_you: true
+      });
+    }
+
+    // Sort so profiles that like the user appear first
+    enrichedMatches = enrichedMatches.sort((a: any, b: any) => {
+      if (a.likes_you && !b.likes_you) return -1;
+      if (!a.likes_you && b.likes_you) return 1;
+      return b.score - a.score;
+    });
 
     return new Response(JSON.stringify({ matches: enrichedMatches }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
