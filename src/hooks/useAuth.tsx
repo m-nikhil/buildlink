@@ -39,16 +39,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Helper to ensure Firebase is authenticated
   const ensureFirebaseAuth = async (currentSession: Session) => {
+    console.log('[useAuth] ensureFirebaseAuth called, currentUser:', auth.currentUser?.uid || 'null');
+    
     // Check if already authenticated with Firebase
     if (auth.currentUser) {
-      console.log('[useAuth] Firebase already authenticated');
+      console.log('[useAuth] Firebase already authenticated:', auth.currentUser.uid);
       // Still update last_active even if already authenticated
       updateLastActive(currentSession.user.id);
       return;
     }
 
     try {
-      console.log('[useAuth] Requesting Firebase token...');
+      console.log('[useAuth] Requesting Firebase token from edge function...');
       const { data, error } = await supabase.functions.invoke('firebase-token');
       
       if (error) {
@@ -56,11 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      console.log('[useAuth] Got Firebase token response:', { hasToken: !!data?.firebaseToken });
+
       if (data?.firebaseToken) {
-        await signInToFirebase(data.firebaseToken);
-        console.log('[useAuth] Firebase re-authenticated successfully');
+        console.log('[useAuth] Signing in to Firebase with custom token...');
+        const userCred = await signInToFirebase(data.firebaseToken);
+        console.log('[useAuth] Firebase signed in successfully:', userCred.user.uid);
         // Update last_active after successful auth
         updateLastActive(currentSession.user.id);
+      } else {
+        console.error('[useAuth] No firebaseToken in response:', data);
       }
     } catch (e) {
       console.error('[useAuth] Firebase auth error:', e);
