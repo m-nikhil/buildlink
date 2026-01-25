@@ -354,18 +354,24 @@ serve(async (req) => {
       }
     });
 
-    // Permanently dismissed (3+ times)
-    const permanentlyDismissedIds = new Set<string>();
+    // Filter dismissed profiles: permanently (3+ times) OR within 1-hour cooldown
+    const dismissedIdsToExclude = new Set<string>();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     
     dismissedProfiles.forEach((d: any) => {
+      // Permanently dismissed (3+ strikes)
       if (d.dismiss_count >= 3) {
-        permanentlyDismissedIds.add(d.dismissed_profile_id);
+        dismissedIdsToExclude.add(d.dismissed_profile_id);
+      }
+      // Recently dismissed (within 1-hour cooldown)
+      else if (d.last_dismissed_at && d.last_dismissed_at > oneHourAgo) {
+        dismissedIdsToExclude.add(d.dismissed_profile_id);
       }
     });
 
     const availableProfiles = allProfiles.filter((p: any) => {
       if (excludedUserIds.has(p.user_id)) return false;
-      if (permanentlyDismissedIds.has(p.user_id)) return false;
+      if (dismissedIdsToExclude.has(p.user_id)) return false;
       return true;
     });
 
