@@ -3,14 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Linkedin, Loader2 } from 'lucide-react';
+import { Linkedin, Loader2, FlaskConical } from 'lucide-react';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
+import { supabase } from '@/integrations/supabase/client';
+
+const SEED_ACCOUNTS = [
+  { email: 'sarah.chen@buildlink.test', name: 'Sarah Chen' },
+  { email: 'marcus.j@buildlink.test', name: 'Marcus Johnson' },
+  { email: 'emily.r@buildlink.test', name: 'Emily Rodriguez' },
+  { email: 'david.kim@buildlink.test', name: 'David Kim' },
+  { email: 'priya.p@buildlink.test', name: 'Priya Patel' },
+  { email: 'james.w@buildlink.test', name: 'James Wilson' },
+  { email: 'lisa.t@buildlink.test', name: 'Lisa Thompson' },
+  { email: 'alex.r@buildlink.test', name: 'Alex Rivera' },
+  { email: 'nicole.z@buildlink.test', name: 'Nicole Zhang' },
+  { email: 'michael.b@buildlink.test', name: 'Michael Brown' },
+];
+
+const isDev = import.meta.env.DEV;
 
 export default function Auth() {
   const navigate = useNavigate();
   const { user, loading, signInWithLinkedIn } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedSeed, setSelectedSeed] = useState<string>('');
+  const [isSeedLoading, setIsSeedLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -25,6 +44,29 @@ export default function Auth() {
     } catch (error) {
       toast.error('Failed to sign in with LinkedIn');
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSeedLogin = async () => {
+    if (!selectedSeed) {
+      toast.error('Please select a test account');
+      return;
+    }
+    
+    setIsSeedLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: selectedSeed,
+        password: 'TestPassword123!',
+      });
+      
+      if (error) {
+        toast.error(`Login failed: ${error.message}`);
+      }
+    } catch (error) {
+      toast.error('Failed to sign in with test account');
+    } finally {
+      setIsSeedLoading(false);
     }
   };
 
@@ -75,6 +117,48 @@ export default function Auth() {
             </p>
           </CardContent>
         </Card>
+
+        {/* Dev-only test account login */}
+        {isDev && (
+          <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
+            <CardHeader className="space-y-1 pb-3">
+              <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+                <FlaskConical className="h-4 w-4" />
+                Dev Mode: Test Accounts
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Login as a seed account for testing (password: TestPassword123!)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Select value={selectedSeed} onValueChange={setSelectedSeed}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a test account..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {SEED_ACCOUNTS.map((account) => (
+                    <SelectItem key={account.email} value={account.email}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={handleSeedLogin}
+                variant="outline"
+                className="w-full gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                disabled={isSeedLoading || !selectedSeed}
+              >
+                {isSeedLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FlaskConical className="h-4 w-4" />
+                )}
+                Login as Test User
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
