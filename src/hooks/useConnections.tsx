@@ -39,8 +39,9 @@ export function useConnections() {
     // Firestore doesn't support OR queries across fields, so we need two queries
     const fetchConnections = async () => {
       try {
-        const requesterQuery = query(connectionsCollection, where('requester_id', '==', user.id));
-        const recipientQuery = query(connectionsCollection, where('recipient_id', '==', user.id));
+        const currentUserId = firebaseUser.uid;
+        const requesterQuery = query(connectionsCollection, where('requester_id', '==', currentUserId));
+        const recipientQuery = query(connectionsCollection, where('recipient_id', '==', currentUserId));
 
         const [requesterSnapshot, recipientSnapshot] = await Promise.all([
           getDocs(requesterQuery),
@@ -96,8 +97,9 @@ export function useConnections() {
     refetch: async () => {
       if (!user || !firebaseUser) return;
       
-      const requesterQuery = query(connectionsCollection, where('requester_id', '==', user.id));
-      const recipientQuery = query(connectionsCollection, where('recipient_id', '==', user.id));
+      const currentUserId = firebaseUser.uid;
+      const requesterQuery = query(connectionsCollection, where('requester_id', '==', currentUserId));
+      const recipientQuery = query(connectionsCollection, where('recipient_id', '==', currentUserId));
 
       const [requesterSnapshot, recipientSnapshot] = await Promise.all([
         getDocs(requesterQuery),
@@ -134,11 +136,14 @@ export function useSendConnectionRequest() {
     mutationFn: async ({ recipientId, message }: { recipientId: string; message?: string }) => {
       if (!user || !firebaseUser) throw new Error('Not authenticated');
       
+      // Use Firebase UID for Firestore operations (must match auth.uid in rules)
+      const currentUserId = firebaseUser.uid;
+      
       // Check if there's an existing connection request from them to us
       const existingQuery = query(
         connectionsCollection, 
         where('requester_id', '==', recipientId),
-        where('recipient_id', '==', user.id)
+        where('recipient_id', '==', currentUserId)
       );
       const existingSnapshot = await getDocs(existingQuery);
       
@@ -160,7 +165,7 @@ export function useSendConnectionRequest() {
       const connectionId = generateConnectionId();
       const newConnection: FirestoreConnection = {
         id: connectionId,
-        requester_id: user.id,
+        requester_id: currentUserId,
         recipient_id: recipientId,
         status: 'pending',
         message: message || null,
@@ -219,7 +224,8 @@ export function useRespondToConnection() {
         return { accepted: true, data: { ...connection, status: 'accepted' as const } };
       } else {
         // Decline: create/update dismiss record for the requester
-        const dismissId = `${connection.requester_id}_${user.id}`;
+        const currentUserId = firebaseUser.uid;
+        const dismissId = `${connection.requester_id}_${currentUserId}`;
         const dismissRef = getDismissedProfileRef(dismissId);
         const dismissSnap = await getDoc(dismissRef);
 
@@ -234,7 +240,7 @@ export function useRespondToConnection() {
           const newDismiss: FirestoreDismissedProfile = {
             id: dismissId,
             user_id: connection.requester_id,
-            dismissed_profile_id: user.id,
+            dismissed_profile_id: currentUserId,
             dismiss_count: 1,
             last_dismissed_at: new Date().toISOString(),
             created_at: new Date().toISOString(),
@@ -293,7 +299,7 @@ export function useRequestLinkedIn() {
       if (!connectionSnap.exists()) throw new Error('Connection not found');
 
       const connection = { ...connectionSnap.data(), id: connectionSnap.id } as FirestoreConnection;
-      const isRequester = connection.requester_id === user.id;
+      const isRequester = connection.requester_id === firebaseUser.uid;
       
       await setDoc(connectionRef, {
         ...connection,
@@ -315,12 +321,13 @@ export function useRequestLinkedIn() {
 
 export function useConnectionStatus(recipientId: string | undefined) {
   const { data: connections } = useConnections();
-  const { user } = useAuth();
+  const { firebaseUser } = useAuth();
 
-  if (!connections || !user || !recipientId) return null;
+  if (!connections || !firebaseUser || !recipientId) return null;
 
+  const currentUserId = firebaseUser.uid;
   return connections.find(
-    c => (c.requester_id === user.id && c.recipient_id === recipientId) ||
-         (c.recipient_id === user.id && c.requester_id === recipientId)
+    c => (c.requester_id === currentUserId && c.recipient_id === recipientId) ||
+         (c.recipient_id === currentUserId && c.requester_id === recipientId)
   );
 }
