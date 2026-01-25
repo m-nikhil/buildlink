@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { signInToFirebase, signOutFromFirebase, auth, onAuthStateChanged, doc, db, setDoc, type FirebaseUser } from '@/integrations/firebase/client';
+import { debug } from '@/lib/debug';
 
 const LINKEDIN_CLIENT_ID = '86jf34hvwupz2k';
 const LINKEDIN_SCOPES = 'openid profile email';
@@ -31,46 +32,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setDoc(profileRef, { 
         last_active: new Date().toISOString() 
       }, { merge: true });
-      console.log('[useAuth] Updated last_active');
+      debug.log('[useAuth] Updated last_active');
     } catch (e) {
-      console.error('[useAuth] Failed to update last_active:', e);
+      debug.error('[useAuth] Failed to update last_active:', e);
     }
   };
 
   // Helper to ensure Firebase is authenticated
   const ensureFirebaseAuth = async (currentSession: Session) => {
-    console.log('[useAuth] ensureFirebaseAuth called, currentUser:', auth.currentUser?.uid || 'null');
+    debug.log('[useAuth] ensureFirebaseAuth called, currentUser:', auth.currentUser?.uid || 'null');
     
-    // Check if already authenticated with Firebase
     if (auth.currentUser) {
-      console.log('[useAuth] Firebase already authenticated:', auth.currentUser.uid);
-      // Still update last_active even if already authenticated
+      debug.log('[useAuth] Firebase already authenticated:', auth.currentUser.uid);
       updateLastActive(currentSession.user.id);
       return;
     }
 
     try {
-      console.log('[useAuth] Requesting Firebase token from edge function...');
+      debug.log('[useAuth] Requesting Firebase token from edge function...');
       const { data, error } = await supabase.functions.invoke('firebase-token');
       
       if (error) {
-        console.error('[useAuth] Failed to get Firebase token:', error);
+        debug.error('[useAuth] Failed to get Firebase token:', error);
         return;
       }
 
-      console.log('[useAuth] Got Firebase token response:', { hasToken: !!data?.firebaseToken });
+      debug.log('[useAuth] Got Firebase token response:', { hasToken: !!data?.firebaseToken });
 
       if (data?.firebaseToken) {
-        console.log('[useAuth] Signing in to Firebase with custom token...');
+        debug.log('[useAuth] Signing in to Firebase with custom token...');
         const userCred = await signInToFirebase(data.firebaseToken);
-        console.log('[useAuth] Firebase signed in successfully:', userCred.user.uid);
-        // Update last_active after successful auth
+        debug.log('[useAuth] Firebase signed in successfully:', userCred.user.uid);
         updateLastActive(currentSession.user.id);
       } else {
-        console.error('[useAuth] No firebaseToken in response:', data);
+        debug.error('[useAuth] No firebaseToken in response:', data);
       }
     } catch (e) {
-      console.error('[useAuth] Firebase auth error:', e);
+      debug.error('[useAuth] Firebase auth error:', e);
     }
   };
 
@@ -78,18 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
       setFirebaseUser(fbUser);
-      console.log('[useAuth] Firebase user state changed:', fbUser?.uid || 'null');
+      debug.log('[useAuth] Firebase user state changed:', fbUser?.uid || 'null');
     });
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    console.log('[useAuth] Setting up auth listener...');
+    debug.log('[useAuth] Setting up auth listener...');
     
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[useAuth] Auth state changed:', event, session?.user?.id || 'no user');
+        debug.log('[useAuth] Auth state changed:', event, session?.user?.id || 'no user');
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -98,13 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => ensureFirebaseAuth(session), 0);
         }
         
-        // Sign out from Firebase if Supabase session ends
         if (!session && event === 'SIGNED_OUT') {
           try {
             await signOutFromFirebase();
-            console.log('[useAuth] Signed out from Firebase');
+            debug.log('[useAuth] Signed out from Firebase');
           } catch (e) {
-            console.error('[useAuth] Firebase sign out error:', e);
+            debug.error('[useAuth] Firebase sign out error:', e);
           }
         }
         
@@ -112,10 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    console.log('[useAuth] Checking for existing session...');
+    debug.log('[useAuth] Checking for existing session...');
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      console.log('[useAuth] getSession result:', session?.user?.id || 'no session', error || 'no error');
+      debug.log('[useAuth] getSession result:', session?.user?.id || 'no session', error || 'no error');
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -126,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setLoading(false);
     }).catch(err => {
-      console.error('[useAuth] getSession error:', err);
+      debug.error('[useAuth] getSession error:', err);
       setLoading(false);
     });
 
@@ -179,14 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Sign in to Firebase with the custom token
     if (data.firebaseToken) {
       try {
         await signInToFirebase(data.firebaseToken);
-        console.log('[useAuth] Signed in to Firebase successfully');
+        debug.log('[useAuth] Signed in to Firebase successfully');
       } catch (firebaseError) {
-        console.error('[useAuth] Firebase sign-in failed:', firebaseError);
-        // Continue even if Firebase auth fails - Supabase auth is primary
+        debug.error('[useAuth] Firebase sign-in failed:', firebaseError);
       }
     }
 
@@ -196,11 +189,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    // Sign out from both Supabase and Firebase
     try {
       await signOutFromFirebase();
     } catch (e) {
-      console.error('[useAuth] Firebase sign out error:', e);
+      debug.error('[useAuth] Firebase sign out error:', e);
     }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;

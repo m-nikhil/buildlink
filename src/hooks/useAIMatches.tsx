@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/profile';
+import { debug } from '@/lib/debug';
 
 export interface AIMatch {
   profile_id: string;
@@ -52,12 +53,12 @@ export function useAIMatches() {
       const { data, error } = await supabase.functions.invoke('ai-match');
       
       if (error) {
-        console.error('[useAIMatches] Edge function error:', error);
+        debug.error('[useAIMatches] Edge function error:', error);
         throw new Error(getUserFriendlyError(error, data));
       }
       
       if (data?.error) {
-        console.error('[useAIMatches] API error:', data.error);
+        debug.error('[useAIMatches] API error:', data.error);
         throw new Error(getUserFriendlyError(null, data));
       }
       

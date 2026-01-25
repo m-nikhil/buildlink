@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { debug } from '@/lib/debug';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function AuthCallback() {
         navigate('/profile/complete');
       })
       .catch((err) => {
-        console.error('LinkedIn callback error:', err);
+        debug.error('LinkedIn callback error:', err);
         setError(err.message || 'Authentication failed');
         setProcessing(false);
       });

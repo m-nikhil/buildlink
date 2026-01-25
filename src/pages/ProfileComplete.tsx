@@ -14,6 +14,7 @@ import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { Loader2, X, Sparkles, ArrowRight } from 'lucide-react';
 import { ExperienceLevel, Industry, ConnectionGoal, EXPERIENCE_LABELS, INDUSTRY_LABELS, GOAL_LABELS } from '@/types/profile';
 import { toast } from 'sonner';
+import { debug } from '@/lib/debug';
 
 export default function ProfileComplete() {
   const navigate = useNavigate();
@@ -195,7 +196,7 @@ export default function ProfileComplete() {
       toast.success('Profile completed! Welcome to BuildLink');
       navigate('/');
     } catch (error) {
-      console.error('Error completing profile:', error);
+      debug.error('Error completing profile:', error);
     }
   };
 

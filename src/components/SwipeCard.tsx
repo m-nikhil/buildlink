@@ -9,6 +9,7 @@ import { useConnectionStatus, useSendConnectionRequest } from '@/hooks/useConnec
 import { useProfile } from '@/hooks/useProfile';
 import { useConfetti } from '@/hooks/useConfetti';
 import { motion } from 'framer-motion';
+import { debug } from '@/lib/debug';
 
 interface SwipeCardProps {
   profile: Profile;
@@ -33,9 +34,8 @@ export function SwipeCard({ profile, score, reason, onLike, onPass }: SwipeCardP
 
   const handleLike = () => {
     setIsExiting('right');
-    // Use user_id (Firebase UID) for connection requests, not document id
     const recipientId = profile.user_id || profile.id;
-    console.log('[SwipeCard] Sending connection request to:', recipientId);
+    debug.log('[SwipeCard] Sending connection request to:', recipientId);
     sendRequest.mutate(
       { recipientId },
       {

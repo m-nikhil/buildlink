@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  db,
   messagesCollection,
   connectionsCollection,
   getMessageRef,
@@ -16,6 +15,7 @@ import { useAuth } from './useAuth';
 import { FirestoreMessage, FirestoreConnection } from '@/integrations/firebase/types';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
+import { debug } from '@/lib/debug';
 
 const MAX_MESSAGES = 50;
 
@@ -53,7 +53,7 @@ export function useMessages(connectionId: string | undefined) {
         setError(null);
       },
       (err) => {
-        console.error('Messages subscription error:', err);
+        debug.error('Messages subscription error:', err);
         setError(err);
         setIsLoading(false);
       }

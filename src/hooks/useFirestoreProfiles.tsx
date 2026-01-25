@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  db, 
   profilesCollection, 
   getProfileRef,
   getDocs, 
@@ -16,6 +15,7 @@ import {
 import { FirestoreProfile, ProfileFilters, PaginationCursor } from '@/integrations/firebase/types';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { debug } from '@/lib/debug';
 import { Timestamp, DocumentSnapshot, doc as firestoreDoc } from 'firebase/firestore';
 
 const PAGE_SIZE = 50;
@@ -138,7 +138,7 @@ export function useSyncProfileToFirestore() {
       queryClient.invalidateQueries({ queryKey: ['firestore-profiles'] });
     },
     onError: (error) => {
-      console.error('Failed to sync profile to Firestore:', error);
+      debug.error('Failed to sync profile to Firestore:', error);
       toast.error('Failed to sync profile');
     },
   });
@@ -166,7 +166,7 @@ export function useBatchSyncProfiles() {
       toast.success(`Synced ${profiles.length} profiles to Firestore`);
     },
     onError: (error) => {
-      console.error('Failed to batch sync profiles:', error);
+      debug.error('Failed to batch sync profiles:', error);
       toast.error('Failed to sync profiles');
     },
   });
