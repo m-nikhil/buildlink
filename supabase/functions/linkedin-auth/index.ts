@@ -149,6 +149,38 @@ serve(async (req) => {
       userId = newUser.user.id;
       isNewUser = true;
       console.log('New user created:', userId);
+
+      // Create initial profile with LinkedIn data including avatar
+      const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+        user_id: userId,
+        full_name: fullName,
+        email: email,
+        avatar_url: avatarUrl,
+      });
+
+      if (profileError) {
+        console.error('Profile creation failed:', profileError);
+        // Don't fail the auth flow, profile can be created later
+      } else {
+        console.log('Profile created with LinkedIn avatar');
+      }
+    }
+    
+    // For existing users, also update avatar if they don't have one
+    if (!isNewUser && avatarUrl) {
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('avatar_url')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (existingProfile && !existingProfile.avatar_url) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({ avatar_url: avatarUrl })
+          .eq('user_id', userId);
+        console.log('Updated existing profile with LinkedIn avatar');
+      }
     }
 
     // Generate a session for the user using magic link approach
