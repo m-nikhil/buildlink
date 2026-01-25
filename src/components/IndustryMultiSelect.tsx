@@ -24,6 +24,7 @@ interface IndustryMultiSelectProps {
   placeholder?: string;
   disabled?: boolean;
   maxDisplay?: number;
+  maxSelections?: number;
 }
 
 export function IndustryMultiSelect({ 
@@ -31,7 +32,8 @@ export function IndustryMultiSelect({
   onChange, 
   placeholder = 'Select industries...', 
   disabled = false,
-  maxDisplay = 3
+  maxDisplay = 3,
+  maxSelections = 3
 }: IndustryMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -63,10 +65,12 @@ export function IndustryMultiSelect({
   const toggleIndustry = (id: string) => {
     if (value.includes(id)) {
       onChange(value.filter(v => v !== id));
-    } else {
+    } else if (value.length < maxSelections) {
       onChange([...value, id]);
     }
   };
+
+  const isMaxReached = value.length >= maxSelections;
 
   const removeIndustry = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -118,21 +122,27 @@ export function IndustryMultiSelect({
             <CommandEmpty>No industry found.</CommandEmpty>
             {Object.entries(filteredGroups).map(([category, industries]) => (
               <CommandGroup key={category} heading={category}>
-                {industries.map((industry) => (
-                  <CommandItem
-                    key={industry.id}
-                    value={industry.id}
-                    onSelect={() => toggleIndustry(industry.id)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value.includes(industry.id) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {industry.name}
-                  </CommandItem>
-                ))}
+                {industries.map((industry) => {
+                  const isSelected = value.includes(industry.id);
+                  const isDisabled = isMaxReached && !isSelected;
+                  return (
+                    <CommandItem
+                      key={industry.id}
+                      value={industry.id}
+                      onSelect={() => toggleIndustry(industry.id)}
+                      disabled={isDisabled}
+                      className={cn(isDisabled && "opacity-50 cursor-not-allowed")}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {industry.name}
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             ))}
           </CommandList>
