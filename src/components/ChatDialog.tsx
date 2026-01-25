@@ -38,7 +38,7 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
   // Find the connection to check LinkedIn request status
   const connection = connections?.find(c => c.id === connectionId) as Connection | undefined;
   
-  const isRequester = connection?.requester_id === myProfile?.id;
+  const isRequester = connection?.requester_id === myProfile?.user_id;
   const myLinkedInRequested = isRequester 
     ? connection?.requester_linkedin_requested 
     : connection?.recipient_linkedin_requested;
