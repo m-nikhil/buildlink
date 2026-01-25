@@ -33,12 +33,12 @@ export default function Connections() {
 
   if (authLoading || !user) return null;
 
-  const getProfileById = (id: string): Profile | undefined => {
-    return allProfiles?.find(p => p.id === id);
+  const getProfileByUserId = (userId: string): Profile | undefined => {
+    return allProfiles?.find(p => p.user_id === userId);
   };
 
   const pendingSent = (connections?.filter(
-    c => c.requester_id === profile?.id && c.status === 'pending'
+    c => c.requester_id === user?.id && c.status === 'pending'
   ) ?? [])
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 50);
@@ -51,10 +51,10 @@ export default function Connections() {
   };
 
   const openChat = (connection: Connection) => {
-    const otherProfileId = connection.requester_id === profile?.id 
+    const otherUserId = connection.requester_id === user?.id 
       ? connection.recipient_id 
       : connection.requester_id;
-    const otherProfile = getProfileById(otherProfileId);
+    const otherProfile = getProfileByUserId(otherUserId);
     if (otherProfile) {
       setChatConnection({ connectionId: connection.id, profile: otherProfile });
     }
@@ -97,10 +97,10 @@ export default function Connections() {
             ) : accepted.length > 0 ? (
               <div className="space-y-3">
                 {accepted.map((connection) => {
-                  const otherProfileId = connection.requester_id === profile?.id 
+                  const otherUserId = connection.requester_id === user?.id 
                     ? connection.recipient_id 
                     : connection.requester_id;
-                  const otherProfile = getProfileById(otherProfileId);
+                  const otherProfile = getProfileByUserId(otherUserId);
                   if (!otherProfile) return null;
                   
                     return (
@@ -178,20 +178,22 @@ export default function Connections() {
           <TabsContent value="sent" className="mt-6">
             {pendingSent.length > 0 ? (
               <div className="space-y-3">
-                {pendingSent.map((connection) => (
+                {pendingSent.map((connection) => {
+                  const recipientProfile = getProfileByUserId(connection.recipient_id);
+                  return (
                   <div key={connection.id} className="flex items-center gap-4 p-4 rounded-lg border bg-card">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={getProfileById(connection.recipient_id)?.avatar_url ?? undefined} />
+                      <AvatarImage src={recipientProfile?.avatar_url ?? undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {getInitials(getProfileById(connection.recipient_id)?.full_name ?? null)}
+                        {getInitials(recipientProfile?.full_name ?? null)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">
-                        {getInitials(getProfileById(connection.recipient_id)?.full_name ?? null)}
+                        {recipientProfile?.full_name ?? 'Unknown'}
                       </p>
                       <p className="text-sm text-muted-foreground truncate">
-                        {getProfileById(connection.recipient_id)?.headline}
+                        {recipientProfile?.headline}
                       </p>
                     </div>
                     <Badge variant="outline" className="gap-1">
@@ -199,7 +201,8 @@ export default function Connections() {
                       Pending
                     </Badge>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <Card>
