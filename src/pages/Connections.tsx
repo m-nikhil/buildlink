@@ -103,6 +103,10 @@ export default function Connections() {
                   const otherProfile = getProfileByUserId(otherUserId);
                   if (!otherProfile) return null;
                   
+                  const connectedDate = connection.updated_at 
+                    ? new Date(connection.updated_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                    : null;
+                    
                     return (
                       <div 
                         key={connection.id} 
@@ -121,6 +125,9 @@ export default function Connections() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{getInitials(otherProfile.full_name)}</p>
                             <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
+                            {connectedDate && (
+                              <p className="text-xs text-muted-foreground">Connected {connectedDate}</p>
+                            )}
                           </div>
                         </div>
                         <Button 
