@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useConnections, useDisconnect } from '@/hooks/useConnections';
-import { useProfile, useProfiles } from '@/hooks/useProfile';
+import { useConnections, useDisconnect, Connection } from '@/hooks/useConnections';
+import { useProfile, useProfiles, Profile } from '@/hooks/useProfile';
 import { Header } from '@/components/Header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,8 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Clock, Users, MessageCircle, UserMinus } from 'lucide-react';
-import { Connection } from '@/types/profile';
-import { FirestoreProfile } from '@/integrations/firebase/types';
 import { ChatDialog } from '@/components/ChatDialog';
 
 export default function Connections() {
@@ -24,7 +22,7 @@ export default function Connections() {
   const disconnect = useDisconnect();
   const navigate = useNavigate();
   
-  const [chatConnection, setChatConnection] = useState<{ connectionId: string; profile: FirestoreProfile } | null>(null);
+  const [chatConnection, setChatConnection] = useState<{ connectionId: string; profile: Profile } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -34,14 +32,14 @@ export default function Connections() {
 
   if (authLoading || !user) return null;
 
-  const getProfileById = (userId: string): FirestoreProfile | undefined => {
+  const getProfileById = (userId: string): Profile | undefined => {
     return allProfiles?.find(p => p.user_id === userId);
   };
 
   const pendingSent = (connections?.filter(
     c => c.requester_id === user.id && c.status === 'pending'
   ) ?? [])
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
     .slice(0, 50);
 
   const accepted = connections?.filter(c => c.status === 'accepted') ?? [];

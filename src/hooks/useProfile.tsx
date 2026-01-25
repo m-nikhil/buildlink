@@ -1,21 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
-import { 
-  profilesCollection, 
-  getDocs,
-  setDoc,
-  doc,
-  db,
-  query, 
-  where,
-} from '@/integrations/firebase/client';
-import { FirestoreProfile } from '@/integrations/firebase/types';
+import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { debug } from '@/lib/debug';
 
-// Get current user's profile from Firestore
+export type Profile = Tables<'profiles'>;
+export type ProfileInsert = TablesInsert<'profiles'>;
+export type ProfileUpdate = TablesUpdate<'profiles'>;
+
+// Get current user's profile from Supabase
 export function useProfile() {
-  const { user, firebaseUser } = useAuth();
+  const { user } = useAuth();
 
   return useQuery({
     queryKey: ['profile', user?.id],
@@ -27,71 +23,79 @@ export function useProfile() {
       
       debug.log('[useProfile] Fetching profile for user:', user.id);
       
-      const q = query(profilesCollection, where('user_id', '==', user.id));
-      const snapshot = await getDocs(q);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
       
-      debug.log('[useProfile] Snapshot empty:', snapshot.empty, 'docs:', snapshot.docs.length);
-      
-      if (snapshot.empty) {
-        debug.log('[useProfile] No profile found');
-        return null;
+      if (error) {
+        debug.error('[useProfile] Error fetching profile:', error);
+        throw error;
       }
       
-      const docSnap = snapshot.docs[0];
-      const profile = { ...docSnap.data(), id: docSnap.id } as FirestoreProfile;
-      debug.log('[useProfile] Found profile:', profile);
-      return profile;
+      debug.log('[useProfile] Found profile:', data);
+      return data;
     },
     enabled: !!user,
   });
 }
 
-// Update current user's profile directly in Firestore
+// Update current user's profile
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
-  const { user, firebaseUser } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (updates: Partial<FirestoreProfile>) => {
+    mutationFn: async (updates: ProfileUpdate) => {
       if (!user) throw new Error('Not authenticated');
-      if (!firebaseUser) throw new Error('Firebase not authenticated - please sign in again');
       
-      // Get the existing profile to find the document ID
-      const q = query(profilesCollection, where('user_id', '==', user.id));
-      const snapshot = await getDocs(q);
+      // Check if profile exists
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
       
-      let docId: string;
-      let existingData: Partial<FirestoreProfile> = {};
-      
-      if (snapshot.empty) {
-        // Create new document with user_id as doc ID
-        docId = user.id;
-      } else {
-        docId = snapshot.docs[0].id;
-        existingData = snapshot.docs[0].data() as FirestoreProfile;
-      }
-      
-      const profileRef = doc(db, 'profiles', docId);
       const now = new Date().toISOString();
       
-      const profileData: Partial<FirestoreProfile> = {
-        ...existingData,
-        ...updates,
-        id: docId,
-        user_id: user.id,
-        email: user.email || existingData.email,
-        updated_at: now,
-        last_active: now, // Update activity timestamp
-        created_at: existingData.created_at || now,
-      };
-      
-      await setDoc(profileRef, profileData, { merge: true });
-      
-      return profileData as FirestoreProfile;
+      if (existing) {
+        // Update existing profile
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({
+            ...updates,
+            updated_at: now,
+            last_active: now,
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return data;
+      } else {
+        // Create new profile
+        const { data, error } = await supabase
+          .from('profiles')
+          .insert({
+            ...updates,
+            user_id: user.id,
+            email: user.email,
+            created_at: now,
+            updated_at: now,
+            last_active: now,
+          })
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['firestore-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
       toast.success('Profile updated successfully');
     },
     onError: (error) => {
@@ -101,33 +105,32 @@ export function useUpdateProfile() {
   });
 }
 
-// Create profile for new user directly in Firestore
+// Create profile for new user
 export function useCreateProfile() {
   const queryClient = useQueryClient();
-  const { user, firebaseUser } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (profileData: Partial<FirestoreProfile>) => {
+    mutationFn: async (profileData: ProfileInsert) => {
       if (!user) throw new Error('Not authenticated');
-      if (!firebaseUser) throw new Error('Firebase not authenticated - please sign in again');
       
-      const docId = user.id;
-      const profileRef = doc(db, 'profiles', docId);
       const now = new Date().toISOString();
       
-      const fullProfileData: Partial<FirestoreProfile> = {
-        ...profileData,
-        id: docId,
-        user_id: user.id,
-        email: user.email || profileData.email,
-        created_at: now,
-        updated_at: now,
-        last_active: now, // New profiles start at top of feed
-      };
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          ...profileData,
+          user_id: user.id,
+          email: user.email,
+          created_at: now,
+          updated_at: now,
+          last_active: now,
+        })
+        .select()
+        .single();
       
-      await setDoc(profileRef, fullProfileData, { merge: true });
-      
-      return fullProfileData as FirestoreProfile;
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -139,8 +142,7 @@ export function useCreateProfile() {
   });
 }
 
-
-// Fetch all profiles from Firestore with optional filters
+// Fetch all profiles with optional filters
 export function useProfiles(filters?: {
   experienceLevel?: string;
   industry?: string;
@@ -149,36 +151,34 @@ export function useProfiles(filters?: {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['firestore-profiles', filters],
+    queryKey: ['profiles', filters],
     queryFn: async () => {
-      // Build query with filters
-      let q = query(profilesCollection);
+      let query = supabase
+        .from('profiles')
+        .select('*')
+        .order('last_active', { ascending: false });
       
       if (filters?.experienceLevel) {
-        q = query(q, where('experience_level', '==', filters.experienceLevel));
+        query = query.eq('experience_level', filters.experienceLevel);
       }
       
       if (filters?.industry) {
-        q = query(q, where('industry', '==', filters.industry));
+        query = query.eq('industry', filters.industry);
       }
       
       if (filters?.lookingFor) {
-        q = query(q, where('looking_for', 'array-contains', filters.lookingFor));
+        query = query.contains('looking_for', [filters.lookingFor]);
       }
-      
-      const snapshot = await getDocs(q);
-      
-      let profiles = snapshot.docs.map(docSnap => ({
-        ...docSnap.data(),
-        id: docSnap.id,
-      })) as FirestoreProfile[];
       
       // Exclude current user
       if (user?.id) {
-        profiles = profiles.filter(p => p.user_id !== user.id);
+        query = query.neq('user_id', user.id);
       }
       
-      return profiles;
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data as Profile[];
     },
     enabled: !!user,
   });

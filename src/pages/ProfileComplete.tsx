@@ -115,9 +115,9 @@ export default function ProfileComplete() {
         bio: profile.bio || '',
         country: locationParts[1] || '',
         city: locationParts[0] || '',
-        experience_level: profile.experience_level || '',
-        industry: profile.industry || '',
-        looking_for: profile.looking_for || [],
+        experience_level: (profile.experience_level || '') as ExperienceLevel | '',
+        industry: (profile.industry || '') as Industry | '',
+        looking_for: (profile.looking_for || []) as ConnectionGoal[],
         skills: profile.skills || [],
         linkedin_url: profile.linkedin_url || '',
       });

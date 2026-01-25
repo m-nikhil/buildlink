@@ -1,39 +1,25 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  getDismissedProfileRef,
-  getDoc,
-  setDoc,
-  deleteDoc,
-} from '@/integrations/firebase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { FirestoreDismissedProfile } from '@/integrations/firebase/types';
+import { debug } from '@/lib/debug';
 
 export function useUndoDismiss() {
   const queryClient = useQueryClient();
-  const { user, firebaseUser } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (dismissedProfileId: string) => {
-      if (!user || !firebaseUser) throw new Error('Not authenticated');
+      if (!user) throw new Error('Not authenticated');
 
-      // Use composite ID for efficient lookup
-      const dismissId = `${user.id}_${dismissedProfileId}`;
-      const dismissRef = getDismissedProfileRef(dismissId);
-      const dismissSnap = await getDoc(dismissRef);
+      const { error } = await supabase
+        .from('dismissed_profiles')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('dismissed_profile_id', dismissedProfileId);
 
-      if (!dismissSnap.exists()) return; // Nothing to undo
-
-      const existing = dismissSnap.data() as FirestoreDismissedProfile;
-
-      if (existing.dismiss_count <= 1) {
-        // Delete the record entirely
-        await deleteDoc(dismissRef);
-      } else {
-        // Decrement dismiss count
-        await setDoc(dismissRef, {
-          ...existing,
-          dismiss_count: existing.dismiss_count - 1,
-        });
+      if (error) {
+        debug.error('[useUndoDismiss] Delete error:', error);
+        throw error;
       }
     },
     onSuccess: () => {
