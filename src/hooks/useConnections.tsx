@@ -38,7 +38,7 @@ export function useSendConnectionRequest() {
         .select('*')
         .eq('requester_id', recipientId)
         .eq('recipient_id', user.id)
-        .single();
+        .maybeSingle();
       
       // If they already liked us, update to accepted (mutual match!)
       if (existingConnection) {
