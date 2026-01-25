@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
@@ -21,9 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Save, Loader2, Plus, X, Camera } from 'lucide-react';
 import {
   ExperienceLevel,
-  ConnectionGoal,
   EXPERIENCE_LABELS,
-  GOAL_LABELS,
 } from '@/types/profile';
 import { IndustrySelect } from '@/components/IndustrySelect';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,7 +43,6 @@ export default function ProfileEdit() {
     linkedin_url: '',
     experience_level: '' as ExperienceLevel | '',
     industry: '' as string,
-    looking_for: [] as ConnectionGoal[],
     skills: [] as string[],
   });
   const [newSkill, setNewSkill] = useState('');
@@ -67,7 +63,6 @@ export default function ProfileEdit() {
         linkedin_url: profile.linkedin_url ?? '',
         experience_level: profile.experience_level ?? '',
         industry: profile.industry ?? '',
-        looking_for: profile.looking_for ?? [],
         skills: profile.skills ?? [],
       });
       setAvatarUrl(profile.avatar_url);
@@ -132,15 +127,6 @@ export default function ProfileEdit() {
       industry: formData.industry || null,
     });
     navigate('/');
-  };
-
-  const handleGoalToggle = (goal: ConnectionGoal) => {
-    setFormData(prev => ({
-      ...prev,
-      looking_for: prev.looking_for.includes(goal)
-        ? prev.looking_for.filter(g => g !== goal)
-        : [...prev.looking_for, goal],
-    }));
   };
 
   const addSkill = () => {
@@ -312,24 +298,6 @@ export default function ProfileEdit() {
                 </div>
               </div>
 
-              {/* Goals */}
-              <div className="space-y-3">
-                <Label>What are you looking for?</Label>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {Object.entries(GOAL_LABELS).map(([value, label]) => (
-                    <div key={value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`goal-${value}`}
-                        checked={formData.looking_for.includes(value as ConnectionGoal)}
-                        onCheckedChange={() => handleGoalToggle(value as ConnectionGoal)}
-                      />
-                      <Label htmlFor={`goal-${value}`} className="font-normal cursor-pointer">
-                        {label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
               {/* Skills */}
               <div className="space-y-3">

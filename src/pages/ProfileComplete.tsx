@@ -9,11 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { Loader2, X, Sparkles, ArrowRight } from 'lucide-react';
-import { ExperienceLevel, ConnectionGoal, EXPERIENCE_LABELS, GOAL_LABELS } from '@/types/profile';
+import { ExperienceLevel, EXPERIENCE_LABELS } from '@/types/profile';
 import { IndustrySelect } from '@/components/IndustrySelect';
 import { toast } from 'sonner';
 
@@ -32,7 +31,6 @@ export default function ProfileComplete() {
     city: '',
     experience_level: '' as ExperienceLevel | '',
     industry: '' as string,
-    looking_for: [] as ConnectionGoal[],
     skills: [] as string[],
     linkedin_url: '',
   });
@@ -118,21 +116,11 @@ export default function ProfileComplete() {
         city: locationParts[0] || '',
         experience_level: profile.experience_level || '',
         industry: profile.industry || '',
-        looking_for: profile.looking_for || [],
         skills: profile.skills || [],
         linkedin_url: profile.linkedin_url || '',
       });
     }
   }, [profile, navigate]);
-
-  const handleGoalToggle = (goal: ConnectionGoal) => {
-    setFormData(prev => ({
-      ...prev,
-      looking_for: prev.looking_for.includes(goal)
-        ? prev.looking_for.filter(g => g !== goal)
-        : [...prev.looking_for, goal]
-    }));
-  };
 
   const addSkill = () => {
     if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
@@ -172,10 +160,6 @@ export default function ProfileComplete() {
   };
 
   const handleSubmit = async () => {
-    if (formData.looking_for.length === 0) {
-      toast.error('Please select at least one connection goal');
-      return;
-    }
 
     try {
       const location = formData.city && formData.country 
@@ -189,7 +173,6 @@ export default function ProfileComplete() {
         location,
         experience_level: formData.experience_level as ExperienceLevel,
         industry: formData.industry || null,
-        looking_for: formData.looking_for,
         skills: formData.skills,
         linkedin_url: formData.linkedin_url,
       });
@@ -231,10 +214,10 @@ export default function ProfileComplete() {
 
         {/* Progress indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <div
               key={s}
-              className={`h-2 w-16 rounded-full transition-colors ${
+              className={`h-2 w-24 rounded-full transition-colors ${
                 s <= step ? 'bg-primary' : 'bg-muted-foreground/20'
               }`}
             />
@@ -246,12 +229,10 @@ export default function ProfileComplete() {
             <CardTitle>
               {step === 1 && 'Basic Information'}
               {step === 2 && 'Professional Details'}
-              {step === 3 && 'Connection Goals'}
             </CardTitle>
             <CardDescription>
               {step === 1 && 'Tell us about yourself'}
               {step === 2 && 'Share your professional background'}
-              {step === 3 && 'What are you looking to achieve?'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -402,35 +383,6 @@ export default function ProfileComplete() {
               </>
             )}
 
-            {/* Step 3: Connection Goals */}
-            {step === 3 && (
-              <>
-                <div className="space-y-4">
-                  <Label>What are you looking for? *</Label>
-                  <p className="text-sm text-muted-foreground">Select all that apply</p>
-                  <div className="grid gap-3">
-                    {Object.entries(GOAL_LABELS).map(([value, label]) => (
-                      <div
-                        key={value}
-                        className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-colors ${
-                          formData.looking_for.includes(value as ConnectionGoal)
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                        onClick={() => handleGoalToggle(value as ConnectionGoal)}
-                      >
-                        <Checkbox
-                          checked={formData.looking_for.includes(value as ConnectionGoal)}
-                          onCheckedChange={() => handleGoalToggle(value as ConnectionGoal)}
-                        />
-                        <span className="font-medium">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
             {/* Navigation buttons */}
             <div className="flex justify-between pt-4">
               {step > 1 ? (
@@ -441,7 +393,7 @@ export default function ProfileComplete() {
                 <div />
               )}
               
-              {step < 3 ? (
+              {step < 2 ? (
                 <Button onClick={handleNext} className="gap-2">
                   Next
                   <ArrowRight className="h-4 w-4" />
