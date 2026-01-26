@@ -63,8 +63,8 @@ serve(async (req) => {
     const accessToken = tokenData.access_token;
     console.log('Access token obtained');
 
-    // Fetch user profile from LinkedIn
-    console.log('Fetching LinkedIn profile...');
+    // Fetch user profile from LinkedIn userinfo endpoint (OIDC)
+    console.log('Fetching LinkedIn profile from /v2/userinfo...');
     const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -81,7 +81,23 @@ serve(async (req) => {
     }
 
     const profileData = await profileResponse.json();
-    console.log('LinkedIn profile fetched:', JSON.stringify(profileData));
+    console.log('LinkedIn /v2/userinfo response:', JSON.stringify(profileData));
+
+    // Also try /v2/me endpoint to see what it returns with current scopes
+    console.log('Trying LinkedIn /v2/me endpoint...');
+    const meResponse = await fetch('https://api.linkedin.com/v2/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+    
+    if (meResponse.ok) {
+      const meData = await meResponse.json();
+      console.log('LinkedIn /v2/me response:', JSON.stringify(meData));
+    } else {
+      const meError = await meResponse.text();
+      console.log('LinkedIn /v2/me failed (expected without r_basicprofile):', meError);
+    }
 
     const email = profileData.email;
     const fullName = profileData.name;
