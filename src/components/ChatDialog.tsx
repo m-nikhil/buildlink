@@ -107,7 +107,7 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
             <Button
               size="sm"
               onClick={() => setShowProfile(!showProfile)}
-              className="bg-[#0A66C2] hover:bg-[#004182] text-white"
+              className="bg-[#0A66C2] hover:bg-[#004182] text-white mr-6"
             >
               {showProfile ? 'Chat' : 'View Profile'}
             </Button>
