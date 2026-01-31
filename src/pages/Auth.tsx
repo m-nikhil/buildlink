@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Linkedin, Loader2, FlaskConical } from 'lucide-react';
+import { Linkedin, Loader2, FlaskConical, User, Mail, MapPin, Briefcase, Check } from 'lucide-react';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,6 +25,13 @@ const SEED_ACCOUNTS = [
 // Show test accounts in dev mode OR preview environments (not production)
 const isProduction = window.location.hostname === 'linkbuild.lovable.app';
 const isDev = import.meta.env.DEV || !isProduction;
+
+const LINKEDIN_PERMISSIONS = [
+  { icon: User, label: 'Name', description: 'Your full name from your profile' },
+  { icon: Mail, label: 'Email', description: 'Your primary email address' },
+  { icon: Briefcase, label: 'Headline', description: 'Your professional headline' },
+  { icon: MapPin, label: 'Location', description: 'Your profile location (if available)' },
+];
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -110,7 +117,31 @@ export default function Auth() {
               Sign in with your LinkedIn account to get started
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* LinkedIn Permissions Info */}
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <p className="text-sm font-medium text-foreground">
+                We'll import from your LinkedIn:
+              </p>
+              <div className="space-y-2">
+                {LINKEDIN_PERMISSIONS.map((perm) => (
+                  <div key={perm.label} className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <perm.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{perm.label}</p>
+                      <p className="text-xs text-muted-foreground">{perm.description}</p>
+                    </div>
+                    <Check className="h-4 w-4 text-primary" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground pt-2 border-t">
+                Profile picture is also imported when available
+              </p>
+            </div>
+
             <Button
               onClick={handleLinkedInLogin}
               className="w-full gap-2 h-12 text-base"
@@ -125,7 +156,7 @@ export default function Auth() {
               Continue with LinkedIn
             </Button>
 
-            <p className="mt-4 text-xs text-center text-muted-foreground">
+            <p className="text-xs text-center text-muted-foreground">
               By continuing, you agree to our Terms of Service and Privacy Policy
             </p>
           </CardContent>
