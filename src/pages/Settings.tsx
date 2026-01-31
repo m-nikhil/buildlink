@@ -8,24 +8,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, Loader2, RefreshCw, Linkedin } from 'lucide-react';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import {
-  ExperienceLevel,
   ConnectionGoal,
-  EXPERIENCE_LABELS,
   GOAL_LABELS,
 } from '@/types/profile';
 import { IndustryMultiSelect } from '@/components/IndustryMultiSelect';
-import { toast } from 'sonner';
+import { LocationSelect } from '@/components/LocationSelect';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signInWithLinkedIn } = useAuth();
-  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useProfile();
+  const { user, loading: authLoading } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
-  const [isSyncing, setIsSyncing] = useState(false);
 
-  const [preferredExperience, setPreferredExperience] = useState<ExperienceLevel[]>([]);
+  const [preferredLocation, setPreferredLocation] = useState<string>('');
   const [preferredIndustries, setPreferredIndustries] = useState<string[]>([]);
   const [preferredGoals, setPreferredGoals] = useState<ConnectionGoal[]>([]);
 
@@ -37,7 +34,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (profile) {
-      setPreferredExperience(profile.preferred_experience_levels || []);
+      setPreferredLocation(profile.location || '');
       setPreferredIndustries(profile.preferred_industries || []);
       setPreferredGoals(profile.preferred_goals || []);
     }
@@ -45,29 +42,10 @@ export default function Settings() {
 
   const handleSave = async () => {
     await updateProfile.mutateAsync({
-      preferred_experience_levels: preferredExperience,
+      location: preferredLocation || null,
       preferred_industries: preferredIndustries,
       preferred_goals: preferredGoals,
     });
-  };
-
-  const handleResyncLinkedIn = () => {
-    setIsSyncing(true);
-    toast.info('Redirecting to LinkedIn to resync your profile...');
-    // Re-trigger LinkedIn OAuth flow with forceSync to overwrite existing data
-    signInWithLinkedIn(true);
-  };
-
-  const toggleExperience = (level: ExperienceLevel) => {
-    setPreferredExperience(prev =>
-      prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]
-    );
-  };
-
-  const toggleIndustry = (industry: string) => {
-    setPreferredIndustries(prev =>
-      prev.includes(industry) ? prev.filter(i => i !== industry) : [...prev, industry]
-    );
   };
 
   const toggleGoal = (goal: ConnectionGoal) => {
@@ -103,23 +81,18 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
-          {/* Experience Level Preferences */}
+          {/* Location Preference */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Experience Level</CardTitle>
-              <CardDescription>What experience levels are you looking for?</CardDescription>
+              <CardTitle className="text-lg">Location</CardTitle>
+              <CardDescription>Where are you based?</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              {(Object.entries(EXPERIENCE_LABELS) as [ExperienceLevel, string][]).map(([value, label]) => (
-                <div key={value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`exp-${value}`}
-                    checked={preferredExperience.includes(value)}
-                    onCheckedChange={() => toggleExperience(value)}
-                  />
-                  <Label htmlFor={`exp-${value}`} className="cursor-pointer">{label}</Label>
-                </div>
-              ))}
+            <CardContent>
+              <LocationSelect
+                value={preferredLocation}
+                onChange={setPreferredLocation}
+                hideLabel
+              />
             </CardContent>
           </Card>
 
@@ -155,34 +128,6 @@ export default function Settings() {
                   <Label htmlFor={`goal-${value}`} className="cursor-pointer">{label}</Label>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-
-          {/* LinkedIn Sync */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Linkedin className="h-5 w-5" />
-                LinkedIn Profile
-              </CardTitle>
-              <CardDescription>
-                Resync your profile data from LinkedIn (photo, headline, profile URL)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={handleResyncLinkedIn}
-                variant="outline"
-                className="w-full gap-2"
-                disabled={isSyncing}
-              >
-                {isSyncing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                Resync from LinkedIn
-              </Button>
             </CardContent>
           </Card>
 
