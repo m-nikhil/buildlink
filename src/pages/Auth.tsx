@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Linkedin, Loader2, FlaskConical, User, Mail, MapPin, Briefcase, Check } from 'lucide-react';
+import { Linkedin, Loader2, FlaskConical, User, Mail, Briefcase, Check, ImageIcon } from 'lucide-react';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -30,7 +30,7 @@ const LINKEDIN_PERMISSIONS = [
   { icon: User, label: 'Name', description: 'Your full name from your profile' },
   { icon: Mail, label: 'Email', description: 'Your primary email address' },
   { icon: Briefcase, label: 'Headline', description: 'Your professional headline' },
-  { icon: MapPin, label: 'Location', description: 'Your profile location (if available)' },
+  { icon: ImageIcon, label: 'Photo', description: 'Your profile picture' },
 ];
 
 export default function Auth() {
@@ -137,9 +137,6 @@ export default function Auth() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground pt-2 border-t">
-                Profile picture is also imported when available
-              </p>
             </div>
 
             <Button
