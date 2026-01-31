@@ -309,49 +309,59 @@ export default function ProfileComplete() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Location - either from LinkedIn (locked) or manual selection */}
+                {profile?.location ? (
                   <div className="space-y-2">
-                    <Label>Country</Label>
-                    <Select
-                      value={formData.country}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, country: value, city: '' }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countries.map((country) => (
-                          <SelectItem key={country} value={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {profile?.location && (
-                      <p className="text-xs text-muted-foreground">LinkedIn location: {profile.location}</p>
-                    )}
+                    <Label>Location</Label>
+                    <Input
+                      value={profile.location}
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                    />
+                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
                   </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Country</Label>
+                      <Select
+                        value={formData.country}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, country: value, city: '' }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>City</Label>
-                    <Select
-                      value={formData.city}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
-                      disabled={!formData.country || availableCities.length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={formData.country ? "Select city" : "Select country first"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCities.map((city) => (
-                          <SelectItem key={city} value={city}>
-                            {city}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Label>City</Label>
+                      <Select
+                        value={formData.city}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
+                        disabled={!formData.country || availableCities.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={formData.country ? "Select city" : "Select country first"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCities.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
 
