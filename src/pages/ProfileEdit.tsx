@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -17,15 +18,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, Loader2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Plus, X, RefreshCw, Linkedin } from 'lucide-react';
 import {
   ExperienceLevel,
+  ConnectionGoal,
   EXPERIENCE_LABELS,
+  GOAL_LABELS,
 } from '@/types/profile';
 import { IndustrySelect } from '@/components/IndustrySelect';
+import { toast } from 'sonner';
 
 export default function ProfileEdit() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signInWithLinkedIn } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const navigate = useNavigate();
@@ -39,8 +43,10 @@ export default function ProfileEdit() {
     experience_level: '' as ExperienceLevel | '',
     industry: '' as string,
     skills: [] as string[],
+    looking_for: [] as ConnectionGoal[],
   });
   const [newSkill, setNewSkill] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -59,6 +65,7 @@ export default function ProfileEdit() {
         experience_level: profile.experience_level ?? '',
         industry: profile.industry ?? '',
         skills: profile.skills ?? [],
+        looking_for: (profile.looking_for ?? []) as ConnectionGoal[],
       });
     }
   }, [profile]);
@@ -74,8 +81,24 @@ export default function ProfileEdit() {
       ...formData,
       experience_level: formData.experience_level || null,
       industry: formData.industry || null,
+      looking_for: formData.looking_for.length > 0 ? formData.looking_for : null,
     });
     navigate('/');
+  };
+
+  const handleResyncLinkedIn = () => {
+    setIsSyncing(true);
+    toast.info('Redirecting to LinkedIn to resync your profile...');
+    signInWithLinkedIn(true);
+  };
+
+  const toggleGoal = (goal: ConnectionGoal) => {
+    setFormData(prev => ({
+      ...prev,
+      looking_for: prev.looking_for.includes(goal)
+        ? prev.looking_for.filter(g => g !== goal)
+        : [...prev.looking_for, goal],
+    }));
   };
 
   const addSkill = () => {
@@ -275,8 +298,53 @@ export default function ProfileEdit() {
                 )}
               </div>
 
+              {/* Looking For */}
+              <div className="space-y-3">
+                <Label>What are you looking for?</Label>
+                <p className="text-sm text-muted-foreground">Select all that apply</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {(Object.entries(GOAL_LABELS) as [ConnectionGoal, string][]).map(([value, label]) => (
+                    <div key={value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`goal-${value}`}
+                        checked={formData.looking_for.includes(value)}
+                        onCheckedChange={() => toggleGoal(value)}
+                      />
+                      <Label htmlFor={`goal-${value}`} className="cursor-pointer font-normal">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* LinkedIn Sync */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <Linkedin className="h-5 w-5 text-[#0A66C2]" />
+                  <Label>LinkedIn Profile</Label>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Resync your profile data from LinkedIn (photo, headline, location, profile URL)
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleResyncLinkedIn}
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={isSyncing}
+                >
+                  {isSyncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Resync from LinkedIn
+                </Button>
+              </div>
+
               {/* Submit */}
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => navigate('/')}>
                   Cancel
                 </Button>
