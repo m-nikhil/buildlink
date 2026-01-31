@@ -108,7 +108,7 @@ export default function ProfileEdit() {
   };
 
   const addSkill = () => {
-    if (newSkill.trim() && !formData.skills.includes(newSkill.trim()) && formData.skills.length < 10) {
+    if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
       setFormData(prev => ({
         ...prev,
         skills: [...prev.skills, newSkill.trim()],
@@ -285,24 +285,20 @@ export default function ProfileEdit() {
 
               {/* Skills */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Skills</Label>
-                  <span className="text-xs text-muted-foreground">{formData.skills.length}/10</span>
-                </div>
+                <Label>Skills</Label>
                 <div className="flex gap-2">
                   <Input
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
-                    placeholder={formData.skills.length >= 10 ? "Maximum 10 skills reached" : "Add a skill"}
+                    placeholder="Add a skill"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         addSkill();
                       }
                     }}
-                    disabled={formData.skills.length >= 10}
                   />
-                  <Button type="button" onClick={addSkill} variant="outline" size="icon" disabled={formData.skills.length >= 10}>
+                  <Button type="button" onClick={addSkill} variant="outline" size="icon">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>

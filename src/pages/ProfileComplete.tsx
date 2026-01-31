@@ -130,7 +130,7 @@ export default function ProfileComplete() {
   }, [profile, navigate]);
 
   const addSkill = () => {
-    if (newSkill.trim() && !formData.skills.includes(newSkill.trim()) && formData.skills.length < 10) {
+    if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
       setFormData(prev => ({
         ...prev,
         skills: [...prev.skills, newSkill.trim()]
@@ -429,19 +429,15 @@ export default function ProfileComplete() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Skills</Label>
-                    <span className="text-xs text-muted-foreground">{formData.skills.length}/10</span>
-                  </div>
+                  <Label>Skills</Label>
                   <div className="flex gap-2">
                     <Input
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
-                      placeholder={formData.skills.length >= 10 ? "Maximum 10 skills reached" : "Add a skill"}
+                      placeholder="Add a skill"
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                      disabled={formData.skills.length >= 10}
                     />
-                    <Button type="button" onClick={addSkill} variant="outline" disabled={formData.skills.length >= 10}>
+                    <Button type="button" onClick={addSkill} variant="outline">
                       Add
                     </Button>
                   </div>
