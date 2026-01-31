@@ -165,6 +165,20 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
             </div>
           )}
 
+          {/* Tags (Skills) */}
+          {profile.skills && profile.skills.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-muted-foreground text-center mb-2">Tags</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {profile.skills.map((skill) => (
+                  <Badge key={skill} variant="secondary" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           {!isConnected && (
             <div className="flex justify-center gap-6">
