@@ -124,66 +124,73 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
         {/* Profile View */}
         {showProfile ? (
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-4">
+            <div className="p-5 space-y-5">
 
-              {/* Location & Industry */}
-              <div className="flex flex-wrap justify-center gap-2">
-                {otherProfile.location && (
-                  <Badge variant="outline" className="gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {otherProfile.location}
-                  </Badge>
-                )}
-                {otherProfile.industry && (
-                  <Badge variant="outline" className="gap-1">
-                    <Briefcase className="h-3 w-3" />
-                    {INDUSTRY_LABELS[otherProfile.industry]}
-                  </Badge>
-                )}
-              </div>
-
-              {/* Experience & Goals */}
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Experience & Goals</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {otherProfile.experience_level && (
-                    <Badge variant="secondary">
-                      {EXPERIENCE_LABELS[otherProfile.experience_level]}
-                    </Badge>
+              {/* Location & Industry - Centered pills */}
+              {(otherProfile.location || otherProfile.industry) && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {otherProfile.location && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/80 text-sm">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{otherProfile.location}</span>
+                    </div>
                   )}
-                  {otherProfile.looking_for?.map((goal) => (
-                    <Badge key={goal} variant="secondary">
-                      {GOAL_LABELS[goal]}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Looking For Text */}
-              {otherProfile.looking_for_text && (
-                <div className="p-3 bg-accent/30 rounded-lg border border-accent/50">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Looking for</p>
-                  <p className="text-sm">{otherProfile.looking_for_text}</p>
+                  {otherProfile.industry && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/80 text-sm">
+                      <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{INDUSTRY_LABELS[otherProfile.industry] || otherProfile.industry}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Bio */}
-              {otherProfile.bio && (
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">About</p>
-                  <p className="text-sm">{otherProfile.bio}</p>
-                </div>
-              )}
-
-              {/* Skills */}
-              {otherProfile.skills && otherProfile.skills.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Skills</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {otherProfile.skills.map((skill) => (
-                      <Badge key={skill} variant="outline">
-                        {skill}
+              {/* Experience & Goals - Compact chips */}
+              {(otherProfile.experience_level || (otherProfile.looking_for && otherProfile.looking_for.length > 0)) && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Experience & Goals</p>
+                  <div className="flex flex-wrap gap-2">
+                    {otherProfile.experience_level && (
+                      <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-0">
+                        {EXPERIENCE_LABELS[otherProfile.experience_level]}
                       </Badge>
+                    )}
+                    {otherProfile.looking_for?.map((goal) => (
+                      <Badge key={goal} className="bg-secondary hover:bg-secondary/80 border-0">
+                        {GOAL_LABELS[goal]}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Looking For Text - Featured card */}
+              {otherProfile.looking_for_text && (
+                <div className="relative p-4 rounded-xl bg-gradient-to-br from-accent/40 to-accent/20 border border-accent/30">
+                  <p className="text-xs font-semibold text-primary/70 uppercase tracking-wide mb-2">Looking for</p>
+                  <p className="text-sm leading-relaxed">{otherProfile.looking_for_text}</p>
+                </div>
+              )}
+
+              {/* Bio - Clean card */}
+              {otherProfile.bio && (
+                <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">About</p>
+                  <p className="text-sm leading-relaxed text-foreground/90">{otherProfile.bio}</p>
+                </div>
+              )}
+
+              {/* Skills - Refined tags */}
+              {otherProfile.skills && otherProfile.skills.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Skills</p>
+                  <div className="flex flex-wrap gap-2">
+                    {otherProfile.skills.map((skill) => (
+                      <span 
+                        key={skill} 
+                        className="px-3 py-1 text-xs font-medium rounded-full bg-background border border-border/80 text-foreground/80"
+                      >
+                        {skill}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -191,7 +198,7 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
 
               {/* LinkedIn link */}
               {isMutualLinkedIn && otherProfile.linkedin_url && (
-                <Button asChild className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
+                <Button asChild className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white mt-2">
                   <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
                     <Linkedin className="h-4 w-4" />
                     View LinkedIn Profile
