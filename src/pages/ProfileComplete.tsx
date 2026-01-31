@@ -239,6 +239,35 @@ export default function ProfileComplete() {
             {/* Step 1: Basic Info */}
             {step === 1 && (
               <>
+                {/* Show LinkedIn-imported data */}
+                {(profile?.avatar_url || profile?.linkedin_url) && (
+                  <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 mb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      {profile?.avatar_url && (
+                        <img 
+                          src={profile.avatar_url} 
+                          alt="Profile" 
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-primary">Imported from LinkedIn</p>
+                        <p className="text-xs text-muted-foreground">Some fields are pre-filled and locked</p>
+                      </div>
+                    </div>
+                    {profile?.linkedin_url && (
+                      <a 
+                        href={profile.linkedin_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        {profile.linkedin_url}
+                      </a>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Full Name *</Label>
                   <Input
@@ -246,7 +275,12 @@ export default function ProfileComplete() {
                     value={formData.full_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                     placeholder="John Doe"
+                    disabled={!!profile?.full_name}
+                    className={profile?.full_name ? "bg-muted cursor-not-allowed" : ""}
                   />
+                  {profile?.full_name && (
+                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -257,6 +291,9 @@ export default function ProfileComplete() {
                     onChange={(e) => setFormData(prev => ({ ...prev, headline: e.target.value }))}
                     placeholder="Senior Software Engineer at Tech Co"
                   />
+                  {profile?.headline && (
+                    <p className="text-xs text-muted-foreground">Pre-filled from LinkedIn (editable)</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -288,6 +325,9 @@ export default function ProfileComplete() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {profile?.location && (
+                      <p className="text-xs text-muted-foreground">LinkedIn location: {profile.location}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
