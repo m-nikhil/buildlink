@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Plus, X, Linkedin, CheckCircle } from 'lucide-react';
+import { Loader2, Plus, X, Linkedin, CheckCircle, AlertTriangle } from 'lucide-react';
+import { LocationSelect } from '@/components/LocationSelect';
 import {
   ExperienceLevel,
   ConnectionGoal,
@@ -254,6 +255,10 @@ export default function ProfileComplete() {
                     placeholder="Tell others about yourself..."
                     rows={4}
                   />
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    Don't include your name or personal contact info
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -265,21 +270,18 @@ export default function ProfileComplete() {
                     placeholder="Describe what you're looking for in connections..."
                     rows={3}
                   />
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    Don't include your name or personal contact info
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
+                  <Label>Location</Label>
+                  <LocationSelect
                     value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="San Francisco, CA"
-                    disabled={!!profile?.location}
-                    className={profile?.location ? "bg-muted cursor-not-allowed" : ""}
+                    onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                   />
-                  {profile?.location && (
-                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
-                  )}
                 </div>
               </div>
 
