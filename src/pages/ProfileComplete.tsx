@@ -310,16 +310,6 @@ export default function ProfileComplete() {
                     </Select>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="linkedin_url">LinkedIn Profile URL</Label>
-                  <Input
-                    id="linkedin_url"
-                    value={formData.linkedin_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, linkedin_url: e.target.value }))}
-                    placeholder="https://linkedin.com/in/yourprofile"
-                  />
-                </div>
               </>
             )}
 

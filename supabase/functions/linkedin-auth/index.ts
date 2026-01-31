@@ -92,10 +92,12 @@ serve(async (req) => {
     });
     
     let vanityName: string | null = null;
+    let linkedinHeadline: string | null = null;
     if (meResponse.ok) {
       const meData = await meResponse.json();
       console.log('LinkedIn /v2/me response:', JSON.stringify(meData));
       vanityName = meData.vanityName || null;
+      linkedinHeadline = meData.headline?.localized?.en_US || meData.headline || null;
     } else {
       const meError = await meResponse.text();
       console.log('LinkedIn /v2/me failed:', meError);
@@ -169,28 +171,29 @@ serve(async (req) => {
       isNewUser = true;
       console.log('New user created:', userId);
 
-      // Create initial profile with LinkedIn data including avatar and URL
+      // Create initial profile with LinkedIn data including avatar, URL, and headline
       const { error: profileError } = await supabaseAdmin.from('profiles').insert({
         user_id: userId,
         full_name: fullName,
         email: email,
         avatar_url: avatarUrl,
         linkedin_url: linkedinUrl,
+        headline: linkedinHeadline,
       });
 
       if (profileError) {
         console.error('Profile creation failed:', profileError);
         // Don't fail the auth flow, profile can be created later
       } else {
-        console.log('Profile created with LinkedIn avatar');
+        console.log('Profile created with LinkedIn data (avatar, URL, headline)');
       }
     }
     
-    // For existing users, also update avatar and linkedin_url if they don't have them
+    // For existing users, also update avatar, linkedin_url, and headline if they don't have them
     if (!isNewUser) {
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
-        .select('avatar_url, linkedin_url')
+        .select('avatar_url, linkedin_url, headline')
         .eq('user_id', userId)
         .maybeSingle();
       
@@ -201,6 +204,9 @@ serve(async (req) => {
         }
         if (!existingProfile.linkedin_url && linkedinUrl) {
           updates.linkedin_url = linkedinUrl;
+        }
+        if (!existingProfile.headline && linkedinHeadline) {
+          updates.headline = linkedinHeadline;
         }
         if (Object.keys(updates).length > 0) {
           await supabaseAdmin
