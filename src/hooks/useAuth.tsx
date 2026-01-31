@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 const LINKEDIN_CLIENT_ID = '86jf34hvwupz2k';
-const LINKEDIN_SCOPES = 'openid profile email r_basicprofile';
+const LINKEDIN_SCOPES = 'openid profile email r_basicprofile r_liteprofile';
 
 interface AuthContextType {
   user: User | null;

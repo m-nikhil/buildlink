@@ -97,7 +97,26 @@ serve(async (req) => {
       const meData = await meResponse.json();
       console.log('LinkedIn /v2/me response:', JSON.stringify(meData));
       vanityName = meData.vanityName || null;
-      linkedinHeadline = meData.headline?.localized?.en_US || meData.headline || null;
+      
+      // Extract headline with localization support (r_liteprofile provides localized data)
+      if (meData.headline) {
+        if (typeof meData.headline === 'string') {
+          linkedinHeadline = meData.headline;
+        } else if (meData.headline.localized) {
+          // Get the preferred locale or fallback to en_US
+          const preferredLocale = meData.headline.preferredLocale;
+          const localeKey = preferredLocale 
+            ? `${preferredLocale.language}_${preferredLocale.country}`
+            : 'en_US';
+          linkedinHeadline = meData.headline.localized[localeKey] || 
+                            meData.headline.localized['en_US'] || 
+                            Object.values(meData.headline.localized)[0] as string || null;
+        }
+      }
+      // Also check localizedHeadline field (r_liteprofile format)
+      if (!linkedinHeadline && meData.localizedHeadline) {
+        linkedinHeadline = meData.localizedHeadline;
+      }
     } else {
       const meError = await meResponse.text();
       console.log('LinkedIn /v2/me failed:', meError);
