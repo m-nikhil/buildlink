@@ -124,6 +124,10 @@ export default function ProfileComplete() {
   };
 
   const addSkill = () => {
+    if (formData.skills.length >= 10) {
+      toast.error('Maximum 10 skills allowed');
+      return;
+    }
     if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
       setFormData(prev => ({
         ...prev,
@@ -320,12 +324,16 @@ export default function ProfileComplete() {
 
               {/* Skills */}
               <div className="space-y-3">
-                <Label>Skills</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Skills</Label>
+                  <span className="text-xs text-muted-foreground">{formData.skills.length}/10</span>
+                </div>
                 <div className="flex gap-2">
                   <Input
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     placeholder="Add a skill"
+                    disabled={formData.skills.length >= 10}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -333,7 +341,7 @@ export default function ProfileComplete() {
                       }
                     }}
                   />
-                  <Button type="button" onClick={addSkill} variant="outline" size="icon">
+                  <Button type="button" onClick={addSkill} variant="outline" size="icon" disabled={formData.skills.length >= 10}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
