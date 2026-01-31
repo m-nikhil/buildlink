@@ -308,26 +308,6 @@ export default function ProfileEdit() {
                 )}
               </div>
 
-              {/* Looking For */}
-              <div className="space-y-3">
-                <Label>What are you looking for?</Label>
-                <p className="text-sm text-muted-foreground">Select all that apply</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {(Object.entries(GOAL_LABELS) as [ConnectionGoal, string][]).map(([value, label]) => (
-                    <div key={value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`goal-${value}`}
-                        checked={formData.looking_for.includes(value)}
-                        onCheckedChange={() => toggleGoal(value)}
-                      />
-                      <Label htmlFor={`goal-${value}`} className="cursor-pointer font-normal">
-                        {label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* LinkedIn Sync */}
               <div className="space-y-3 pt-4 border-t">
                 <div className="flex items-center gap-2">
