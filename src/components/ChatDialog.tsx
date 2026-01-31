@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Send, Linkedin, AlertCircle, Check, MapPin, Briefcase, MessageCircle } from 'lucide-react';
+
+import { Send, Linkedin, AlertCircle, Check } from 'lucide-react';
 import { useMessages, useSendMessage, useMessageCount } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { useConnections, useRequestLinkedIn } from '@/hooks/useConnections';
-import { Profile, Connection, EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
+import { Profile, Connection } from '@/types/profile';
 import { cn } from '@/lib/utils';
 
 const MAX_MESSAGES = 50;
@@ -23,7 +23,6 @@ interface ChatDialogProps {
 
 export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: ChatDialogProps) {
   const [message, setMessage] = useState('');
-  const [showProfile, setShowProfile] = useState(false);
   const { data: messages, isLoading } = useMessages(connectionId);
   const { data: myProfile } = useProfile();
   const { data: connections } = useConnections();
@@ -103,113 +102,10 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 </>
               )}
             </div>
-            <Button 
-              variant={showProfile ? "default" : "outline"}
-              size="sm" 
-              className="gap-1.5 shrink-0 mr-6"
-              onClick={() => setShowProfile(!showProfile)}
-            >
-              {showProfile ? (
-                <>
-                  <MessageCircle className="h-4 w-4" />
-                  Chat
-                </>
-              ) : (
-                <>View Profile</>
-              )}
-            </Button>
           </DialogTitle>
         </DialogHeader>
 
-        {/* Profile View */}
-        {showProfile ? (
-          <ScrollArea className="flex-1">
-            <div className="p-5 space-y-5">
-
-              {/* Location & Industry - Centered pills */}
-              {(otherProfile.location || otherProfile.industry) && (
-                <div className="flex flex-wrap justify-center gap-2">
-                  {otherProfile.location && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/80 text-sm">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{otherProfile.location}</span>
-                    </div>
-                  )}
-                  {otherProfile.industry && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/80 text-sm">
-                      <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{INDUSTRY_LABELS[otherProfile.industry] || otherProfile.industry}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Experience & Goals - Compact chips */}
-              {(otherProfile.experience_level || (otherProfile.looking_for && otherProfile.looking_for.length > 0)) && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Experience & Goals</p>
-                  <div className="flex flex-wrap gap-2">
-                    {otherProfile.experience_level && (
-                      <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-0">
-                        {EXPERIENCE_LABELS[otherProfile.experience_level]}
-                      </Badge>
-                    )}
-                    {otherProfile.looking_for?.map((goal) => (
-                      <Badge key={goal} className="bg-secondary hover:bg-secondary/80 border-0">
-                        {GOAL_LABELS[goal]}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Looking For Text - Featured card */}
-              {otherProfile.looking_for_text && (
-                <div className="relative p-4 rounded-xl bg-gradient-to-br from-accent/40 to-accent/20 border border-accent/30">
-                  <p className="text-xs font-semibold text-primary/70 uppercase tracking-wide mb-2">Looking for</p>
-                  <p className="text-sm leading-relaxed">{otherProfile.looking_for_text}</p>
-                </div>
-              )}
-
-              {/* Bio - Clean card */}
-              {otherProfile.bio && (
-                <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">About</p>
-                  <p className="text-sm leading-relaxed text-foreground/90">{otherProfile.bio}</p>
-                </div>
-              )}
-
-              {/* Skills - Refined tags */}
-              {otherProfile.skills && otherProfile.skills.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Skills</p>
-                  <div className="flex flex-wrap gap-2">
-                    {otherProfile.skills.map((skill) => (
-                      <span 
-                        key={skill} 
-                        className="px-3 py-1 text-xs font-medium rounded-full bg-background border border-border/80 text-foreground/80"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* LinkedIn link */}
-              {isMutualLinkedIn && otherProfile.linkedin_url && (
-                <Button asChild className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white mt-2">
-                  <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                    <Linkedin className="h-4 w-4" />
-                    View LinkedIn Profile
-                  </a>
-                </Button>
-              )}
-            </div>
-          </ScrollArea>
-        ) : (
-          <>
-            {/* Chat View - Status indicators */}
+        {/* Chat View - Status indicators */}
         <div className="px-4 py-3 bg-muted/50 space-y-2">
           {/* Message count */}
           <div className="flex items-center justify-center text-sm">
@@ -400,8 +296,6 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
               </Button>
             </div>
           </div>
-        )}
-          </>
         )}
       </DialogContent>
     </Dialog>
