@@ -68,7 +68,7 @@ export default function Connections() {
       <main className="container px-4 py-8 max-w-3xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Connections</h1>
-          <p className="text-muted-foreground">Manage your professional network</p>
+          <p className="text-muted-foreground">Know before you connect</p>
         </div>
 
         <Tabs defaultValue="connections" className="w-full">
