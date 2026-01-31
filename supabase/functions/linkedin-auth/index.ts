@@ -91,18 +91,21 @@ serve(async (req) => {
       },
     });
     
+    let vanityName: string | null = null;
     if (meResponse.ok) {
       const meData = await meResponse.json();
       console.log('LinkedIn /v2/me response:', JSON.stringify(meData));
+      vanityName = meData.vanityName || null;
     } else {
       const meError = await meResponse.text();
-      console.log('LinkedIn /v2/me failed (expected without r_basicprofile):', meError);
+      console.log('LinkedIn /v2/me failed:', meError);
     }
 
     const email = profileData.email;
     const fullName = profileData.name;
     const avatarUrl = profileData.picture;
     const linkedinSub = profileData.sub;
+    const linkedinUrl = vanityName ? `https://linkedin.com/in/${vanityName}` : null;
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email not available from LinkedIn' }), {
@@ -166,12 +169,13 @@ serve(async (req) => {
       isNewUser = true;
       console.log('New user created:', userId);
 
-      // Create initial profile with LinkedIn data including avatar
+      // Create initial profile with LinkedIn data including avatar and URL
       const { error: profileError } = await supabaseAdmin.from('profiles').insert({
         user_id: userId,
         full_name: fullName,
         email: email,
         avatar_url: avatarUrl,
+        linkedin_url: linkedinUrl,
       });
 
       if (profileError) {
@@ -182,20 +186,29 @@ serve(async (req) => {
       }
     }
     
-    // For existing users, also update avatar if they don't have one
-    if (!isNewUser && avatarUrl) {
+    // For existing users, also update avatar and linkedin_url if they don't have them
+    if (!isNewUser) {
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
-        .select('avatar_url')
+        .select('avatar_url, linkedin_url')
         .eq('user_id', userId)
         .maybeSingle();
       
-      if (existingProfile && !existingProfile.avatar_url) {
-        await supabaseAdmin
-          .from('profiles')
-          .update({ avatar_url: avatarUrl })
-          .eq('user_id', userId);
-        console.log('Updated existing profile with LinkedIn avatar');
+      if (existingProfile) {
+        const updates: Record<string, string> = {};
+        if (!existingProfile.avatar_url && avatarUrl) {
+          updates.avatar_url = avatarUrl;
+        }
+        if (!existingProfile.linkedin_url && linkedinUrl) {
+          updates.linkedin_url = linkedinUrl;
+        }
+        if (Object.keys(updates).length > 0) {
+          await supabaseAdmin
+            .from('profiles')
+            .update(updates)
+            .eq('user_id', userId);
+          console.log('Updated existing profile with LinkedIn data:', Object.keys(updates));
+        }
       }
     }
 
