@@ -98,8 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    // Always clear local state, even if server signOut fails (e.g., stale session)
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      // Ignore errors - session might already be invalid
+      console.warn('Sign out error (ignored):', e);
+    }
+    // Force clear local state
+    setUser(null);
+    setSession(null);
   };
 
   return (
