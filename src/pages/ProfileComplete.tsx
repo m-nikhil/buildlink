@@ -415,14 +415,16 @@ export default function ProfileComplete() {
                   <Label>Industry *</Label>
                   <IndustrySelect
                     value={formData.industry || null}
-                    onChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}
+                    onChange={(value) => setFormData(prev => ({ ...prev, industry: value, industry_other: '' }))}
                     placeholder="Select your industry"
+                    disabled={!!formData.industry_other}
                   />
                   <Input
                     value={formData.industry_other}
-                    onChange={(e) => setFormData(prev => ({ ...prev, industry_other: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, industry_other: e.target.value, industry: '' }))}
                     placeholder="Or type your industry if not listed..."
                     className="mt-2"
+                    disabled={!!formData.industry}
                   />
                 </div>
 
