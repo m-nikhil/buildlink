@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
@@ -17,23 +17,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, Loader2, Plus, X, Camera } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Plus, X } from 'lucide-react';
 import {
   ExperienceLevel,
   EXPERIENCE_LABELS,
 } from '@/types/profile';
 import { IndustrySelect } from '@/components/IndustrySelect';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 export default function ProfileEdit() {
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -65,54 +60,8 @@ export default function ProfileEdit() {
         industry: profile.industry ?? '',
         skills: profile.skills ?? [],
       });
-      setAvatarUrl(profile.avatar_url);
     }
   }, [profile]);
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      return;
-    }
-
-    setIsUploadingAvatar(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Update profile with new avatar URL
-      await updateProfile.mutateAsync({ avatar_url: publicUrl });
-      setAvatarUrl(publicUrl);
-      toast.success('Profile picture updated!');
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload image');
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
 
   const getInitials = (name: string | null) => {
     if (!name) return 'U';
@@ -179,38 +128,19 @@ export default function ProfileEdit() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Avatar Upload */}
+              {/* Avatar Display */}
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                    <AvatarImage src={avatarUrl ?? undefined} alt={formData.full_name || 'User'} />
+                    <AvatarImage src={profile?.avatar_url ?? undefined} alt={formData.full_name || 'User'} />
                     <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
                       {getInitials(formData.full_name)}
                     </AvatarFallback>
                   </Avatar>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="secondary"
-                    className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingAvatar}
-                  >
-                    {isUploadingAvatar ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
                 </div>
-                <p className="text-sm text-muted-foreground">Click to upload a profile picture</p>
+                {profile?.avatar_url && (
+                  <p className="text-sm text-muted-foreground">Profile picture imported from LinkedIn</p>
+                )}
               </div>
 
               {/* Basic Info */}
@@ -222,7 +152,12 @@ export default function ProfileEdit() {
                     value={formData.full_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                     placeholder="John Doe"
+                    disabled={!!profile?.full_name}
+                    className={profile?.full_name ? "bg-muted cursor-not-allowed" : ""}
                   />
+                  {profile?.full_name && (
+                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -232,7 +167,12 @@ export default function ProfileEdit() {
                     value={formData.headline}
                     onChange={(e) => setFormData(prev => ({ ...prev, headline: e.target.value }))}
                     placeholder="Product Manager at Tech Co"
+                    disabled={!!profile?.headline}
+                    className={profile?.headline ? "bg-muted cursor-not-allowed" : ""}
                   />
+                  {profile?.headline && (
+                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
