@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RefreshCw, Linkedin } from 'lucide-react';
 import {
   ExperienceLevel,
   ConnectionGoal,
@@ -16,12 +16,14 @@ import {
   GOAL_LABELS,
 } from '@/types/profile';
 import { IndustryMultiSelect } from '@/components/IndustryMultiSelect';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { user, loading: authLoading, signInWithLinkedIn } = useAuth();
+  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useProfile();
   const updateProfile = useUpdateProfile();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [preferredExperience, setPreferredExperience] = useState<ExperienceLevel[]>([]);
   const [preferredIndustries, setPreferredIndustries] = useState<string[]>([]);
@@ -47,6 +49,13 @@ export default function Settings() {
       preferred_industries: preferredIndustries,
       preferred_goals: preferredGoals,
     });
+  };
+
+  const handleResyncLinkedIn = () => {
+    setIsSyncing(true);
+    toast.info('Redirecting to LinkedIn to resync your profile...');
+    // Re-trigger LinkedIn OAuth flow with forceSync to overwrite existing data
+    signInWithLinkedIn(true);
   };
 
   const toggleExperience = (level: ExperienceLevel) => {
@@ -146,6 +155,34 @@ export default function Settings() {
                   <Label htmlFor={`goal-${value}`} className="cursor-pointer">{label}</Label>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          {/* LinkedIn Sync */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Linkedin className="h-5 w-5" />
+                LinkedIn Profile
+              </CardTitle>
+              <CardDescription>
+                Resync your profile data from LinkedIn (photo, headline, profile URL)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={handleResyncLinkedIn}
+                variant="outline"
+                className="w-full gap-2"
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Resync from LinkedIn
+              </Button>
             </CardContent>
           </Card>
 

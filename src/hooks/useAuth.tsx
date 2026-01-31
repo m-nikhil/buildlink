@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithLinkedIn: () => void;
+  signInWithLinkedIn: (forceSync?: boolean) => void;
   handleLinkedInCallback: (code: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -41,13 +41,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithLinkedIn = () => {
+  const signInWithLinkedIn = (forceSync: boolean = false) => {
     const redirectUri = `${window.location.origin}/auth/callback`;
     const state = crypto.randomUUID();
     
     // Store state for CSRF protection
     sessionStorage.setItem('linkedin_oauth_state', state);
     sessionStorage.setItem('linkedin_redirect_uri', redirectUri);
+    if (forceSync) {
+      sessionStorage.setItem('linkedin_force_sync', 'true');
+    }
     
     const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
     authUrl.searchParams.set('response_type', 'code');
@@ -61,10 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleLinkedInCallback = async (code: string) => {
     const redirectUri = sessionStorage.getItem('linkedin_redirect_uri') || `${window.location.origin}/auth/callback`;
+    const forceSync = sessionStorage.getItem('linkedin_force_sync') === 'true';
     
     // Call our edge function to exchange the code
     const { data, error } = await supabase.functions.invoke('linkedin-auth', {
-      body: { code, redirectUri },
+      body: { code, redirectUri, forceSync },
     });
 
     if (error) {
@@ -90,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Clean up session storage
     sessionStorage.removeItem('linkedin_oauth_state');
     sessionStorage.removeItem('linkedin_redirect_uri');
+    sessionStorage.removeItem('linkedin_force_sync');
   };
 
   const signOut = async () => {

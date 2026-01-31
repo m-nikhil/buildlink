@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { code, redirectUri } = await req.json();
+    const { code, redirectUri, forceSync } = await req.json();
 
     if (!code) {
       return new Response(JSON.stringify({ error: 'Authorization code is required' }), {
@@ -189,7 +189,8 @@ serve(async (req) => {
       }
     }
     
-    // For existing users, also update avatar, linkedin_url, and headline if they don't have them
+    // For existing users, update avatar, linkedin_url, and headline
+    // If forceSync is true, always update. Otherwise only update if empty.
     if (!isNewUser) {
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
@@ -199,13 +200,13 @@ serve(async (req) => {
       
       if (existingProfile) {
         const updates: Record<string, string> = {};
-        if (!existingProfile.avatar_url && avatarUrl) {
+        if ((forceSync || !existingProfile.avatar_url) && avatarUrl) {
           updates.avatar_url = avatarUrl;
         }
-        if (!existingProfile.linkedin_url && linkedinUrl) {
+        if ((forceSync || !existingProfile.linkedin_url) && linkedinUrl) {
           updates.linkedin_url = linkedinUrl;
         }
-        if (!existingProfile.headline && linkedinHeadline) {
+        if ((forceSync || !existingProfile.headline) && linkedinHeadline) {
           updates.headline = linkedinHeadline;
         }
         if (Object.keys(updates).length > 0) {
@@ -213,7 +214,7 @@ serve(async (req) => {
             .from('profiles')
             .update(updates)
             .eq('user_id', userId);
-          console.log('Updated existing profile with LinkedIn data:', Object.keys(updates));
+          console.log('Updated existing profile with LinkedIn data:', Object.keys(updates), forceSync ? '(force sync)' : '');
         }
       }
     }
