@@ -193,7 +193,12 @@ export default function ProfileEdit() {
                     value={formData.location}
                     onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                     placeholder="San Francisco, CA"
+                    disabled={!!profile?.location}
+                    className={profile?.location ? "bg-muted cursor-not-allowed" : ""}
                   />
+                  {profile?.location && (
+                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
+                  )}
                 </div>
 
               </div>
