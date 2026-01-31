@@ -270,7 +270,6 @@ export default function ProfileEdit() {
                     value={formData.industry || null}
                     onChange={(value) => setFormData(prev => ({ ...prev, industry: value, industry_other: value === 'other' ? prev.industry_other : '' }))}
                     placeholder="Select industry"
-                    showOther
                   />
                   {formData.industry === 'other' && (
                     <Input

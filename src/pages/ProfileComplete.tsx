@@ -417,7 +417,6 @@ export default function ProfileComplete() {
                     value={formData.industry || null}
                     onChange={(value) => setFormData(prev => ({ ...prev, industry: value, industry_other: value === 'other' ? prev.industry_other : '' }))}
                     placeholder="Select your industry"
-                    showOther
                   />
                   {formData.industry === 'other' && (
                     <Input
