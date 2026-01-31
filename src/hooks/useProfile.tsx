@@ -38,9 +38,10 @@ export function useUpdateProfile() {
         .update(updates)
         .eq('user_id', user.id)
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
+      if (!data) throw new Error('Profile not found');
       return data as Profile;
     },
     onSuccess: () => {
