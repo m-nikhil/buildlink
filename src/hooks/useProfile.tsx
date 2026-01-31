@@ -33,15 +33,21 @@ export function useUpdateProfile() {
     mutationFn: async (updates: Partial<Profile>) => {
       if (!user) throw new Error('Not authenticated');
       
+      // Use upsert to create profile if it doesn't exist
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('user_id', user.id)
+        .upsert(
+          { 
+            user_id: user.id, 
+            email: user.email,
+            ...updates 
+          },
+          { onConflict: 'user_id' }
+        )
         .select()
-        .maybeSingle();
+        .single();
       
       if (error) throw error;
-      if (!data) throw new Error('Profile not found');
       return data as Profile;
     },
     onSuccess: () => {
