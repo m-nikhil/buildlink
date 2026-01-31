@@ -246,6 +246,14 @@ export default function ProfileComplete() {
                   )}
                 </div>
 
+              {/* Privacy Notice */}
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>Don't include your name or personal contact info. Your full name is hidden—only initials are shown to others.</span>
+                </p>
+              </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
@@ -255,10 +263,6 @@ export default function ProfileComplete() {
                     placeholder="Tell others about yourself..."
                     rows={4}
                   />
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3 text-amber-500" />
-                    Don't include your name or personal contact info
-                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -270,10 +274,6 @@ export default function ProfileComplete() {
                     placeholder="Describe what you're looking for in connections..."
                     rows={3}
                   />
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3 text-amber-500" />
-                    Don't include your name or personal contact info
-                  </p>
                 </div>
 
                 <div className="space-y-2">
