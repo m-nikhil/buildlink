@@ -33,10 +33,12 @@ export function LocationSelect({ value, onChange, disabled, hideLabel }: Locatio
   const [query, setQuery] = useState(value || '');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasSelected, setHasSelected] = useState(!!value);
 
   // Sync with external value changes
   useEffect(() => {
     setQuery(value || '');
+    setHasSelected(!!value);
   }, [value]);
 
   const searchLocations = useCallback(async (searchQuery: string) => {
@@ -83,25 +85,35 @@ export function LocationSelect({ value, onChange, disabled, hideLabel }: Locatio
       : suggestion.city;
     setQuery(locationString);
     onChange(locationString);
+    setHasSelected(true);
     setOpen(false);
     setSuggestions([]);
   };
 
   const handleInputChange = (newValue: string) => {
     setQuery(newValue);
+    setHasSelected(false); // Mark as not selected when user types
     if (!open && newValue.length >= 2) {
       setOpen(true);
     }
   };
 
   const handleBlur = () => {
-    // If user typed something but didn't select, use their input
+    // Only allow selected values - revert to previous valid value if not selected
     setTimeout(() => {
-      if (query && query !== value) {
-        onChange(query);
+      if (!hasSelected) {
+        // Revert to the last valid value
+        setQuery(value || '');
       }
       setOpen(false);
     }, 200);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    onChange('');
+    setHasSelected(false);
+    setSuggestions([]);
   };
 
   return (
