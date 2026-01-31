@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { Loader2, X, ArrowRight } from 'lucide-react';
@@ -190,37 +191,23 @@ export default function ProfileComplete() {
             {/* Step 1: Basic Info */}
             {step === 1 && (
               <>
-                {/* Show LinkedIn-imported data */}
-                {(profile?.avatar_url || profile?.linkedin_url) && (
-                  <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 mb-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      {profile?.avatar_url && (
-                        <img 
-                          src={profile.avatar_url} 
-                          alt="Profile" 
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-primary">Imported from LinkedIn</p>
-                        <p className="text-xs text-muted-foreground">Some fields are pre-filled and locked</p>
-                      </div>
-                    </div>
-                    {profile?.linkedin_url && (
-                      <a 
-                        href={profile.linkedin_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline"
-                      >
-                        {profile.linkedin_url}
-                      </a>
-                    )}
+                {/* Avatar Display - matching ProfileEdit */}
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                      <AvatarImage src={profile?.avatar_url ?? undefined} alt={formData.full_name || 'User'} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
+                        {formData.full_name ? formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
-                )}
+                  {profile?.avatar_url && (
+                    <p className="text-sm text-muted-foreground">Profile picture imported from LinkedIn</p>
+                  )}
+                </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name *</Label>
+                  <Label htmlFor="full_name">Full Name</Label>
                   <Input
                     id="full_name"
                     value={formData.full_name}
@@ -235,7 +222,7 @@ export default function ProfileComplete() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="headline">Professional Headline *</Label>
+                  <Label htmlFor="headline">Headline</Label>
                   <Input
                     id="headline"
                     value={formData.headline}
@@ -256,7 +243,7 @@ export default function ProfileComplete() {
                     value={formData.bio}
                     onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                     placeholder="Tell others about yourself..."
-                    rows={3}
+                    rows={4}
                   />
                 </div>
 
@@ -271,27 +258,20 @@ export default function ProfileComplete() {
                   />
                 </div>
 
-                {/* Location - either from LinkedIn (locked) or manual selection */}
-                {profile?.location ? (
-                  <div className="space-y-2">
-                    <Label>Location</Label>
-                    <Input
-                      value={profile.location}
-                      disabled
-                      className="bg-muted cursor-not-allowed"
-                    />
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="San Francisco, CA"
+                    disabled={!!profile?.location}
+                    className={profile?.location ? "bg-muted cursor-not-allowed" : ""}
+                  />
+                  {profile?.location && (
                     <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label>Location</Label>
-                    <Input
-                      value={formData.location}
-                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                      placeholder="e.g. San Francisco, CA"
-                    />
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             )}
 
