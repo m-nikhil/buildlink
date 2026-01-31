@@ -39,6 +39,9 @@ export function Header() {
         <Link to="/" className="flex items-center gap-2">
           <BuildLinkLogo size="sm" />
           <span className="text-xl font-bold tracking-tight">BuildLink</span>
+          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary rounded-full border border-primary/20">
+            Beta
+          </span>
         </Link>
 
         {user ? (
