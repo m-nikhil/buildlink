@@ -76,10 +76,9 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium leading-none">{profile?.full_name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{profile?.email}</p>
-                </div>
+              <div className="flex flex-col space-y-1 p-2">
+                <p className="text-sm font-medium leading-none">{profile?.full_name}</p>
+              </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/profile/edit')}>
                   <User className="mr-2 h-4 w-4" />
