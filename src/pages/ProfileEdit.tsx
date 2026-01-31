@@ -38,6 +38,7 @@ export default function ProfileEdit() {
     full_name: '',
     headline: '',
     bio: '',
+    looking_for_text: '',
     location: '',
     linkedin_url: '',
     experience_level: '' as ExperienceLevel | '',
@@ -60,6 +61,7 @@ export default function ProfileEdit() {
         full_name: profile.full_name ?? '',
         headline: profile.headline ?? '',
         bio: profile.bio ?? '',
+        looking_for_text: profile.looking_for_text ?? '',
         location: profile.location ?? '',
         linkedin_url: profile.linkedin_url ?? '',
         experience_level: profile.experience_level ?? '',
@@ -82,6 +84,7 @@ export default function ProfileEdit() {
       experience_level: formData.experience_level || null,
       industry: formData.industry || null,
       looking_for: formData.looking_for.length > 0 ? formData.looking_for : null,
+      looking_for_text: formData.looking_for_text || null,
     });
     navigate('/');
   };
@@ -206,6 +209,17 @@ export default function ProfileEdit() {
                     onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                     placeholder="Tell others about yourself..."
                     rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="looking_for_text">What are you looking for?</Label>
+                  <Textarea
+                    id="looking_for_text"
+                    value={formData.looking_for_text}
+                    onChange={(e) => setFormData(prev => ({ ...prev, looking_for_text: e.target.value }))}
+                    placeholder="Describe what you're looking for in connections..."
+                    rows={3}
                   />
                 </div>
 
