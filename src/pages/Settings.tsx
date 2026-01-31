@@ -76,7 +76,7 @@ export default function Settings() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Connection Preferences</h1>
-            <p className="text-muted-foreground">Set who you'd like to connect with</p>
+            <p className="text-muted-foreground">These preferences are considered in matching, not strict filters</p>
           </div>
         </div>
 
