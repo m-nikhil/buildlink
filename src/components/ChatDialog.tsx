@@ -5,13 +5,13 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-import { Send, Linkedin, AlertCircle, Check, User } from 'lucide-react';
+import { Send, Linkedin, AlertCircle, Check, ArrowLeft, MapPin, Briefcase } from 'lucide-react';
 import { useMessages, useSendMessage, useMessageCount } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { useConnections, useRequestLinkedIn } from '@/hooks/useConnections';
-import { Profile, Connection } from '@/types/profile';
+import { Profile, Connection, EXPERIENCE_LABELS, GOAL_LABELS, INDUSTRY_LABELS } from '@/types/profile';
 import { cn } from '@/lib/utils';
-import { ProfileSheet } from './ProfileSheet';
+import { Badge } from '@/components/ui/badge';
 
 const MAX_MESSAGES = 50;
 
@@ -24,7 +24,7 @@ interface ChatDialogProps {
 
 export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: ChatDialogProps) {
   const [message, setMessage] = useState('');
-  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const { data: messages, isLoading } = useMessages(connectionId);
   const { data: myProfile } = useProfile();
   const { data: connections } = useConnections();
@@ -85,6 +85,16 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
       <DialogContent className="sm:max-w-md h-[600px] flex flex-col p-0">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="flex items-center gap-3">
+            {showProfile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowProfile(false)}
+                className="h-8 w-8"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
             <Avatar className="h-10 w-10">
               <AvatarImage src={otherProfile.avatar_url ?? undefined} />
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -104,25 +114,109 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 </>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setProfileSheetOpen(true)}
-              title="View Profile"
-            >
-              <User className="h-5 w-5" />
-            </Button>
           </DialogTitle>
+          {!showProfile && (
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => setShowProfile(true)}
+              className="text-[#0A66C2] hover:text-[#004182] p-0 h-auto font-medium ml-14"
+            >
+              View Profile
+            </Button>
+          )}
         </DialogHeader>
 
-        <ProfileSheet
-          open={profileSheetOpen}
-          onOpenChange={setProfileSheetOpen}
-          profile={otherProfile}
-          showFullDetails={isMutualLinkedIn}
-        />
+        {/* Profile View */}
+        {showProfile ? (
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-6">
+              {/* Location & Industry */}
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                {otherProfile.location && (
+                  <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full">
+                    <MapPin className="h-4 w-4" />
+                    {otherProfile.location}
+                  </span>
+                )}
+                {otherProfile.industry && (
+                  <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full">
+                    <Briefcase className="h-4 w-4" />
+                    {INDUSTRY_LABELS[otherProfile.industry]}
+                  </span>
+                )}
+              </div>
 
-        {/* Chat View - Status indicators */}
+              {/* LinkedIn - only shown when mutually revealed */}
+              {isMutualLinkedIn && otherProfile.linkedin_url && (
+                <Button asChild className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
+                  <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
+                    <Linkedin className="h-5 w-5" />
+                    View LinkedIn Profile
+                  </a>
+                </Button>
+              )}
+
+              {/* Experience & Goals */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Experience & Goals</h4>
+                <div className="flex flex-wrap gap-2">
+                  {otherProfile.experience_level && (
+                    <Badge variant="secondary">
+                      {EXPERIENCE_LABELS[otherProfile.experience_level]}
+                    </Badge>
+                  )}
+                  {otherProfile.looking_for?.map((goal) => (
+                    <Badge key={goal} variant="outline">
+                      {GOAL_LABELS[goal]}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Looking For Text */}
+              {otherProfile.looking_for_text && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Looking For</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{otherProfile.looking_for_text}</p>
+                </div>
+              )}
+
+              {/* Bio */}
+              {otherProfile.bio && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">About</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{otherProfile.bio}</p>
+                </div>
+              )}
+
+              {/* Skills */}
+              {otherProfile.skills && otherProfile.skills.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Skills</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {otherProfile.skills.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Full name hint when not revealed */}
+              {!isMutualLinkedIn && (
+                <div className="text-center p-4 rounded-lg bg-muted/50 border border-dashed">
+                  <p className="text-sm text-muted-foreground">
+                    Request LinkedIn connection to see their full name and profile
+                  </p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        ) : (
+          <>
+            {/* Chat View - Status indicators */}
         <div className="px-4 py-3 bg-muted/50 space-y-2">
           {/* Message count */}
           <div className="flex items-center justify-center text-sm">
@@ -313,6 +407,8 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
               </Button>
             </div>
           </div>
+        )}
+          </>
         )}
       </DialogContent>
     </Dialog>
