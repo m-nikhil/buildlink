@@ -116,20 +116,20 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
 
         {/* Profile View */}
         {showProfile ? (
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-5">
+          <ScrollArea className="flex-1 p-5">
+            <div className="space-y-6">
               {/* Location & Industry */}
               {(otherProfile.location || otherProfile.industry) && (
                 <div className="flex flex-wrap items-center gap-2">
                   {otherProfile.location && (
-                    <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full text-sm">
-                      <MapPin className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-2 bg-secondary/60 px-4 py-2 rounded-full text-sm font-medium text-foreground border border-border/50">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
                       {otherProfile.location}
                     </span>
                   )}
                   {otherProfile.industry && (
-                    <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full text-sm">
-                      <Briefcase className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-2 bg-secondary/60 px-4 py-2 rounded-full text-sm font-medium text-foreground border border-border/50">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
                       {INDUSTRY_LABELS[otherProfile.industry]}
                     </span>
                   )}
@@ -138,16 +138,16 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
 
               {/* Experience & Goals */}
               {(otherProfile.experience_level || (otherProfile.looking_for && otherProfile.looking_for.length > 0)) && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">Experience & Goals</h4>
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-foreground tracking-wide">Experience & Goals</h4>
                   <div className="flex flex-wrap gap-2">
                     {otherProfile.experience_level && (
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="px-3 py-1.5 text-sm font-medium bg-background hover:bg-secondary/50 transition-colors">
                         {EXPERIENCE_LABELS[otherProfile.experience_level]}
                       </Badge>
                     )}
                     {otherProfile.looking_for?.map((goal) => (
-                      <Badge key={goal} variant="outline">
+                      <Badge key={goal} variant="outline" className="px-3 py-1.5 text-sm font-medium bg-background hover:bg-secondary/50 transition-colors">
                         {GOAL_LABELS[goal]}
                       </Badge>
                     ))}
@@ -157,27 +157,27 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
 
               {/* Looking For Text */}
               {otherProfile.looking_for_text && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">Looking For</h4>
+                <div className="space-y-2.5 p-4 rounded-xl bg-secondary/30 border border-border/30">
+                  <h4 className="text-sm font-semibold text-foreground tracking-wide">Looking For</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">{otherProfile.looking_for_text}</p>
                 </div>
               )}
 
               {/* Bio / About */}
               {otherProfile.bio && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">About</h4>
+                <div className="space-y-2.5 p-4 rounded-xl bg-secondary/30 border border-border/30">
+                  <h4 className="text-sm font-semibold text-foreground tracking-wide">About</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">{otherProfile.bio}</p>
                 </div>
               )}
 
-              {/* Tags (formerly Skills) */}
+              {/* Tags */}
               {otherProfile.skills && otherProfile.skills.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">Tags</h4>
-                  <div className="flex flex-wrap gap-1.5">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-foreground tracking-wide">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
                     {otherProfile.skills.map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-xs">
+                      <Badge key={skill} variant="secondary" className="px-3 py-1.5 text-xs font-medium bg-secondary hover:bg-secondary/80 transition-colors">
                         {skill}
                       </Badge>
                     ))}
