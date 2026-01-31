@@ -163,6 +163,7 @@ export type Database = {
           preferred_experience_levels: string[] | null
           preferred_goals: string[] | null
           preferred_industries: string[] | null
+          preferred_locations: string[] | null
           skills: string[] | null
           updated_at: string | null
           user_id: string
@@ -190,6 +191,7 @@ export type Database = {
           preferred_experience_levels?: string[] | null
           preferred_goals?: string[] | null
           preferred_industries?: string[] | null
+          preferred_locations?: string[] | null
           skills?: string[] | null
           updated_at?: string | null
           user_id: string
@@ -217,6 +219,7 @@ export type Database = {
           preferred_experience_levels?: string[] | null
           preferred_goals?: string[] | null
           preferred_industries?: string[] | null
+          preferred_locations?: string[] | null
           skills?: string[] | null
           updated_at?: string | null
           user_id?: string
