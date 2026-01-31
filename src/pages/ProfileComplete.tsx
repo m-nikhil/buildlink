@@ -33,6 +33,7 @@ export default function ProfileComplete() {
     city: '',
     experience_level: '' as ExperienceLevel | '',
     industry: '' as string,
+    industry_other: '',
     skills: [] as string[],
     linkedin_url: '',
     looking_for: [] as ConnectionGoal[],
@@ -120,6 +121,7 @@ export default function ProfileComplete() {
         city: locationParts[0] || '',
         experience_level: profile.experience_level || '',
         industry: profile.industry || '',
+        industry_other: profile.industry_other || '',
         skills: profile.skills || [],
         linkedin_url: profile.linkedin_url || '',
         looking_for: (profile.looking_for || []) as ConnectionGoal[],
@@ -188,6 +190,7 @@ export default function ProfileComplete() {
         location,
         experience_level: formData.experience_level as ExperienceLevel,
         industry: formData.industry || null,
+        industry_other: formData.industry_other || null,
         skills: formData.skills,
         linkedin_url: formData.linkedin_url,
         looking_for: formData.looking_for.length > 0 ? formData.looking_for : null,
@@ -414,6 +417,12 @@ export default function ProfileComplete() {
                     value={formData.industry || null}
                     onChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}
                     placeholder="Select your industry"
+                  />
+                  <Input
+                    value={formData.industry_other}
+                    onChange={(e) => setFormData(prev => ({ ...prev, industry_other: e.target.value }))}
+                    placeholder="Or type your industry if not listed..."
+                    className="mt-2"
                   />
                 </div>
 

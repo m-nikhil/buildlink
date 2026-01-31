@@ -43,6 +43,7 @@ export default function ProfileEdit() {
     linkedin_url: '',
     experience_level: '' as ExperienceLevel | '',
     industry: '' as string,
+    industry_other: '',
     skills: [] as string[],
     looking_for: [] as ConnectionGoal[],
   });
@@ -66,6 +67,7 @@ export default function ProfileEdit() {
         linkedin_url: profile.linkedin_url ?? '',
         experience_level: profile.experience_level ?? '',
         industry: profile.industry ?? '',
+        industry_other: profile.industry_other ?? '',
         skills: profile.skills ?? [],
         looking_for: (profile.looking_for ?? []) as ConnectionGoal[],
       });
@@ -83,6 +85,7 @@ export default function ProfileEdit() {
       ...formData,
       experience_level: formData.experience_level || null,
       industry: formData.industry || null,
+      industry_other: formData.industry_other || null,
       looking_for: formData.looking_for.length > 0 ? formData.looking_for : null,
       looking_for_text: formData.looking_for_text || null,
     });
@@ -267,6 +270,12 @@ export default function ProfileEdit() {
                     value={formData.industry || null}
                     onChange={(value) => setFormData(prev => ({ ...prev, industry: value }))}
                     placeholder="Select industry"
+                  />
+                  <Input
+                    value={formData.industry_other}
+                    onChange={(e) => setFormData(prev => ({ ...prev, industry_other: e.target.value }))}
+                    placeholder="Or type your industry if not listed..."
+                    className="mt-2"
                   />
                 </div>
               </div>
