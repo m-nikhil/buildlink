@@ -138,6 +138,29 @@ serve(async (req) => {
       console.log('LinkedIn /v2/me failed:', meError);
     }
 
+    // Try to fetch skills with r_fullprofile scope
+    let linkedinSkills: string[] = [];
+    console.log('Trying LinkedIn /v2/me/skills endpoint...');
+    const skillsResponse = await fetch('https://api.linkedin.com/v2/me/skills?projection=(elements*(id,name))', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+    
+    if (skillsResponse.ok) {
+      const skillsData = await skillsResponse.json();
+      console.log('LinkedIn /v2/me/skills response:', JSON.stringify(skillsData));
+      if (skillsData.elements && Array.isArray(skillsData.elements)) {
+        linkedinSkills = skillsData.elements
+          .map((s: { name?: string }) => s.name)
+          .filter((name: string | undefined): name is string => !!name);
+      }
+      console.log('Extracted skills:', linkedinSkills);
+    } else {
+      const skillsError = await skillsResponse.text();
+      console.log('LinkedIn /v2/me/skills failed:', skillsError);
+    }
+
     const email = profileData.email;
     const fullName = profileData.name;
     const avatarUrl = profileData.picture;
@@ -206,7 +229,7 @@ serve(async (req) => {
       isNewUser = true;
       console.log('New user created:', userId);
 
-      // Create initial profile with LinkedIn data including avatar, URL, headline, and location
+      // Create initial profile with LinkedIn data including avatar, URL, headline, location, and skills
       const { error: profileError } = await supabaseAdmin.from('profiles').insert({
         user_id: userId,
         full_name: fullName,
@@ -215,27 +238,28 @@ serve(async (req) => {
         linkedin_url: linkedinUrl,
         headline: linkedinHeadline,
         location: linkedinLocation,
+        skills: linkedinSkills.length > 0 ? linkedinSkills : null,
       });
 
       if (profileError) {
         console.error('Profile creation failed:', profileError);
         // Don't fail the auth flow, profile can be created later
       } else {
-        console.log('Profile created with LinkedIn data (avatar, URL, headline, location)');
+        console.log('Profile created with LinkedIn data (avatar, URL, headline, location, skills)');
       }
     }
     
-    // For existing users, update avatar, linkedin_url, and headline
+    // For existing users, update avatar, linkedin_url, headline, location, and skills
     // If forceSync is true, always update. Otherwise only update if empty.
     if (!isNewUser) {
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
-        .select('avatar_url, linkedin_url, headline, location')
+        .select('avatar_url, linkedin_url, headline, location, skills')
         .eq('user_id', userId)
         .maybeSingle();
       
       if (existingProfile) {
-        const updates: Record<string, string> = {};
+        const updates: Record<string, string | string[]> = {};
         if ((forceSync || !existingProfile.avatar_url) && avatarUrl) {
           updates.avatar_url = avatarUrl;
         }
@@ -247,6 +271,9 @@ serve(async (req) => {
         }
         if ((forceSync || !existingProfile.location) && linkedinLocation) {
           updates.location = linkedinLocation;
+        }
+        if ((forceSync || !existingProfile.skills || existingProfile.skills.length === 0) && linkedinSkills.length > 0) {
+          updates.skills = linkedinSkills;
         }
         if (Object.keys(updates).length > 0) {
           await supabaseAdmin
