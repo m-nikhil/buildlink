@@ -98,16 +98,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    // Always clear local state, even if server signOut fails (e.g., stale session)
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      // Ignore errors - session might already be invalid
-      console.warn('Sign out error (ignored):', e);
-    }
-    // Force clear local state
+    // Clear local state first
     setUser(null);
     setSession(null);
+    
+    // Try server signOut, ignore errors (session might already be invalid)
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      console.warn('Sign out error (ignored):', e);
+    }
+    
+    // Force clear any remaining Supabase auth data from localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('sb-') && key.includes('-auth-token')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Reload to ensure clean state
+    window.location.href = '/auth';
   };
 
   return (
