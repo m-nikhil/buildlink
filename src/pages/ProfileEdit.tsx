@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -286,17 +286,20 @@ export default function ProfileEdit() {
               </div>
 
 
-              {/* Skills */}
+              {/* Tags */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label>Skills</Label>
+                  <Label>Tags</Label>
                   <span className="text-xs text-muted-foreground">{formData.skills.length}/10</span>
                 </div>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Add tags that define you — skills, expertise, interests, or what you're here for
+                </p>
                 <div className="flex gap-2">
                   <Input
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
-                    placeholder="Add a skill"
+                    placeholder="e.g. Product Strategy, AI/ML, Seeking Co-founder"
                     disabled={formData.skills.length >= 10}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -312,19 +315,20 @@ export default function ProfileEdit() {
                 {formData.skills.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {formData.skills.map((skill) => (
-                      <span
+                      <Badge
                         key={skill}
-                        className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm"
+                        variant="secondary"
+                        className="text-sm py-1.5 px-3 gap-1.5"
                       >
                         {skill}
                         <button
                           type="button"
                           onClick={() => removeSkill(skill)}
-                          className="text-muted-foreground hover:text-foreground"
+                          className="text-muted-foreground hover:text-foreground ml-0.5"
                         >
                           <X className="h-3 w-3" />
                         </button>
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 )}
