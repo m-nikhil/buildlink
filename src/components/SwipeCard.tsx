@@ -140,14 +140,12 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
             </div>
           )}
 
-          {/* AI Match Reason */}
-          {reason && (
-            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-4">
-              <p className="text-sm text-center text-muted-foreground">
-                <span className="font-medium text-primary">Why connect:</span> {reason}
-              </p>
-            </div>
-          )}
+          {/* AI Match Reason - always show with fallback */}
+          <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-4">
+            <p className="text-sm text-center text-muted-foreground">
+              <span className="font-medium text-primary">Why connect:</span> {reason || 'Based on your professional interests and goals, this could be a great connection.'}
+            </p>
+          </div>
 
           {/* Looking For Text */}
           {profile.looking_for_text && (
