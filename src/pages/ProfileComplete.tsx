@@ -28,6 +28,7 @@ export default function ProfileComplete() {
     full_name: '',
     headline: '',
     bio: '',
+    looking_for_text: '',
     country: '',
     city: '',
     experience_level: '' as ExperienceLevel | '',
@@ -114,6 +115,7 @@ export default function ProfileComplete() {
         full_name: profile.full_name || '',
         headline: profile.headline || '',
         bio: profile.bio || '',
+        looking_for_text: profile.looking_for_text || '',
         country: locationParts[1] || '',
         city: locationParts[0] || '',
         experience_level: profile.experience_level || '',
@@ -182,6 +184,7 @@ export default function ProfileComplete() {
         full_name: formData.full_name,
         headline: formData.headline,
         bio: formData.bio,
+        looking_for_text: formData.looking_for_text || null,
         location,
         experience_level: formData.experience_level as ExperienceLevel,
         industry: formData.industry || null,
@@ -312,6 +315,17 @@ export default function ProfileComplete() {
                     value={formData.bio}
                     onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                     placeholder="Tell others about yourself..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="looking_for_text">What are you looking for?</Label>
+                  <Textarea
+                    id="looking_for_text"
+                    value={formData.looking_for_text}
+                    onChange={(e) => setFormData(prev => ({ ...prev, looking_for_text: e.target.value }))}
+                    placeholder="Describe what you're looking for in connections..."
                     rows={3}
                   />
                 </div>
