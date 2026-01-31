@@ -85,16 +85,6 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
       <DialogContent className="sm:max-w-md h-[600px] flex flex-col p-0">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="flex items-center gap-3">
-            {showProfile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowProfile(false)}
-                className="h-8 w-8"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
             <Avatar className="h-10 w-10">
               <AvatarImage src={otherProfile.avatar_url ?? undefined} />
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -114,17 +104,14 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 </>
               )}
             </div>
-          </DialogTitle>
-          {!showProfile && (
             <Button
-              variant="link"
               size="sm"
-              onClick={() => setShowProfile(true)}
-              className="text-[#0A66C2] hover:text-[#004182] p-0 h-auto font-medium ml-14"
+              onClick={() => setShowProfile(!showProfile)}
+              className="bg-[#0A66C2] hover:bg-[#004182] text-white"
             >
-              View Profile
+              {showProfile ? 'Chat' : 'View Profile'}
             </Button>
-          )}
+          </DialogTitle>
         </DialogHeader>
 
         {/* Profile View */}
