@@ -45,9 +45,11 @@ export default function Connections() {
 
   const accepted = connections?.filter(c => c.status === 'accepted') ?? [];
 
-  const getInitials = (name: string | null) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  // Use stored initials from profile, fallback to computing from name
+  const getDisplayInitials = (profile: Profile | undefined) => {
+    if (profile?.initials) return profile.initials;
+    if (!profile?.full_name) return 'U';
+    return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const openChat = (connection: Connection) => {
@@ -119,11 +121,11 @@ export default function Connections() {
                           <Avatar className="h-12 w-12">
                             <AvatarImage src={otherProfile.avatar_url ?? undefined} />
                             <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                              {getInitials(otherProfile.full_name)}
+                              {getDisplayInitials(otherProfile)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{getInitials(otherProfile.full_name)}</p>
+                            <p className="font-medium truncate">{getDisplayInitials(otherProfile)}</p>
                             <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
                             {connectedDate && (
                               <p className="text-xs text-muted-foreground">Connected {connectedDate}</p>
@@ -149,7 +151,7 @@ export default function Connections() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Disconnect from {otherProfile.full_name}?</AlertDialogTitle>
+                              <AlertDialogTitle>Disconnect from {getDisplayInitials(otherProfile)}?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 This will remove your connection and chat history. They won't be notified, but you'll both appear in each other's discover feed again.
                               </AlertDialogDescription>
@@ -192,12 +194,12 @@ export default function Connections() {
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={recipientProfile?.avatar_url ?? undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {getInitials(recipientProfile?.full_name ?? null)}
+                        {getDisplayInitials(recipientProfile)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">
-                        {recipientProfile?.full_name ?? 'Unknown'}
+                        {getDisplayInitials(recipientProfile)}
                       </p>
                       <p className="text-sm text-muted-foreground truncate">
                         {recipientProfile?.headline}
