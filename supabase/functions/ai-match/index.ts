@@ -81,11 +81,18 @@ serve(async (req) => {
       });
     }
 
-    // Get all other profiles
-    const { data: otherProfiles, error: profilesError } = await supabase
+    // Get all other profiles - exclude by user_id AND by email to handle seed data
+    let profilesQuery = supabase
       .from('profiles')
       .select('*')
       .neq('user_id', user.id);
+    
+    // Also exclude profiles with matching email (for seed profiles with different user_ids)
+    if (user.email) {
+      profilesQuery = profilesQuery.neq('email', user.email);
+    }
+    
+    const { data: otherProfiles, error: profilesError } = await profilesQuery;
 
     if (profilesError) {
       throw profilesError;
