@@ -130,70 +130,69 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
         {/* Profile View */}
         {showProfile ? (
           <ScrollArea className="flex-1 p-4">
-            <div className="space-y-6">
-              {/* Location & Industry */}
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                {otherProfile.location && (
-                  <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full">
-                    <MapPin className="h-4 w-4" />
-                    {otherProfile.location}
-                  </span>
-                )}
-                {otherProfile.industry && (
-                  <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full">
-                    <Briefcase className="h-4 w-4" />
-                    {INDUSTRY_LABELS[otherProfile.industry]}
-                  </span>
-                )}
-              </div>
+            <div className="space-y-5">
+              {/* Headline */}
+              {otherProfile.headline && (
+                <p className="text-sm text-muted-foreground">{otherProfile.headline}</p>
+              )}
 
-              {/* LinkedIn - only shown when mutually revealed */}
-              {isMutualLinkedIn && otherProfile.linkedin_url && (
-                <Button asChild className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
-                  <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                    <Linkedin className="h-5 w-5" />
-                    View LinkedIn Profile
-                  </a>
-                </Button>
+              {/* Location & Industry */}
+              {(otherProfile.location || otherProfile.industry) && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {otherProfile.location && (
+                    <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full text-sm">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {otherProfile.location}
+                    </span>
+                  )}
+                  {otherProfile.industry && (
+                    <span className="flex items-center gap-1.5 bg-muted px-3 py-1.5 rounded-full text-sm">
+                      <Briefcase className="h-3.5 w-3.5" />
+                      {INDUSTRY_LABELS[otherProfile.industry]}
+                    </span>
+                  )}
+                </div>
               )}
 
               {/* Experience & Goals */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Experience & Goals</h4>
-                <div className="flex flex-wrap gap-2">
-                  {otherProfile.experience_level && (
-                    <Badge variant="secondary">
-                      {EXPERIENCE_LABELS[otherProfile.experience_level]}
-                    </Badge>
-                  )}
-                  {otherProfile.looking_for?.map((goal) => (
-                    <Badge key={goal} variant="outline">
-                      {GOAL_LABELS[goal]}
-                    </Badge>
-                  ))}
+              {(otherProfile.experience_level || (otherProfile.looking_for && otherProfile.looking_for.length > 0)) && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Experience & Goals</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {otherProfile.experience_level && (
+                      <Badge variant="outline">
+                        {EXPERIENCE_LABELS[otherProfile.experience_level]}
+                      </Badge>
+                    )}
+                    {otherProfile.looking_for?.map((goal) => (
+                      <Badge key={goal} variant="outline">
+                        {GOAL_LABELS[goal]}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Looking For Text */}
               {otherProfile.looking_for_text && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Looking For</h4>
+                  <h4 className="text-sm font-semibold">Looking For</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">{otherProfile.looking_for_text}</p>
                 </div>
               )}
 
-              {/* Bio */}
+              {/* Bio / About */}
               {otherProfile.bio && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">About</h4>
+                  <h4 className="text-sm font-semibold">About</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">{otherProfile.bio}</p>
                 </div>
               )}
 
-              {/* Skills */}
+              {/* Tags (formerly Skills) */}
               {otherProfile.skills && otherProfile.skills.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Skills</h4>
+                  <h4 className="text-sm font-semibold">Tags</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {otherProfile.skills.map((skill) => (
                       <Badge key={skill} variant="secondary" className="text-xs">
@@ -204,9 +203,19 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 </div>
               )}
 
-              {/* Full name hint when not revealed */}
+              {/* LinkedIn button when mutual */}
+              {isMutualLinkedIn && otherProfile.linkedin_url && (
+                <Button asChild className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
+                  <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
+                    <Linkedin className="h-5 w-5" />
+                    View LinkedIn Profile
+                  </a>
+                </Button>
+              )}
+
+              {/* Request LinkedIn hint when not revealed */}
               {!isMutualLinkedIn && (
-                <div className="text-center p-4 rounded-lg bg-muted/50 border border-dashed">
+                <div className="text-center p-4 rounded-xl bg-muted/50 border border-dashed">
                   <p className="text-sm text-muted-foreground">
                     Request LinkedIn connection to see their full name and profile
                   </p>
