@@ -125,19 +125,6 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
         {showProfile ? (
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
-              {/* Avatar & Name */}
-              <div className="flex flex-col items-center text-center">
-                <Avatar className="h-20 w-20 mb-3">
-                  <AvatarImage src={otherProfile.avatar_url ?? undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <h3 className="font-semibold text-lg">
-                  {isMutualLinkedIn ? otherProfile.full_name : initials}
-                </h3>
-                <p className="text-sm text-muted-foreground">{otherProfile.headline}</p>
-              </div>
 
               {/* Location & Industry */}
               <div className="flex flex-wrap justify-center gap-2">
