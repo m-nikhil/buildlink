@@ -290,9 +290,11 @@ export default function ProfileComplete() {
                     value={formData.headline}
                     onChange={(e) => setFormData(prev => ({ ...prev, headline: e.target.value }))}
                     placeholder="Senior Software Engineer at Tech Co"
+                    disabled={!!profile?.headline}
+                    className={profile?.headline ? "bg-muted cursor-not-allowed" : ""}
                   />
                   {profile?.headline && (
-                    <p className="text-xs text-muted-foreground">Pre-filled from LinkedIn (editable)</p>
+                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
                   )}
                 </div>
 
