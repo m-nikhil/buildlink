@@ -147,11 +147,12 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
             </p>
           </div>
 
-          {/* Looking For Text */}
-          {profile.looking_for_text && (
+          {/* Looking For Text - with fallback from goals */}
+          {(profile.looking_for_text || (profile.looking_for && profile.looking_for.length > 0)) && (
             <div className="p-3 bg-accent/30 rounded-lg border border-accent/50 mb-4">
               <p className="text-sm text-center text-muted-foreground">
-                <span className="font-medium text-foreground">Looking for:</span> {profile.looking_for_text}
+                <span className="font-medium text-foreground">Looking for:</span>{' '}
+                {profile.looking_for_text || profile.looking_for?.map(g => GOAL_LABELS[g]).join(', ')}
               </p>
             </div>
           )}
