@@ -96,8 +96,8 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
 
         {/* Profile Info */}
         <div className="p-6 -mt-16 relative">
-          <div className="text-center mb-4">
-            <h2 className="text-2xl font-bold">{initials}</h2>
+          <div className="text-center mb-2">
+            <h2 className="text-2xl font-bold">{profile.full_name || initials}</h2>
           </div>
 
           {profile.headline && (
@@ -150,9 +150,11 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
 
           {/* Bio */}
           {profile.bio && (
-            <p className="text-sm text-muted-foreground text-center mb-6 line-clamp-3">
-              {profile.bio}
-            </p>
+            <div className="p-3 bg-muted/50 rounded-lg mb-4">
+              <p className="text-sm text-muted-foreground text-center line-clamp-4">
+                {profile.bio}
+              </p>
+            </div>
           )}
 
           {/* Action Buttons */}
