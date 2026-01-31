@@ -153,6 +153,7 @@ export type Database = {
           headline: string | null
           id: string
           industry: string | null
+          industry_other: string | null
           is_seed: boolean | null
           last_active: string | null
           linkedin_url: string | null
@@ -179,6 +180,7 @@ export type Database = {
           headline?: string | null
           id?: string
           industry?: string | null
+          industry_other?: string | null
           is_seed?: boolean | null
           last_active?: string | null
           linkedin_url?: string | null
@@ -205,6 +207,7 @@ export type Database = {
           headline?: string | null
           id?: string
           industry?: string | null
+          industry_other?: string | null
           is_seed?: boolean | null
           last_active?: string | null
           linkedin_url?: string | null

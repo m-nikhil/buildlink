@@ -13,6 +13,7 @@ export interface Profile {
   linkedin_url: string | null;
   experience_level: ExperienceLevel | null;
   industry: string | null; // Now uses dynamic industry IDs from src/data/industries.ts
+  industry_other: string | null;
   looking_for: ConnectionGoal[] | null;
   looking_for_text: string | null;
   skills: string[] | null;
