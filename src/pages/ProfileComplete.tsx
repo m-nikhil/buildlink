@@ -11,9 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
-import { Loader2, X, Sparkles, ArrowRight } from 'lucide-react';
-import { ExperienceLevel, EXPERIENCE_LABELS } from '@/types/profile';
+import { Loader2, X, ArrowRight } from 'lucide-react';
+import { ExperienceLevel, ConnectionGoal, EXPERIENCE_LABELS, GOAL_LABELS } from '@/types/profile';
 import { IndustrySelect } from '@/components/IndustrySelect';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
 export default function ProfileComplete() {
@@ -33,6 +34,7 @@ export default function ProfileComplete() {
     industry: '' as string,
     skills: [] as string[],
     linkedin_url: '',
+    looking_for: [] as ConnectionGoal[],
   });
 
   // Country and city data
@@ -118,6 +120,7 @@ export default function ProfileComplete() {
         industry: profile.industry || '',
         skills: profile.skills || [],
         linkedin_url: profile.linkedin_url || '',
+        looking_for: (profile.looking_for || []) as ConnectionGoal[],
       });
     }
   }, [profile, navigate]);
@@ -136,6 +139,15 @@ export default function ProfileComplete() {
     setFormData(prev => ({
       ...prev,
       skills: prev.skills.filter(s => s !== skill)
+    }));
+  };
+
+  const toggleGoal = (goal: ConnectionGoal) => {
+    setFormData(prev => ({
+      ...prev,
+      looking_for: prev.looking_for.includes(goal)
+        ? prev.looking_for.filter(g => g !== goal)
+        : [...prev.looking_for, goal],
     }));
   };
 
@@ -175,6 +187,7 @@ export default function ProfileComplete() {
         industry: formData.industry || null,
         skills: formData.skills,
         linkedin_url: formData.linkedin_url,
+        looking_for: formData.looking_for.length > 0 ? formData.looking_for : null,
       });
       
       toast.success('Profile completed! Welcome to BuildLink');
@@ -204,12 +217,6 @@ export default function ProfileComplete() {
           <p className="text-muted-foreground">
             Help us connect you with the right people
           </p>
-          
-          {/* Coming soon badge */}
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm">
-            <Sparkles className="h-4 w-4" />
-            <span>We're building automatic LinkedIn data import - coming soon!</span>
-          </div>
         </div>
 
         {/* Progress indicator */}
@@ -421,6 +428,26 @@ export default function ProfileComplete() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Looking For */}
+                <div className="space-y-3">
+                  <Label>What are you looking for?</Label>
+                  <p className="text-sm text-muted-foreground">Select all that apply</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(Object.entries(GOAL_LABELS) as [ConnectionGoal, string][]).map(([value, label]) => (
+                      <div key={value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`onboard-goal-${value}`}
+                          checked={formData.looking_for.includes(value)}
+                          onCheckedChange={() => toggleGoal(value)}
+                        />
+                        <Label htmlFor={`onboard-goal-${value}`} className="cursor-pointer font-normal">
+                          {label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
