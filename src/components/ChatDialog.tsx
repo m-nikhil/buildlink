@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-import { Send, Linkedin, AlertCircle, Check } from 'lucide-react';
+import { Send, Linkedin, AlertCircle, Check, User } from 'lucide-react';
 import { useMessages, useSendMessage, useMessageCount } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { useConnections, useRequestLinkedIn } from '@/hooks/useConnections';
 import { Profile, Connection } from '@/types/profile';
 import { cn } from '@/lib/utils';
+import { ProfileSheet } from './ProfileSheet';
 
 const MAX_MESSAGES = 50;
 
@@ -23,6 +24,7 @@ interface ChatDialogProps {
 
 export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: ChatDialogProps) {
   const [message, setMessage] = useState('');
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const { data: messages, isLoading } = useMessages(connectionId);
   const { data: myProfile } = useProfile();
   const { data: connections } = useConnections();
@@ -102,8 +104,23 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 </>
               )}
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setProfileSheetOpen(true)}
+              title="View Profile"
+            >
+              <User className="h-5 w-5" />
+            </Button>
           </DialogTitle>
         </DialogHeader>
+
+        <ProfileSheet
+          open={profileSheetOpen}
+          onOpenChange={setProfileSheetOpen}
+          profile={otherProfile}
+          showFullDetails={isMutualLinkedIn}
+        />
 
         {/* Chat View - Status indicators */}
         <div className="px-4 py-3 bg-muted/50 space-y-2">
