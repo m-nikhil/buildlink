@@ -22,13 +22,15 @@ interface IndustrySelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  showOther?: boolean;
 }
 
 export function IndustrySelect({ 
   value, 
   onChange, 
   placeholder = 'Select industry...', 
-  disabled = false 
+  disabled = false,
+  showOther = false
 }: IndustrySelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -67,7 +69,7 @@ export function IndustrySelect({
           disabled={disabled}
           className="w-full justify-between font-normal"
         >
-          {selectedIndustry ? selectedIndustry.name : placeholder}
+          {value === 'other' ? 'Other' : selectedIndustry ? selectedIndustry.name : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -103,6 +105,26 @@ export function IndustrySelect({
                 ))}
               </CommandGroup>
             ))}
+            {showOther && (
+              <CommandGroup heading="Other">
+                <CommandItem
+                  value="other"
+                  onSelect={() => {
+                    onChange('other');
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === 'other' ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  Other (please specify)
+                </CommandItem>
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

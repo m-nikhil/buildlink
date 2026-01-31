@@ -268,17 +268,18 @@ export default function ProfileEdit() {
                   <Label>Industry</Label>
                   <IndustrySelect
                     value={formData.industry || null}
-                    onChange={(value) => setFormData(prev => ({ ...prev, industry: value, industry_other: '' }))}
+                    onChange={(value) => setFormData(prev => ({ ...prev, industry: value, industry_other: value === 'other' ? prev.industry_other : '' }))}
                     placeholder="Select industry"
-                    disabled={!!formData.industry_other}
+                    showOther
                   />
-                  <Input
-                    value={formData.industry_other}
-                    onChange={(e) => setFormData(prev => ({ ...prev, industry_other: e.target.value, industry: '' }))}
-                    placeholder="Or type your industry if not listed..."
-                    className="mt-2"
-                    disabled={!!formData.industry}
-                  />
+                  {formData.industry === 'other' && (
+                    <Input
+                      value={formData.industry_other}
+                      onChange={(e) => setFormData(prev => ({ ...prev, industry_other: e.target.value }))}
+                      placeholder="Please specify your industry..."
+                      className="mt-2"
+                    />
+                  )}
                 </div>
               </div>
 
