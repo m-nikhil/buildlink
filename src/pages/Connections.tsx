@@ -189,6 +189,9 @@ export default function Connections() {
               <div className="space-y-3">
                 {pendingSent.map((connection) => {
                   const recipientProfile = getProfileByUserId(connection.recipient_id);
+                  const sentDate = connection.created_at 
+                    ? new Date(connection.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                    : null;
                   return (
                   <div key={connection.id} className="flex items-center gap-4 p-4 rounded-lg border bg-card">
                     <Avatar className="h-12 w-12">
@@ -204,6 +207,9 @@ export default function Connections() {
                       <p className="text-sm text-muted-foreground truncate">
                         {recipientProfile?.headline}
                       </p>
+                      {sentDate && (
+                        <p className="text-xs text-muted-foreground">Sent {sentDate}</p>
+                      )}
                     </div>
                     <Badge variant="outline" className="gap-1">
                       <Clock className="h-3 w-3" />
