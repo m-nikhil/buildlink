@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { Loader2, X, ArrowRight } from 'lucide-react';
@@ -30,7 +29,8 @@ export default function ProfileComplete() {
     headline: '',
     bio: '',
     looking_for_text: '',
-    location: '',
+    country: '',
+    city: '',
     experience_level: '' as ExperienceLevel | '',
     industry: '' as string,
     industry_other: '',
@@ -39,6 +39,61 @@ export default function ProfileComplete() {
     looking_for: [] as ConnectionGoal[],
   });
 
+  // Country and city data
+  const countries = [
+    'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
+    'France', 'Netherlands', 'India', 'Singapore', 'Japan', 'Brazil',
+    'Mexico', 'Spain', 'Italy', 'Sweden', 'Switzerland', 'Ireland',
+    'United Arab Emirates', 'South Africa', 'Nigeria', 'Kenya', 'Egypt',
+    'Israel', 'South Korea', 'China', 'Indonesia', 'Philippines', 'Vietnam',
+    'Thailand', 'Malaysia', 'New Zealand', 'Poland', 'Portugal', 'Belgium',
+    'Austria', 'Denmark', 'Norway', 'Finland', 'Czech Republic', 'Argentina'
+  ].sort();
+
+  const citiesByCountry: Record<string, string[]> = {
+    'United States': ['New York', 'San Francisco', 'Los Angeles', 'Seattle', 'Austin', 'Boston', 'Chicago', 'Denver', 'Miami', 'Atlanta', 'Washington DC', 'Dallas', 'Houston', 'Phoenix', 'San Diego'],
+    'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Edinburgh', 'Bristol', 'Leeds', 'Glasgow', 'Cambridge', 'Oxford'],
+    'Canada': ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa', 'Edmonton', 'Waterloo'],
+    'Australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Canberra'],
+    'Germany': ['Berlin', 'Munich', 'Hamburg', 'Frankfurt', 'Cologne', 'Stuttgart', 'Düsseldorf'],
+    'France': ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Bordeaux'],
+    'Netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht', 'Eindhoven'],
+    'India': ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Gurgaon', 'Noida'],
+    'Singapore': ['Singapore'],
+    'Japan': ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama', 'Fukuoka'],
+    'Brazil': ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Brasília', 'Curitiba'],
+    'Mexico': ['Mexico City', 'Guadalajara', 'Monterrey', 'Tijuana'],
+    'Spain': ['Madrid', 'Barcelona', 'Valencia', 'Seville', 'Málaga'],
+    'Italy': ['Milan', 'Rome', 'Turin', 'Florence', 'Bologna'],
+    'Sweden': ['Stockholm', 'Gothenburg', 'Malmö', 'Uppsala'],
+    'Switzerland': ['Zurich', 'Geneva', 'Basel', 'Bern', 'Lausanne'],
+    'Ireland': ['Dublin', 'Cork', 'Galway', 'Limerick'],
+    'United Arab Emirates': ['Dubai', 'Abu Dhabi', 'Sharjah'],
+    'South Africa': ['Cape Town', 'Johannesburg', 'Durban', 'Pretoria'],
+    'Nigeria': ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan'],
+    'Kenya': ['Nairobi', 'Mombasa', 'Kisumu'],
+    'Egypt': ['Cairo', 'Alexandria', 'Giza'],
+    'Israel': ['Tel Aviv', 'Jerusalem', 'Haifa', 'Herzliya'],
+    'South Korea': ['Seoul', 'Busan', 'Incheon', 'Daegu'],
+    'China': ['Shanghai', 'Beijing', 'Shenzhen', 'Hangzhou', 'Guangzhou', 'Chengdu'],
+    'Indonesia': ['Jakarta', 'Surabaya', 'Bandung', 'Bali'],
+    'Philippines': ['Manila', 'Cebu', 'Davao'],
+    'Vietnam': ['Ho Chi Minh City', 'Hanoi', 'Da Nang'],
+    'Thailand': ['Bangkok', 'Chiang Mai', 'Phuket'],
+    'Malaysia': ['Kuala Lumpur', 'Penang', 'Johor Bahru'],
+    'New Zealand': ['Auckland', 'Wellington', 'Christchurch'],
+    'Poland': ['Warsaw', 'Krakow', 'Wroclaw', 'Gdansk'],
+    'Portugal': ['Lisbon', 'Porto', 'Braga'],
+    'Belgium': ['Brussels', 'Antwerp', 'Ghent'],
+    'Austria': ['Vienna', 'Salzburg', 'Graz'],
+    'Denmark': ['Copenhagen', 'Aarhus', 'Odense'],
+    'Norway': ['Oslo', 'Bergen', 'Trondheim'],
+    'Finland': ['Helsinki', 'Espoo', 'Tampere'],
+    'Czech Republic': ['Prague', 'Brno', 'Ostrava'],
+    'Argentina': ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza'],
+  };
+
+  const availableCities = formData.country ? citiesByCountry[formData.country] || [] : [];
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
@@ -56,12 +111,14 @@ export default function ProfileComplete() {
       }
       
       // Pre-fill with existing data
+      const locationParts = profile.location?.split(', ') || [];
       setFormData({
         full_name: profile.full_name || '',
         headline: profile.headline || '',
         bio: profile.bio || '',
         looking_for_text: profile.looking_for_text || '',
-        location: profile.location || '',
+        country: locationParts[1] || '',
+        city: locationParts[0] || '',
         experience_level: profile.experience_level || '',
         industry: profile.industry || '',
         industry_other: profile.industry_other || '',
@@ -121,12 +178,16 @@ export default function ProfileComplete() {
   const handleSubmit = async () => {
 
     try {
+      const location = formData.city && formData.country 
+        ? `${formData.city}, ${formData.country}` 
+        : formData.country || '';
+      
       await updateProfile.mutateAsync({
         full_name: formData.full_name,
         headline: formData.headline,
         bio: formData.bio,
         looking_for_text: formData.looking_for_text || null,
-        location: formData.location || null,
+        location,
         experience_level: formData.experience_level as ExperienceLevel,
         industry: formData.industry || null,
         industry_other: formData.industry_other || null,
@@ -191,23 +252,37 @@ export default function ProfileComplete() {
             {/* Step 1: Basic Info */}
             {step === 1 && (
               <>
-                {/* Avatar Display - matching ProfileEdit */}
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-                      <AvatarImage src={profile?.avatar_url ?? undefined} alt={formData.full_name || 'User'} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
-                        {formData.full_name ? formData.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+                {/* Show LinkedIn-imported data */}
+                {(profile?.avatar_url || profile?.linkedin_url) && (
+                  <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 mb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      {profile?.avatar_url && (
+                        <img 
+                          src={profile.avatar_url} 
+                          alt="Profile" 
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-primary">Imported from LinkedIn</p>
+                        <p className="text-xs text-muted-foreground">Some fields are pre-filled and locked</p>
+                      </div>
+                    </div>
+                    {profile?.linkedin_url && (
+                      <a 
+                        href={profile.linkedin_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        {profile.linkedin_url}
+                      </a>
+                    )}
                   </div>
-                  {profile?.avatar_url && (
-                    <p className="text-sm text-muted-foreground">Profile picture imported from LinkedIn</p>
-                  )}
-                </div>
+                )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name</Label>
+                  <Label htmlFor="full_name">Full Name *</Label>
                   <Input
                     id="full_name"
                     value={formData.full_name}
@@ -222,7 +297,7 @@ export default function ProfileComplete() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="headline">Headline</Label>
+                  <Label htmlFor="headline">Professional Headline *</Label>
                   <Input
                     id="headline"
                     value={formData.headline}
@@ -243,7 +318,7 @@ export default function ProfileComplete() {
                     value={formData.bio}
                     onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                     placeholder="Tell others about yourself..."
-                    rows={4}
+                    rows={3}
                   />
                 </div>
 
@@ -258,20 +333,59 @@ export default function ProfileComplete() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="San Francisco, CA"
-                    disabled={!!profile?.location}
-                    className={profile?.location ? "bg-muted cursor-not-allowed" : ""}
-                  />
-                  {profile?.location && (
+                {/* Location - either from LinkedIn (locked) or manual selection */}
+                {profile?.location ? (
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Input
+                      value={profile.location}
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                    />
                     <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Country</Label>
+                      <Select
+                        value={formData.country}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, country: value, city: '' }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>City</Label>
+                      <Select
+                        value={formData.city}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
+                        disabled={!formData.country || availableCities.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={formData.country ? "Select city" : "Select country first"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCities.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
