@@ -158,6 +158,7 @@ export type Database = {
           linkedin_url: string | null
           location: string | null
           looking_for: string[] | null
+          looking_for_text: string | null
           preferred_experience_levels: string[] | null
           preferred_goals: string[] | null
           preferred_industries: string[] | null
@@ -183,6 +184,7 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           looking_for?: string[] | null
+          looking_for_text?: string | null
           preferred_experience_levels?: string[] | null
           preferred_goals?: string[] | null
           preferred_industries?: string[] | null
@@ -208,6 +210,7 @@ export type Database = {
           linkedin_url?: string | null
           location?: string | null
           looking_for?: string[] | null
+          looking_for_text?: string | null
           preferred_experience_levels?: string[] | null
           preferred_goals?: string[] | null
           preferred_industries?: string[] | null

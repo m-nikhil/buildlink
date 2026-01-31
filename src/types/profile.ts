@@ -14,6 +14,7 @@ export interface Profile {
   experience_level: ExperienceLevel | null;
   industry: string | null; // Now uses dynamic industry IDs from src/data/industries.ts
   looking_for: ConnectionGoal[] | null;
+  looking_for_text: string | null;
   skills: string[] | null;
   location: string | null;
   // Match preferences
