@@ -24,11 +24,12 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
   const sendRequest = useSendConnectionRequest();
   const [isExiting, setIsExiting] = useState<'left' | 'right' | null>(null);
 
-  const initials = profile.full_name
+  // Use stored initials, fallback to computing from name
+  const initials = profile.initials || (profile.full_name
     ?.split(' ')
     .map((n) => n[0])
     .join('')
-    .toUpperCase() || '?';
+    .toUpperCase()) || '?';
 
   const handleLike = () => {
     setIsExiting('right');
@@ -66,7 +67,7 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
           <Avatar className="absolute inset-0 h-full w-full rounded-none">
             <AvatarImage 
               src={profile.avatar_url || undefined} 
-              alt={profile.full_name || 'User'} 
+              alt={initials} 
               className="object-cover"
             />
             <AvatarFallback className="text-6xl rounded-none bg-gradient-to-br from-primary/30 to-primary/10">
@@ -97,7 +98,7 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
         {/* Profile Info */}
         <div className="p-6 -mt-16 relative">
           <div className="text-center mb-2">
-            <h2 className="text-2xl font-bold">{profile.full_name || initials}</h2>
+            <h2 className="text-2xl font-bold">{initials}</h2>
           </div>
 
           {profile.headline && (

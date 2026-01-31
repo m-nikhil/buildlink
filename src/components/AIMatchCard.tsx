@@ -18,11 +18,12 @@ export function AIMatchCard({ profile, score, reason }: AIMatchCardProps) {
   const { data: myProfile } = useProfile();
   const sendRequest = useSendConnectionRequest();
 
-  const initials = profile.full_name
+  // Use stored initials, fallback to computing from name
+  const initials = profile.initials || (profile.full_name
     ?.split(' ')
     .map((n) => n[0])
     .join('')
-    .toUpperCase() || '?';
+    .toUpperCase()) || '?';
 
   const handleConnect = () => {
     sendRequest.mutate({ recipientId: profile.user_id });
@@ -52,10 +53,10 @@ export function AIMatchCard({ profile, score, reason }: AIMatchCardProps) {
       <CardContent className="pt-0">
         <div className="flex flex-col items-center -mt-10">
           <Avatar className="h-20 w-20 border-4 border-background shadow-md">
-            <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || 'User'} />
+            <AvatarImage src={profile.avatar_url || undefined} alt={initials} />
             <AvatarFallback className="text-lg bg-primary/10">{initials}</AvatarFallback>
           </Avatar>
-          <h3 className="mt-3 font-semibold text-lg">{profile.full_name || 'Anonymous'}</h3>
+          <h3 className="mt-3 font-semibold text-lg">{initials}</h3>
           {profile.headline && (
             <p className="text-sm text-muted-foreground text-center line-clamp-2 mt-1">
               {profile.headline}

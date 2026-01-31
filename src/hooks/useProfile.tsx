@@ -25,6 +25,17 @@ export function useProfile() {
   });
 }
 
+// Helper to compute initials from full name
+function computeInitials(fullName: string | null | undefined): string {
+  if (!fullName) return 'U';
+  return fullName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -33,6 +44,11 @@ export function useUpdateProfile() {
     mutationFn: async (updates: Partial<Profile>) => {
       if (!user) throw new Error('Not authenticated');
       
+      // Compute initials if full_name is being updated
+      const initials = updates.full_name !== undefined 
+        ? computeInitials(updates.full_name) 
+        : undefined;
+      
       // Use upsert to create profile if it doesn't exist
       const { data, error } = await supabase
         .from('profiles')
@@ -40,7 +56,8 @@ export function useUpdateProfile() {
           { 
             user_id: user.id, 
             email: user.email,
-            ...updates 
+            ...updates,
+            ...(initials !== undefined && { initials }),
           },
           { onConflict: 'user_id' }
         )
