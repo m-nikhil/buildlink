@@ -172,6 +172,17 @@ export default function ProfileEdit() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
+                {profile?.linkedin_url && (
+                  <a 
+                    href={profile.linkedin_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-sm text-[#0A66C2] hover:underline"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                    View LinkedIn Profile
+                  </a>
+                )}
               </div>
 
               {/* Basic Info */}
