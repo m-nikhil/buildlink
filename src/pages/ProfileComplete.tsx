@@ -209,9 +209,6 @@ export default function ProfileComplete() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                {profile?.avatar_url && (
-                  <p className="text-sm text-muted-foreground">Profile picture imported from LinkedIn</p>
-                )}
               </div>
 
               {/* Basic Info */}
@@ -226,11 +223,7 @@ export default function ProfileComplete() {
                     disabled={!!profile?.full_name}
                     className={profile?.full_name ? "bg-muted cursor-not-allowed" : ""}
                   />
-                  {profile?.full_name && (
-                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
-                  )}
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="headline">Headline *</Label>
                   <Input
@@ -241,18 +234,9 @@ export default function ProfileComplete() {
                     disabled={!!profile?.headline}
                     className={profile?.headline ? "bg-muted cursor-not-allowed" : ""}
                   />
-                  {profile?.headline && (
-                    <p className="text-xs text-muted-foreground">Imported from LinkedIn</p>
-                  )}
                 </div>
 
               {/* Privacy Notice */}
-              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>Don't include your name or personal contact info. Your full name is hidden - only initials are shown to others.</span>
-                </p>
-              </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
@@ -276,13 +260,10 @@ export default function ProfileComplete() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Location</Label>
-                  <LocationSelect
-                    value={formData.location}
-                    onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
-                  />
-                </div>
+                <LocationSelect
+                  value={formData.location}
+                  onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+                />
               </div>
 
               {/* Professional Info */}
