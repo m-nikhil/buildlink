@@ -16,6 +16,7 @@ interface LocationSelectProps {
   value: string | null;
   onChange: (value: string) => void;
   disabled?: boolean;
+  hideLabel?: boolean;
 }
 
 interface LocationSuggestion {
@@ -27,7 +28,7 @@ interface LocationSuggestion {
   countryCode: string;
 }
 
-export function LocationSelect({ value, onChange, disabled }: LocationSelectProps) {
+export function LocationSelect({ value, onChange, disabled, hideLabel }: LocationSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value || '');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -105,7 +106,7 @@ export function LocationSelect({ value, onChange, disabled }: LocationSelectProp
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="location">Location</Label>
+      {!hideLabel && <Label htmlFor="location">Location</Label>}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div className="relative">
