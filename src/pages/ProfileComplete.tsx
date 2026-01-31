@@ -249,17 +249,6 @@ export default function ProfileComplete() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="looking_for_text">What are you looking for?</Label>
-                  <Textarea
-                    id="looking_for_text"
-                    value={formData.looking_for_text}
-                    onChange={(e) => setFormData(prev => ({ ...prev, looking_for_text: e.target.value }))}
-                    placeholder="Describe what you're looking for in connections..."
-                    rows={3}
-                  />
-                </div>
-
                 <LocationSelect
                   value={formData.location}
                   onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
