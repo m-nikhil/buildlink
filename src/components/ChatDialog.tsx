@@ -180,56 +180,29 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
             </>
           )}
           
-          {/* Mutual LinkedIn - show both profiles */}
+          {/* Mutual LinkedIn - show profile details */}
           {isMutualLinkedIn && (
-            <div className="space-y-2">
-              {/* Other person's profile */}
-              <div className="flex items-center justify-between gap-3 px-4 py-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={otherProfile.avatar_url ?? undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{otherProfile.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{otherProfile.headline}</p>
-                  </div>
+            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={otherProfile.avatar_url ?? undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{otherProfile.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{otherProfile.headline}</p>
                 </div>
-                {otherProfile.linkedin_url && (
-                  <Button asChild size="sm" className="gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
-                    <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                      <Linkedin className="h-4 w-4" />
-                      View Profile
-                    </a>
-                  </Button>
-                )}
               </div>
-              
-              {/* My profile */}
-              <div className="flex items-center justify-between gap-3 px-4 py-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={myProfile?.avatar_url ?? undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {myProfile?.initials || myProfile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{myProfile?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{myProfile?.headline}</p>
-                  </div>
-                </div>
-                {myProfile?.linkedin_url && (
-                  <Button asChild size="sm" className="gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
-                    <a href={myProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                      <Linkedin className="h-4 w-4" />
-                      View Profile
-                    </a>
-                  </Button>
-                )}
-              </div>
+              {otherProfile.linkedin_url && (
+                <Button asChild size="sm" className="gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
+                  <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
+                    <Linkedin className="h-4 w-4" />
+                    View Profile
+                  </a>
+                </Button>
+              )}
             </div>
           )}
         </div>
