@@ -337,7 +337,7 @@ export default function ProfileEdit() {
                   <Label>LinkedIn Profile</Label>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Resync your profile data from LinkedIn (photo, headline, location, profile URL)
+                  Resync your profile data from LinkedIn (photo, headline, name, profile URL)
                 </p>
                 <Button
                   type="button"
