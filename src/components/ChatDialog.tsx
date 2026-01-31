@@ -106,7 +106,7 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
             <Button 
               variant={showProfile ? "default" : "outline"}
               size="sm" 
-              className="gap-1.5 shrink-0"
+              className="gap-1.5 shrink-0 mr-6"
               onClick={() => setShowProfile(!showProfile)}
             >
               {showProfile ? (
@@ -189,20 +189,14 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                 </div>
               )}
 
-              {/* LinkedIn hint or link */}
-              {isMutualLinkedIn && otherProfile.linkedin_url ? (
+              {/* LinkedIn link */}
+              {isMutualLinkedIn && otherProfile.linkedin_url && (
                 <Button asChild className="w-full gap-2 bg-[#0A66C2] hover:bg-[#004182] text-white">
                   <a href={otherProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
                     <Linkedin className="h-4 w-4" />
                     View LinkedIn Profile
                   </a>
                 </Button>
-              ) : !isMutualLinkedIn && (
-                <div className="p-3 bg-muted/50 rounded-lg text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Request LinkedIn connection to see their full name and profile
-                  </p>
-                </div>
               )}
             </div>
           </ScrollArea>
