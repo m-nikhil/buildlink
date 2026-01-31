@@ -14,7 +14,7 @@ import {
   GOAL_LABELS,
 } from '@/types/profile';
 import { IndustryMultiSelect } from '@/components/IndustryMultiSelect';
-import { LocationSelect } from '@/components/LocationSelect';
+import { LocationMultiSelect } from '@/components/LocationMultiSelect';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
 
-  const [preferredLocation, setPreferredLocation] = useState<string>('');
+  const [preferredLocations, setPreferredLocations] = useState<string[]>([]);
   const [preferredIndustries, setPreferredIndustries] = useState<string[]>([]);
   const [preferredGoals, setPreferredGoals] = useState<ConnectionGoal[]>([]);
 
@@ -34,7 +34,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (profile) {
-      setPreferredLocation(profile.location || '');
+      setPreferredLocations((profile as any).preferred_locations || []);
       setPreferredIndustries(profile.preferred_industries || []);
       setPreferredGoals(profile.preferred_goals || []);
     }
@@ -42,10 +42,10 @@ export default function Settings() {
 
   const handleSave = async () => {
     await updateProfile.mutateAsync({
-      location: preferredLocation || null,
+      preferred_locations: preferredLocations,
       preferred_industries: preferredIndustries,
       preferred_goals: preferredGoals,
-    });
+    } as any);
   };
 
   const toggleGoal = (goal: ConnectionGoal) => {
@@ -81,17 +81,18 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
-          {/* Location Preference */}
+          {/* Location Preferences */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Location</CardTitle>
-              <CardDescription>Where are you based?</CardDescription>
+              <CardDescription>Where would you like to connect? (up to 3)</CardDescription>
             </CardHeader>
             <CardContent>
-              <LocationSelect
-                value={preferredLocation}
-                onChange={setPreferredLocation}
-                hideLabel
+              <LocationMultiSelect
+                value={preferredLocations}
+                onChange={setPreferredLocations}
+                max={3}
+                placeholder="Search for a city..."
               />
             </CardContent>
           </Card>
