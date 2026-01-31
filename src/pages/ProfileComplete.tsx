@@ -169,13 +169,28 @@ export default function ProfileComplete() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* LinkedIn Import Notice */}
               {hasLinkedInData && (
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <Linkedin className="h-5 w-5 text-[#0A66C2] flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-primary">Data imported from LinkedIn</p>
-                    <p className="text-xs text-muted-foreground">Some fields are pre-filled and locked</p>
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Linkedin className="h-5 w-5 text-[#0A66C2] flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-primary">Data imported from LinkedIn</p>
+                      <p className="text-xs text-muted-foreground">Some fields are pre-filled and locked</p>
+                    </div>
+                    <CheckCircle className="h-5 w-5 text-primary" />
                   </div>
-                  <CheckCircle className="h-5 w-5 text-primary" />
+                  {profile?.linkedin_url && (
+                    <a 
+                      href={profile.linkedin_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-[#0A66C2] hover:underline"
+                    >
+                      <span className="truncate">{profile.linkedin_url}</span>
+                      <svg className="h-3 w-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  )}
                 </div>
               )}
 
