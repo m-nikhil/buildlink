@@ -218,6 +218,17 @@ export default function ProfileEdit() {
               </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="looking_for_text">What I'm Looking For</Label>
+                  <Textarea
+                    id="looking_for_text"
+                    value={formData.looking_for_text}
+                    onChange={(e) => setFormData(prev => ({ ...prev, looking_for_text: e.target.value }))}
+                    placeholder="Describe what kind of connections you're seeking..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
