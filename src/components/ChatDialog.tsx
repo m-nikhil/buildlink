@@ -131,11 +131,6 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
         {showProfile ? (
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-5">
-              {/* Headline */}
-              {otherProfile.headline && (
-                <p className="text-sm text-muted-foreground">{otherProfile.headline}</p>
-              )}
-
               {/* Location & Industry */}
               {(otherProfile.location || otherProfile.industry) && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -211,15 +206,6 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
                     View LinkedIn Profile
                   </a>
                 </Button>
-              )}
-
-              {/* Request LinkedIn hint when not revealed */}
-              {!isMutualLinkedIn && (
-                <div className="text-center p-4 rounded-xl bg-muted/50 border border-dashed">
-                  <p className="text-sm text-muted-foreground">
-                    Request LinkedIn connection to see their full name and profile
-                  </p>
-                </div>
               )}
             </div>
           </ScrollArea>
