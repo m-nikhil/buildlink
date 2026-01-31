@@ -446,7 +446,7 @@ export default function ProfileComplete() {
 
                 {/* Looking For */}
                 <div className="space-y-3">
-                  <Label>What are you looking for?</Label>
+                  <Label>Exploring</Label>
                   <p className="text-sm text-muted-foreground">Select all that apply</p>
                   <div className="grid grid-cols-2 gap-3">
                     {(Object.entries(GOAL_LABELS) as [ConnectionGoal, string][]).map(([value, label]) => (
