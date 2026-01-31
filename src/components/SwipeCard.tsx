@@ -142,9 +142,18 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
 
           {/* AI Match Reason */}
           {reason && (
-            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-6">
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-4">
               <p className="text-sm text-center text-muted-foreground">
                 <span className="font-medium text-primary">Why connect:</span> {reason}
+              </p>
+            </div>
+          )}
+
+          {/* Looking For Text */}
+          {profile.looking_for_text && (
+            <div className="p-3 bg-accent/30 rounded-lg border border-accent/50 mb-4">
+              <p className="text-sm text-center text-muted-foreground">
+                <span className="font-medium text-foreground">Looking for:</span> {profile.looking_for_text}
               </p>
             </div>
           )}
