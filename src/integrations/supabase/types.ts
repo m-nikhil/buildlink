@@ -229,6 +229,42 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_intros: {
+        Row: {
+          created_at: string
+          id: string
+          intro_completed_at: string | null
+          matched_user_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          video_call_url: string | null
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intro_completed_at?: string | null
+          matched_user_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          video_call_url?: string | null
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intro_completed_at?: string | null
+          matched_user_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          video_call_url?: string | null
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
