@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.geocode]
 verify_jwt = false
+
+[functions.weekly-intro-match]
+verify_jwt = false
