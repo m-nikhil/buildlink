@@ -10,6 +10,7 @@ export interface WeeklyIntro {
   week_start: string;
   status: 'pending' | 'accepted' | 'completed' | 'skipped';
   video_call_url: string | null;
+  video_call_password: string | null;
   intro_completed_at: string | null;
   scheduled_at: string | null;
   match_revealed_at: string | null;

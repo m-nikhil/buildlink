@@ -276,6 +276,7 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          video_call_password: string | null
           video_call_url: string | null
           week_start: string
         }
@@ -289,6 +290,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          video_call_password?: string | null
           video_call_url?: string | null
           week_start: string
         }
@@ -302,6 +304,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          video_call_password?: string | null
           video_call_url?: string | null
           week_start?: string
         }

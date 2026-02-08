@@ -34,8 +34,18 @@ function getNextSlotDateTime(dayOfWeek: number, timeStr: string, weekStart: stri
 
 // Generate a simple video call URL (using Jitsi Meet as a free option)
 function generateVideoCallUrl(introId: string): string {
-  const roomName = `buildlink-intro-${introId.slice(0, 8)}`;
+  const roomName = `buildlink-intro-${introId}`;
   return `https://meet.jit.si/${roomName}`;
+}
+
+// Generate a random password for the video call room
+function generateRoomPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
 }
 
 interface AvailabilitySlot {
@@ -368,8 +378,9 @@ Candidate ${i + 1} (user_id: ${p.user_id}):
       ? getNextSlotDateTime(selectedOverlap.day, selectedOverlap.time, weekStart)
       : null;
 
-    // Create the intro with video call URL and scheduled time
+    // Create the intro with video call URL, password, and scheduled time
     const introId = crypto.randomUUID();
+    const roomPassword = generateRoomPassword();
     const videoCallUrl = generateVideoCallUrl(introId);
 
     const introData: Record<string, unknown> = {
@@ -378,6 +389,7 @@ Candidate ${i + 1} (user_id: ${p.user_id}):
       matched_user_id: selectedUserId,
       week_start: weekStart,
       video_call_url: videoCallUrl,
+      video_call_password: roomPassword,
       match_revealed_at: new Date().toISOString(),
     };
 
