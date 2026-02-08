@@ -23,21 +23,23 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_NAMES_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_VALUES = [0, 1, 2, 3, 4, 5, 6];
 
-// Generate time slots - 1 hour increments for cleaner display
-function generateTimeSlots(includeNight: boolean): { hour: number; label: string }[] {
-  const slots: { hour: number; label: string }[] = [];
+// Generate time slots - 30 min increments
+function generateTimeSlots(includeNight: boolean): { hour: number; minute: number; label: string }[] {
+  const slots: { hour: number; minute: number; label: string }[] = [];
   
   if (includeNight) {
     for (let hour = 0; hour < 6; hour++) {
       const displayHour = hour === 0 ? 12 : hour;
-      slots.push({ hour, label: `${displayHour} AM` });
+      slots.push({ hour, minute: 0, label: `${displayHour} AM` });
+      slots.push({ hour, minute: 30, label: '' });
     }
   }
   
   for (let hour = 6; hour < 24; hour++) {
     const isPM = hour >= 12;
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    slots.push({ hour, label: `${displayHour} ${isPM ? 'PM' : 'AM'}` });
+    slots.push({ hour, minute: 0, label: `${displayHour} ${isPM ? 'PM' : 'AM'}` });
+    slots.push({ hour, minute: 30, label: '' });
   }
   
   return slots;
@@ -47,10 +49,10 @@ interface AvailabilityPickerProps {
   onSaved?: () => void;
 }
 
-type SlotKey = `${number}-${number}`; // day-hour
+type SlotKey = `${number}-${number}-${number}`; // day-hour-minute
 
-function formatTimeValue(hour: number): string {
-  return `${hour.toString().padStart(2, '0')}:00`;
+function formatTimeValue(hour: number, minute: number): string {
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 }
 
 export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
@@ -73,15 +75,23 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
       let hasNightSlots = false;
       
       existingSlots.forEach(slot => {
-        const [startHour] = slot.start_time.split(':').map(Number);
-        const [endHour] = slot.end_time.split(':').map(Number);
+        const [startHour, startMin] = slot.start_time.split(':').map(Number);
+        const [endHour, endMin] = slot.end_time.split(':').map(Number);
         
         if (startHour < 6 || (endHour <= 6 && endHour > 0)) {
           hasNightSlots = true;
         }
         
-        for (let h = startHour; h < endHour; h++) {
-          slots.add(`${slot.day_of_week}-${h}`);
+        // Mark each 30-min slot in the range
+        let h = startHour;
+        let m = startMin;
+        while (h < endHour || (h === endHour && m < endMin)) {
+          slots.add(`${slot.day_of_week}-${h}-${m}`);
+          m += 30;
+          if (m >= 60) {
+            m = 0;
+            h += 1;
+          }
         }
       });
       
@@ -99,11 +109,11 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     
     selectedSlots.forEach(key => {
       const [day] = key.split('-').map(Number);
-      dayHours.set(day, (dayHours.get(day) || 0) + 1);
+      dayHours.set(day, (dayHours.get(day) || 0) + 0.5);
     });
     
     return {
-      totalHours: selectedSlots.size,
+      totalHours: selectedSlots.size * 0.5,
       perDayHours: dayHours,
     };
   })();
@@ -115,42 +125,52 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     }
     
     saveTimeoutRef.current = setTimeout(async () => {
-      const slotsByDay = new Map<number, number[]>();
+      const slotsByDay = new Map<number, { hour: number; minute: number }[]>();
       
       slots.forEach(key => {
-        const [day, hour] = key.split('-').map(Number);
+        const [day, hour, minute] = key.split('-').map(Number);
         if (!slotsByDay.has(day)) {
           slotsByDay.set(day, []);
         }
-        slotsByDay.get(day)!.push(hour);
+        slotsByDay.get(day)!.push({ hour, minute });
       });
 
       const timeSlots: TimeSlot[] = [];
       
-      slotsByDay.forEach((hours, day) => {
-        hours.sort((a, b) => a - b);
+      slotsByDay.forEach((times, day) => {
+        times.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
         
-        if (hours.length === 0) return;
+        if (times.length === 0) return;
         
-        let startHour = hours[0];
-        let endHour = hours[0];
+        let startTime = times[0];
+        let endTime = times[0];
         
-        for (let i = 1; i <= hours.length; i++) {
-          const current = hours[i];
+        for (let i = 1; i <= times.length; i++) {
+          const current = times[i];
+          const prevMinutes = endTime.hour * 60 + endTime.minute;
+          const currMinutes = current ? current.hour * 60 + current.minute : -1;
           
-          if (current === endHour + 1) {
-            endHour = current;
+          if (current && currMinutes === prevMinutes + 30) {
+            endTime = current;
           } else {
+            // Calculate end time (add 30 min to last slot)
+            let endH = endTime.hour;
+            let endM = endTime.minute + 30;
+            if (endM >= 60) {
+              endM = 0;
+              endH += 1;
+            }
+            
             timeSlots.push({
               day_of_week: day,
-              start_time: formatTimeValue(startHour),
-              end_time: formatTimeValue(endHour + 1),
+              start_time: formatTimeValue(startTime.hour, startTime.minute),
+              end_time: formatTimeValue(endH, endM),
               timezone,
             });
             
-            if (current !== undefined) {
-              startHour = current;
-              endHour = current;
+            if (current) {
+              startTime = current;
+              endTime = current;
             }
           }
         }
@@ -160,8 +180,8 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     }, 800);
   }, [saveAvailability, timezone]);
 
-  const toggleSlot = useCallback((day: number, hour: number, forceMode?: 'select' | 'deselect') => {
-    const key: SlotKey = `${day}-${hour}`;
+  const toggleSlot = useCallback((day: number, hour: number, minute: number, forceMode?: 'select' | 'deselect') => {
+    const key: SlotKey = `${day}-${hour}-${minute}`;
     
     setSelectedSlots(prev => {
       const newSlots = new Set(prev);
@@ -183,17 +203,17 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     saveSlots(new Set());
   }, [saveSlots]);
 
-  const handleMouseDown = useCallback((day: number, hour: number) => {
-    const key: SlotKey = `${day}-${hour}`;
+  const handleMouseDown = useCallback((day: number, hour: number, minute: number) => {
+    const key: SlotKey = `${day}-${hour}-${minute}`;
     const mode = selectedSlots.has(key) ? 'deselect' : 'select';
     setIsDragging(true);
     setDragMode(mode);
-    toggleSlot(day, hour, mode);
+    toggleSlot(day, hour, minute, mode);
   }, [selectedSlots, toggleSlot]);
 
-  const handleMouseEnter = useCallback((day: number, hour: number) => {
+  const handleMouseEnter = useCallback((day: number, hour: number, minute: number) => {
     if (isDragging) {
-      toggleSlot(day, hour, dragMode);
+      toggleSlot(day, hour, minute, dragMode);
     }
   }, [isDragging, dragMode, toggleSlot]);
 
@@ -201,12 +221,12 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     setIsDragging(false);
   }, []);
 
-  const handleTouchStart = useCallback((day: number, hour: number) => {
-    const key: SlotKey = `${day}-${hour}`;
+  const handleTouchStart = useCallback((day: number, hour: number, minute: number) => {
+    const key: SlotKey = `${day}-${hour}-${minute}`;
     const mode = selectedSlots.has(key) ? 'deselect' : 'select';
     setIsDragging(true);
     setDragMode(mode);
-    toggleSlot(day, hour, mode);
+    toggleSlot(day, hour, minute, mode);
   }, [selectedSlots, toggleSlot]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -216,8 +236,8 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     
     if (element && element.getAttribute('data-slot')) {
-      const [day, hour] = element.getAttribute('data-slot')!.split('-').map(Number);
-      toggleSlot(day, hour, dragMode);
+      const [day, hour, minute] = element.getAttribute('data-slot')!.split('-').map(Number);
+      toggleSlot(day, hour, minute, dragMode);
     }
   }, [isDragging, dragMode, toggleSlot]);
 
@@ -310,9 +330,9 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
 
             {/* Time rows */}
             <div className="rounded-lg overflow-hidden border">
-              {TIME_SLOTS.map(({ hour, label }, idx) => (
+              {TIME_SLOTS.map(({ hour, minute, label }, idx) => (
                 <div 
-                  key={hour} 
+                  key={`${hour}-${minute}`} 
                   className={cn(
                     "grid grid-cols-[50px_repeat(7,1fr)] gap-px bg-border",
                     idx > 0 && "border-t border-border"
@@ -322,22 +342,22 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
                     {label}
                   </div>
                   {DAY_VALUES.map(day => {
-                    const key: SlotKey = `${day}-${hour}`;
+                    const key: SlotKey = `${day}-${hour}-${minute}`;
                     const isSelected = selectedSlots.has(key);
                     
                     return (
                       <div
                         key={key}
-                        data-slot={`${day}-${hour}`}
+                        data-slot={`${day}-${hour}-${minute}`}
                         className={cn(
-                          "h-7 cursor-pointer transition-colors",
+                          "h-5 cursor-pointer transition-colors",
                           isSelected 
                             ? "bg-slot-available hover:bg-slot-available-hover" 
                             : "bg-slot-unavailable hover:bg-slot-unavailable-hover"
                         )}
-                        onMouseDown={() => handleMouseDown(day, hour)}
-                        onMouseEnter={() => handleMouseEnter(day, hour)}
-                        onTouchStart={() => handleTouchStart(day, hour)}
+                        onMouseDown={() => handleMouseDown(day, hour, minute)}
+                        onMouseEnter={() => handleMouseEnter(day, hour, minute)}
+                        onTouchStart={() => handleTouchStart(day, hour, minute)}
                       />
                     );
                   })}
