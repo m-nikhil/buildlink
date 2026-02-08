@@ -27,6 +27,7 @@ const DAY_VALUES = [0, 1, 2, 3, 4, 5, 6];
 function generateTimeSlots(includeNight: boolean): { hour: number; minute: number; label: string }[] {
   const slots: { hour: number; minute: number; label: string }[] = [];
   
+  // Night hours first (12 AM - 5:30 AM)
   if (includeNight) {
     for (let hour = 0; hour < 6; hour++) {
       const displayHour = hour === 0 ? 12 : hour;
@@ -35,9 +36,10 @@ function generateTimeSlots(includeNight: boolean): { hour: number; minute: numbe
     }
   }
   
+  // Day hours (6 AM - 11:30 PM)
   for (let hour = 6; hour < 24; hour++) {
     const isPM = hour >= 12;
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour === 12 ? 12 : hour;
     slots.push({ hour, minute: 0, label: `${displayHour} ${isPM ? 'PM' : 'AM'}` });
     slots.push({ hour, minute: 30, label: '' });
   }
@@ -62,6 +64,7 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
   const [showNightHours, setShowNightHours] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -330,39 +333,51 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
 
             {/* Time rows */}
             <div className="rounded-lg overflow-hidden border">
-              {TIME_SLOTS.map(({ hour, minute, label }, idx) => (
-                <div 
-                  key={`${hour}-${minute}`} 
-                  className={cn(
-                    "grid grid-cols-[50px_repeat(7,1fr)] gap-px bg-border",
-                    idx > 0 && "border-t border-border"
-                  )}
-                >
-                  <div className="text-xs text-muted-foreground pr-2 flex items-center justify-end bg-card">
-                    {label}
+              {TIME_SLOTS.map(({ hour, minute, label }, idx) => {
+                const rowKey = `${hour}-${minute}`;
+                const isRowHovered = hoveredRow === rowKey;
+                
+                return (
+                  <div 
+                    key={rowKey}
+                    className={cn(
+                      "grid grid-cols-[50px_repeat(7,1fr)] gap-px transition-colors",
+                      isRowHovered ? "bg-primary/20" : "bg-border",
+                      idx > 0 && "border-t border-border"
+                    )}
+                    onMouseEnter={() => setHoveredRow(rowKey)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                  >
+                    <div className={cn(
+                      "text-xs pr-2 flex items-center justify-end bg-card transition-colors",
+                      isRowHovered ? "text-primary font-medium" : "text-muted-foreground"
+                    )}>
+                      {label || (isRowHovered ? `:30` : '')}
+                    </div>
+                    {DAY_VALUES.map(day => {
+                      const key: SlotKey = `${day}-${hour}-${minute}`;
+                      const isSelected = selectedSlots.has(key);
+                      
+                      return (
+                        <div
+                          key={key}
+                          data-slot={`${day}-${hour}-${minute}`}
+                          className={cn(
+                            "h-5 cursor-pointer transition-colors",
+                            isSelected 
+                              ? "bg-slot-available hover:bg-slot-available-hover" 
+                              : "bg-slot-unavailable hover:bg-slot-unavailable-hover",
+                            isRowHovered && !isSelected && "bg-slot-unavailable-hover"
+                          )}
+                          onMouseDown={() => handleMouseDown(day, hour, minute)}
+                          onMouseEnter={() => handleMouseEnter(day, hour, minute)}
+                          onTouchStart={() => handleTouchStart(day, hour, minute)}
+                        />
+                      );
+                    })}
                   </div>
-                  {DAY_VALUES.map(day => {
-                    const key: SlotKey = `${day}-${hour}-${minute}`;
-                    const isSelected = selectedSlots.has(key);
-                    
-                    return (
-                      <div
-                        key={key}
-                        data-slot={`${day}-${hour}-${minute}`}
-                        className={cn(
-                          "h-5 cursor-pointer transition-colors",
-                          isSelected 
-                            ? "bg-slot-available hover:bg-slot-available-hover" 
-                            : "bg-slot-unavailable hover:bg-slot-unavailable-hover"
-                        )}
-                        onMouseDown={() => handleMouseDown(day, hour, minute)}
-                        onMouseEnter={() => handleMouseEnter(day, hour, minute)}
-                        onTouchStart={() => handleTouchStart(day, hour, minute)}
-                      />
-                    );
-                  })}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -390,9 +405,9 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                    className="h-7 text-xs border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   >
                     Clear all
                   </Button>
