@@ -15,10 +15,61 @@ function getWeekStart(): string {
   return monday.toISOString().split('T')[0];
 }
 
+// Get the next occurrence of a specific day of week and time
+function getNextSlotDateTime(dayOfWeek: number, timeStr: string, weekStart: string): Date {
+  const weekStartDate = new Date(weekStart);
+  // Calculate the date for the given day of week
+  const currentDayOfWeek = weekStartDate.getDay();
+  const daysUntilTarget = (dayOfWeek - currentDayOfWeek + 7) % 7;
+  
+  const targetDate = new Date(weekStartDate);
+  targetDate.setDate(weekStartDate.getDate() + daysUntilTarget);
+  
+  // Set the time
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  targetDate.setHours(hours, minutes, 0, 0);
+  
+  return targetDate;
+}
+
 // Generate a simple video call URL (using Jitsi Meet as a free option)
 function generateVideoCallUrl(introId: string): string {
   const roomName = `buildlink-intro-${introId.slice(0, 8)}`;
   return `https://meet.jit.si/${roomName}`;
+}
+
+interface AvailabilitySlot {
+  user_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  timezone: string;
+}
+
+// Find overlapping availability between two users
+function findOverlappingSlot(
+  userSlots: AvailabilitySlot[],
+  matchSlots: AvailabilitySlot[]
+): { day: number; time: string } | null {
+  for (const userSlot of userSlots) {
+    for (const matchSlot of matchSlots) {
+      if (userSlot.day_of_week === matchSlot.day_of_week) {
+        // Check if there's at least 30 min overlap
+        const userStart = userSlot.start_time;
+        const userEnd = userSlot.end_time;
+        const matchStart = matchSlot.start_time;
+        const matchEnd = matchSlot.end_time;
+        
+        const overlapStart = userStart > matchStart ? userStart : matchStart;
+        const overlapEnd = userEnd < matchEnd ? userEnd : matchEnd;
+        
+        if (overlapStart < overlapEnd) {
+          return { day: userSlot.day_of_week, time: overlapStart };
+        }
+      }
+    }
+  }
+  return null;
 }
 
 serve(async (req) => {
@@ -79,6 +130,25 @@ serve(async (req) => {
       });
     }
 
+    // Get user's availability
+    const { data: userAvailability, error: availError } = await supabaseUser
+      .from('user_weekly_availability')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (availError) {
+      console.error('Error fetching availability:', availError);
+    }
+
+    if (!userAvailability || userAvailability.length === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'Please set your weekly availability first before generating an intro.' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get current user's profile
     const { data: userProfile, error: profileError } = await supabaseUser
       .from('profiles')
@@ -123,43 +193,70 @@ serve(async (req) => {
       }
     });
 
-    // Get available profiles (exclude self, connected users, past intros)
-    let profilesQuery = supabaseUser
-      .from('profiles')
+    // Get all availability data for other users
+    const { data: allAvailability, error: allAvailError } = await supabaseUser
+      .from('user_weekly_availability')
       .select('*')
       .neq('user_id', user.id);
 
-    if (user.email) {
-      profilesQuery = profilesQuery.neq('email', user.email);
+    if (allAvailError) {
+      console.error('Error fetching all availability:', allAvailError);
     }
 
-    const { data: availableProfiles, error: profilesError } = await profilesQuery;
+    // Group availability by user
+    const availabilityByUser = new Map<string, AvailabilitySlot[]>();
+    allAvailability?.forEach(slot => {
+      if (!availabilityByUser.has(slot.user_id)) {
+        availabilityByUser.set(slot.user_id, []);
+      }
+      availabilityByUser.get(slot.user_id)!.push(slot);
+    });
 
-    if (profilesError) {
-      throw profilesError;
+    // Filter users who have overlapping availability
+    const usersWithOverlap: Array<{ userId: string; overlap: { day: number; time: string } }> = [];
+    for (const [userId, slots] of availabilityByUser) {
+      // Skip already connected users and past intros
+      if (connectedUserIds.has(userId) || pastMatchUserIds.has(userId)) {
+        continue;
+      }
+      const overlap = findOverlappingSlot(userAvailability, slots);
+      if (overlap) {
+        usersWithOverlap.push({ userId, overlap });
+      }
     }
 
-    // Filter out connected users and past intros
-    const candidateProfiles = availableProfiles?.filter(p => 
-      !connectedUserIds.has(p.user_id) && !pastMatchUserIds.has(p.user_id)
-    ) || [];
-
-    if (candidateProfiles.length === 0) {
+    if (usersWithOverlap.length === 0) {
       return new Response(JSON.stringify({ 
-        error: 'No available matches found. You may have already connected with or been introduced to all available users.' 
+        error: 'No users found with overlapping availability. Try expanding your availability or check back later.' 
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Use AI to find the best match
+    // Get profiles of users with overlapping availability
+    const userIdsWithOverlap = usersWithOverlap.map(u => u.userId);
+    const { data: candidateProfiles, error: profilesError } = await supabaseUser
+      .from('profiles')
+      .select('*')
+      .in('user_id', userIdsWithOverlap);
+
+    if (profilesError || !candidateProfiles || candidateProfiles.length === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'No available matches found with overlapping availability.' 
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Use AI to find the best match from candidates with overlapping availability
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are a professional matchmaker for a weekly networking intro feature. Given a user's profile and a list of candidates, select THE SINGLE BEST match for a meaningful one-on-one introduction.
+    const systemPrompt = `You are a professional matchmaker for a weekly networking intro feature. Given a user's profile and a list of candidates (all of whom have overlapping availability), select THE SINGLE BEST match for a meaningful one-on-one introduction.
 
 Consider these factors:
 1. Complementary goals (mentors with mentees, hiring managers with job seekers)
@@ -181,7 +278,6 @@ User Profile:
 - Skills: ${userProfile.skills?.join(', ') || 'Not specified'}
 - Location: ${userProfile.location || 'Not specified'}
 - Preferred Industries: ${userProfile.preferred_industries?.join(', ') || 'Any'}
-- Preferred Experience: ${userProfile.preferred_experience_levels?.join(', ') || 'Any'}
 - Preferred Goals: ${userProfile.preferred_goals?.join(', ') || 'Any'}
 `;
 
@@ -253,51 +349,45 @@ Candidate ${i + 1} (user_id: ${p.user_id}):
     const matchResult = JSON.parse(toolCall.function.arguments);
     const matchedUserId = matchResult.selected_user_id;
 
-    // Verify the matched user exists in our candidates
-    const matchedProfile = candidateProfiles.find(p => p.user_id === matchedUserId);
-    if (!matchedProfile) {
-      // Fallback to random selection if AI returned invalid ID
-      const randomIndex = Math.floor(Math.random() * candidateProfiles.length);
-      const fallbackProfile = candidateProfiles[randomIndex];
-      
-      const introId = crypto.randomUUID();
-      const videoCallUrl = generateVideoCallUrl(introId);
+    // Verify the matched user exists in our candidates and get their overlap
+    const matchOverlapData = usersWithOverlap.find(u => u.userId === matchedUserId);
+    
+    let selectedUserId = matchedUserId;
+    let selectedOverlap = matchOverlapData?.overlap;
 
-      const { data: newIntro, error: insertError } = await supabaseAdmin
-        .from('weekly_intros')
-        .insert({
-          id: introId,
-          user_id: user.id,
-          matched_user_id: fallbackProfile.user_id,
-          week_start: weekStart,
-          video_call_url: videoCallUrl,
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      return new Response(JSON.stringify({ 
-        intro: newIntro,
-        match_reason: 'Selected for potential networking synergy'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Fallback to random selection if AI returned invalid ID
+    if (!matchOverlapData) {
+      const randomIndex = Math.floor(Math.random() * usersWithOverlap.length);
+      const fallback = usersWithOverlap[randomIndex];
+      selectedUserId = fallback.userId;
+      selectedOverlap = fallback.overlap;
     }
 
-    // Create the intro with video call URL
+    // Calculate the scheduled meeting time
+    const scheduledAt = selectedOverlap 
+      ? getNextSlotDateTime(selectedOverlap.day, selectedOverlap.time, weekStart)
+      : null;
+
+    // Create the intro with video call URL and scheduled time
     const introId = crypto.randomUUID();
     const videoCallUrl = generateVideoCallUrl(introId);
 
+    const introData: Record<string, unknown> = {
+      id: introId,
+      user_id: user.id,
+      matched_user_id: selectedUserId,
+      week_start: weekStart,
+      video_call_url: videoCallUrl,
+      match_revealed_at: new Date().toISOString(),
+    };
+
+    if (scheduledAt) {
+      introData.scheduled_at = scheduledAt.toISOString();
+    }
+
     const { data: newIntro, error: insertError } = await supabaseAdmin
       .from('weekly_intros')
-      .insert({
-        id: introId,
-        user_id: user.id,
-        matched_user_id: matchedUserId,
-        week_start: weekStart,
-        video_call_url: videoCallUrl,
-      })
+      .insert(introData)
       .select()
       .single();
 
@@ -311,8 +401,8 @@ Candidate ${i + 1} (user_id: ${p.user_id}):
       .from('connections')
       .insert({
         requester_id: user.id,
-        recipient_id: matchedUserId,
-        status: 'accepted', // Auto-accept for weekly intros
+        recipient_id: selectedUserId,
+        status: 'accepted',
         message: 'Connected via Weekly Intro'
       });
 
@@ -323,7 +413,8 @@ Candidate ${i + 1} (user_id: ${p.user_id}):
 
     return new Response(JSON.stringify({ 
       intro: newIntro,
-      match_reason: matchResult.match_reason
+      match_reason: matchResult.match_reason,
+      scheduled_at: scheduledAt?.toISOString() || null
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

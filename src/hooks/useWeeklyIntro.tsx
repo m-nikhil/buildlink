@@ -11,6 +11,8 @@ export interface WeeklyIntro {
   status: 'pending' | 'accepted' | 'completed' | 'skipped';
   video_call_url: string | null;
   intro_completed_at: string | null;
+  scheduled_at: string | null;
+  match_revealed_at: string | null;
   created_at: string;
   updated_at: string;
   matched_profile?: Profile;
