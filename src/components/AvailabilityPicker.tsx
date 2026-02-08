@@ -15,33 +15,29 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Clock, Moon, Trash2 } from 'lucide-react';
+import { Clock, Moon } from 'lucide-react';
 import { TimeSlot, useUserAvailability, useSaveAvailability } from '@/hooks/useAvailability';
 import { cn } from '@/lib/utils';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_NAMES_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const DAY_VALUES = [0, 1, 2, 3, 4, 5, 6]; // Sunday = 0
+const DAY_VALUES = [0, 1, 2, 3, 4, 5, 6];
 
-// Generate time slots
-function generateTimeSlots(includeNight: boolean): { hour: number; minute: number; label: string }[] {
-  const slots: { hour: number; minute: number; label: string }[] = [];
+// Generate time slots - 1 hour increments for cleaner display
+function generateTimeSlots(includeNight: boolean): { hour: number; label: string }[] {
+  const slots: { hour: number; label: string }[] = [];
   
-  // Night hours (12 AM - 5 AM)
   if (includeNight) {
-    for (let hour = 0; hour < 5; hour++) {
+    for (let hour = 0; hour < 6; hour++) {
       const displayHour = hour === 0 ? 12 : hour;
-      slots.push({ hour, minute: 0, label: `${displayHour}:00 AM` });
-      slots.push({ hour, minute: 30, label: `${displayHour}:30 AM` });
+      slots.push({ hour, label: `${displayHour} AM` });
     }
   }
   
-  // Day hours (5 AM - 12 AM / midnight)
-  for (let hour = 5; hour < 24; hour++) {
+  for (let hour = 6; hour < 24; hour++) {
     const isPM = hour >= 12;
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    slots.push({ hour, minute: 0, label: `${displayHour}:00 ${isPM ? 'PM' : 'AM'}` });
-    slots.push({ hour, minute: 30, label: `${displayHour}:30 ${isPM ? 'PM' : 'AM'}` });
+    slots.push({ hour, label: `${displayHour} ${isPM ? 'PM' : 'AM'}` });
   }
   
   return slots;
@@ -51,10 +47,10 @@ interface AvailabilityPickerProps {
   onSaved?: () => void;
 }
 
-type SlotKey = `${number}-${number}-${number}`; // day-hour-minute
+type SlotKey = `${number}-${number}`; // day-hour
 
-function formatTimeValue(hour: number, minute: number): string {
-  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+function formatTimeValue(hour: number): string {
+  return `${hour.toString().padStart(2, '0')}:00`;
 }
 
 export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
@@ -77,24 +73,15 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
       let hasNightSlots = false;
       
       existingSlots.forEach(slot => {
-        const [startHour, startMin] = slot.start_time.split(':').map(Number);
-        const [endHour, endMin] = slot.end_time.split(':').map(Number);
+        const [startHour] = slot.start_time.split(':').map(Number);
+        const [endHour] = slot.end_time.split(':').map(Number);
         
-        // Check if there are any night slots
-        if (startHour < 5 || (endHour < 5 && endHour > 0)) {
+        if (startHour < 6 || (endHour <= 6 && endHour > 0)) {
           hasNightSlots = true;
         }
         
-        // Mark each 30-min slot in the range
-        let h = startHour;
-        let m = startMin;
-        while (h < endHour || (h === endHour && m < endMin)) {
-          slots.add(`${slot.day_of_week}-${h}-${m}`);
-          m += 30;
-          if (m >= 60) {
-            m = 0;
-            h += 1;
-          }
+        for (let h = startHour; h < endHour; h++) {
+          slots.add(`${slot.day_of_week}-${h}`);
         }
       });
       
@@ -112,11 +99,11 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     
     selectedSlots.forEach(key => {
       const [day] = key.split('-').map(Number);
-      dayHours.set(day, (dayHours.get(day) || 0) + 0.5);
+      dayHours.set(day, (dayHours.get(day) || 0) + 1);
     });
     
     return {
-      totalHours: selectedSlots.size * 0.5,
+      totalHours: selectedSlots.size,
       perDayHours: dayHours,
     };
   })();
@@ -128,51 +115,42 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     }
     
     saveTimeoutRef.current = setTimeout(async () => {
-      const slotsByDay = new Map<number, { hour: number; minute: number }[]>();
+      const slotsByDay = new Map<number, number[]>();
       
       slots.forEach(key => {
-        const [day, hour, minute] = key.split('-').map(Number);
+        const [day, hour] = key.split('-').map(Number);
         if (!slotsByDay.has(day)) {
           slotsByDay.set(day, []);
         }
-        slotsByDay.get(day)!.push({ hour, minute });
+        slotsByDay.get(day)!.push(hour);
       });
 
       const timeSlots: TimeSlot[] = [];
       
-      slotsByDay.forEach((times, day) => {
-        times.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
+      slotsByDay.forEach((hours, day) => {
+        hours.sort((a, b) => a - b);
         
-        if (times.length === 0) return;
+        if (hours.length === 0) return;
         
-        let startTime = times[0];
-        let endTime = times[0];
+        let startHour = hours[0];
+        let endHour = hours[0];
         
-        for (let i = 1; i <= times.length; i++) {
-          const current = times[i];
-          const prevMinutes = endTime.hour * 60 + endTime.minute;
-          const currMinutes = current ? current.hour * 60 + current.minute : -1;
+        for (let i = 1; i <= hours.length; i++) {
+          const current = hours[i];
           
-          if (current && currMinutes === prevMinutes + 30) {
-            endTime = current;
+          if (current === endHour + 1) {
+            endHour = current;
           } else {
-            let endH = endTime.hour;
-            let endM = endTime.minute + 30;
-            if (endM >= 60) {
-              endM = 0;
-              endH += 1;
-            }
-            
             timeSlots.push({
               day_of_week: day,
-              start_time: formatTimeValue(startTime.hour, startTime.minute),
-              end_time: formatTimeValue(endH, endM),
+              start_time: formatTimeValue(startHour),
+              end_time: formatTimeValue(endHour + 1),
               timezone,
             });
             
-            if (current) {
-              startTime = current;
-              endTime = current;
+            if (current !== undefined) {
+              startHour = current;
+              endHour = current;
             }
           }
         }
@@ -182,8 +160,8 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     }, 800);
   }, [saveAvailability, timezone]);
 
-  const toggleSlot = useCallback((day: number, hour: number, minute: number, forceMode?: 'select' | 'deselect') => {
-    const key: SlotKey = `${day}-${hour}-${minute}`;
+  const toggleSlot = useCallback((day: number, hour: number, forceMode?: 'select' | 'deselect') => {
+    const key: SlotKey = `${day}-${hour}`;
     
     setSelectedSlots(prev => {
       const newSlots = new Set(prev);
@@ -205,17 +183,17 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     saveSlots(new Set());
   }, [saveSlots]);
 
-  const handleMouseDown = useCallback((day: number, hour: number, minute: number) => {
-    const key: SlotKey = `${day}-${hour}-${minute}`;
+  const handleMouseDown = useCallback((day: number, hour: number) => {
+    const key: SlotKey = `${day}-${hour}`;
     const mode = selectedSlots.has(key) ? 'deselect' : 'select';
     setIsDragging(true);
     setDragMode(mode);
-    toggleSlot(day, hour, minute, mode);
+    toggleSlot(day, hour, mode);
   }, [selectedSlots, toggleSlot]);
 
-  const handleMouseEnter = useCallback((day: number, hour: number, minute: number) => {
+  const handleMouseEnter = useCallback((day: number, hour: number) => {
     if (isDragging) {
-      toggleSlot(day, hour, minute, dragMode);
+      toggleSlot(day, hour, dragMode);
     }
   }, [isDragging, dragMode, toggleSlot]);
 
@@ -223,12 +201,12 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     setIsDragging(false);
   }, []);
 
-  const handleTouchStart = useCallback((day: number, hour: number, minute: number) => {
-    const key: SlotKey = `${day}-${hour}-${minute}`;
+  const handleTouchStart = useCallback((day: number, hour: number) => {
+    const key: SlotKey = `${day}-${hour}`;
     const mode = selectedSlots.has(key) ? 'deselect' : 'select';
     setIsDragging(true);
     setDragMode(mode);
-    toggleSlot(day, hour, minute, mode);
+    toggleSlot(day, hour, mode);
   }, [selectedSlots, toggleSlot]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -238,8 +216,8 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     
     if (element && element.getAttribute('data-slot')) {
-      const [day, hour, minute] = element.getAttribute('data-slot')!.split('-').map(Number);
-      toggleSlot(day, hour, minute, dragMode);
+      const [day, hour] = element.getAttribute('data-slot')!.split('-').map(Number);
+      toggleSlot(day, hour, dragMode);
     }
   }, [isDragging, dragMode, toggleSlot]);
 
@@ -270,147 +248,157 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Clock className="h-5 w-5" />
           Set Your Weekly Availability
         </CardTitle>
         <CardDescription>
-          Click and drag to toggle availability. Changes save automatically.
+          Click and drag to toggle. Changes save automatically.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Legend & Night toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span>Unavailable</span>
-              <div className="w-5 h-5 rounded bg-slot-unavailable border border-slot-border-unavailable" />
+      <CardContent className="space-y-3">
+        {/* Controls row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded-sm bg-slot-unavailable border border-slot-border-unavailable" />
+              <span className="text-muted-foreground">Unavailable</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span>Available</span>
-              <div className="w-5 h-5 rounded bg-slot-available border border-slot-border-available" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded-sm bg-slot-available border border-slot-border-available" />
+              <span className="text-muted-foreground">Available</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={selectedSlots.size === 0}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Clear all
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear all availability?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will remove all your selected time slots. You'll need to set them again if you want to be matched for weekly intros.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Clear all
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            
-            <div className="flex items-center gap-2">
-              <Switch
-                id="night-hours"
-                checked={showNightHours}
-                onCheckedChange={setShowNightHours}
-              />
-              <Label htmlFor="night-hours" className="flex items-center gap-1 text-sm cursor-pointer">
-                <Moon className="h-4 w-4" />
-                Night hours
-              </Label>
-            </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="night-hours"
+              checked={showNightHours}
+              onCheckedChange={setShowNightHours}
+              className="scale-90"
+            />
+            <Label htmlFor="night-hours" className="flex items-center gap-1 text-xs cursor-pointer text-muted-foreground">
+              <Moon className="h-3.5 w-3.5" />
+              Night
+            </Label>
           </div>
         </div>
 
         {/* Timezone */}
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Timezone:</span>
-          <Badge variant="secondary">{timezone}</Badge>
+          <Badge variant="secondary" className="text-xs font-normal">{timezone}</Badge>
         </div>
 
         {/* Grid */}
         <div 
           ref={gridRef}
-          className="overflow-x-auto touch-none max-h-[400px] overflow-y-auto"
+          className="touch-none"
           onTouchMove={handleTouchMove}
         >
-          <div className="min-w-[420px] select-none">
-            {/* Header row - sticky */}
-            <div className="grid grid-cols-8 gap-0.5 mb-1 sticky top-0 bg-card z-10 py-1">
-              <div className="text-xs text-muted-foreground text-right pr-2" />
+          <div className="select-none">
+            {/* Header row */}
+            <div className="grid grid-cols-[50px_repeat(7,1fr)] gap-px mb-px">
+              <div />
               {DAYS.map(day => (
-                <div key={day} className="text-center font-medium text-sm py-1">
+                <div key={day} className="text-center font-medium text-xs py-1.5 text-muted-foreground">
                   {day}
                 </div>
               ))}
             </div>
 
             {/* Time rows */}
-            {TIME_SLOTS.map(({ hour, minute, label }) => (
-              <div key={`${hour}-${minute}`} className="grid grid-cols-8 gap-0.5 mb-0.5">
-                <div className="text-xs text-muted-foreground text-right pr-2 flex items-center justify-end">
-                  {minute === 0 ? label : ''}
+            <div className="rounded-lg overflow-hidden border">
+              {TIME_SLOTS.map(({ hour, label }, idx) => (
+                <div 
+                  key={hour} 
+                  className={cn(
+                    "grid grid-cols-[50px_repeat(7,1fr)] gap-px bg-border",
+                    idx > 0 && "border-t border-border"
+                  )}
+                >
+                  <div className="text-xs text-muted-foreground pr-2 flex items-center justify-end bg-card">
+                    {label}
+                  </div>
+                  {DAY_VALUES.map(day => {
+                    const key: SlotKey = `${day}-${hour}`;
+                    const isSelected = selectedSlots.has(key);
+                    
+                    return (
+                      <div
+                        key={key}
+                        data-slot={`${day}-${hour}`}
+                        className={cn(
+                          "h-7 cursor-pointer transition-colors",
+                          isSelected 
+                            ? "bg-slot-available hover:bg-slot-available-hover" 
+                            : "bg-slot-unavailable hover:bg-slot-unavailable-hover"
+                        )}
+                        onMouseDown={() => handleMouseDown(day, hour)}
+                        onMouseEnter={() => handleMouseEnter(day, hour)}
+                        onTouchStart={() => handleTouchStart(day, hour)}
+                      />
+                    );
+                  })}
                 </div>
-                {DAY_VALUES.map(day => {
-                  const key: SlotKey = `${day}-${hour}-${minute}`;
-                  const isSelected = selectedSlots.has(key);
-                  
-                  return (
-                    <div
-                      key={key}
-                      data-slot={`${day}-${hour}-${minute}`}
-                      className={cn(
-                        "h-5 rounded-sm cursor-pointer transition-colors border",
-                        isSelected 
-                          ? "bg-slot-available border-slot-border-available hover:bg-slot-available-hover" 
-                          : "bg-slot-unavailable border-slot-border-unavailable hover:bg-slot-unavailable-hover"
-                      )}
-                      onMouseDown={() => handleMouseDown(day, hour, minute)}
-                      onMouseEnter={() => handleMouseEnter(day, hour, minute)}
-                      onTouchStart={() => handleTouchStart(day, hour, minute)}
-                    />
-                  );
-                })}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Per-day breakdown */}
-        <div className="pt-3 border-t space-y-2">
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-sm">
+        {/* Footer with summary and clear */}
+        <div className="pt-2 border-t space-y-2">
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
             {DAY_VALUES.map(day => {
               const hours = perDayHours.get(day) || 0;
+              if (hours === 0) return null;
               return (
-                <span key={day} className="text-muted-foreground">
-                  <span className="font-medium text-foreground">{DAY_NAMES_FULL[day]}:</span>{' '}
-                  {hours > 0 ? `${hours}h` : '—'}
+                <span key={day}>
+                  {DAY_NAMES_FULL[day]}: <span className="font-medium text-foreground">{hours}h</span>
                 </span>
               );
             })}
           </div>
-          <p className="text-center text-sm text-muted-foreground">
-            Total: <span className="font-medium text-foreground">{totalHours}</span> hours/week
-          </p>
+          
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Total: <span className="font-medium text-foreground">{totalHours}</span> hours/week
+            </p>
+            
+            {selectedSlots.size > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    Clear all
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all availability?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove all your selected time slots. You'll need to set them again if you want to be matched for weekly intros.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Clear all
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
 
         {/* Saving indicator */}
         {saveAvailability.isPending && (
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-xs text-muted-foreground">
             Saving...
           </div>
         )}
