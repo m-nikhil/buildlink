@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, Video, Sparkles, Users, MapPin, CheckCircle, RefreshCw, 
-  Clock, CalendarDays, Edit2, Lock, Copy
+  Clock, CalendarDays, Edit2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EXPERIENCE_LABELS, GOAL_LABELS } from '@/types/profile';
@@ -270,34 +270,6 @@ export default function WeeklyIntro() {
                               </div>
                             </div>
 
-                            {/* Password Display */}
-                            {intro.video_call_password && (
-                              <div className="mt-3 p-3 bg-background rounded-md border">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Lock className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground">Room Password:</span>
-                                    <code className="font-mono font-semibold text-foreground">
-                                      {intro.video_call_password}
-                                    </code>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 px-2"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(intro.video_call_password!);
-                                      toast.success('Password copied!');
-                                    }}
-                                  >
-                                    <Copy className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  You'll need this to join the private room
-                                </p>
-                              </div>
-                            )}
                             
                             {intro.video_call_url && (
                               <Button 
