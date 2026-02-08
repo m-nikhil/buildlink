@@ -1,18 +1,38 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Clock, Moon } from 'lucide-react';
 import { TimeSlot, useUserAvailability, useSaveAvailability } from '@/hooks/useAvailability';
 import { cn } from '@/lib/utils';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_NAMES_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_VALUES = [0, 1, 2, 3, 4, 5, 6]; // Sunday = 0
 
-// 30-minute slots from 9 AM to 6 PM
-const TIME_SLOTS: { hour: number; minute: number; label: string }[] = [];
-for (let hour = 9; hour < 18; hour++) {
-  TIME_SLOTS.push({ hour, minute: 0, label: `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}` });
-  TIME_SLOTS.push({ hour, minute: 30, label: `${hour > 12 ? hour - 12 : hour}:30 ${hour >= 12 ? 'PM' : 'AM'}` });
+// Generate time slots
+function generateTimeSlots(includeNight: boolean): { hour: number; minute: number; label: string }[] {
+  const slots: { hour: number; minute: number; label: string }[] = [];
+  
+  // Night hours (12 AM - 5 AM)
+  if (includeNight) {
+    for (let hour = 0; hour < 5; hour++) {
+      const displayHour = hour === 0 ? 12 : hour;
+      slots.push({ hour, minute: 0, label: `${displayHour}:00 AM` });
+      slots.push({ hour, minute: 30, label: `${displayHour}:30 AM` });
+    }
+  }
+  
+  // Day hours (5 AM - 12 AM / midnight)
+  for (let hour = 5; hour < 24; hour++) {
+    const isPM = hour >= 12;
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    slots.push({ hour, minute: 0, label: `${displayHour}:00 ${isPM ? 'PM' : 'AM'}` });
+    slots.push({ hour, minute: 30, label: `${displayHour}:30 ${isPM ? 'PM' : 'AM'}` });
+  }
+  
+  return slots;
 }
 
 interface AvailabilityPickerProps {
@@ -31,17 +51,27 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
   const [selectedSlots, setSelectedSlots] = useState<Set<SlotKey>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
+  const [showNightHours, setShowNightHours] = useState(false);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  const TIME_SLOTS = generateTimeSlots(showNightHours);
 
   // Initialize from existing data
   useEffect(() => {
     if (existingSlots && existingSlots.length > 0) {
       const slots = new Set<SlotKey>();
+      let hasNightSlots = false;
+      
       existingSlots.forEach(slot => {
         const [startHour, startMin] = slot.start_time.split(':').map(Number);
         const [endHour, endMin] = slot.end_time.split(':').map(Number);
+        
+        // Check if there are any night slots
+        if (startHour < 5 || (endHour < 5 && endHour > 0)) {
+          hasNightSlots = true;
+        }
         
         // Mark each 30-min slot in the range
         let h = startHour;
@@ -55,12 +85,29 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
           }
         }
       });
+      
       setSelectedSlots(slots);
+      if (hasNightSlots) {
+        setShowNightHours(true);
+      }
     }
   }, [existingSlots]);
 
-  // Calculate total selected hours
-  const totalHours = selectedSlots.size * 0.5;
+  // Calculate total selected hours and per-day breakdown
+  const { totalHours, perDayHours } = (() => {
+    const dayHours = new Map<number, number>();
+    DAY_VALUES.forEach(d => dayHours.set(d, 0));
+    
+    selectedSlots.forEach(key => {
+      const [day] = key.split('-').map(Number);
+      dayHours.set(day, (dayHours.get(day) || 0) + 0.5);
+    });
+    
+    return {
+      totalHours: selectedSlots.size * 0.5,
+      perDayHours: dayHours,
+    };
+  })();
 
   // Debounced save function
   const saveSlots = useCallback((slots: Set<SlotKey>) => {
@@ -69,8 +116,6 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     }
     
     saveTimeoutRef.current = setTimeout(async () => {
-      // Convert selected slots to TimeSlot format
-      // Group consecutive 30-min slots per day
       const slotsByDay = new Map<number, { hour: number; minute: number }[]>();
       
       slots.forEach(key => {
@@ -84,12 +129,10 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
       const timeSlots: TimeSlot[] = [];
       
       slotsByDay.forEach((times, day) => {
-        // Sort by time
         times.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
         
         if (times.length === 0) return;
         
-        // Group consecutive slots
         let startTime = times[0];
         let endTime = times[0];
         
@@ -101,7 +144,6 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
           if (current && currMinutes === prevMinutes + 30) {
             endTime = current;
           } else {
-            // End of consecutive block - calculate end time (add 30 min to last slot)
             let endH = endTime.hour;
             let endM = endTime.minute + 30;
             if (endM >= 60) {
@@ -125,7 +167,6 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
       });
 
       await saveAvailability.mutateAsync(timeSlots);
-      // Don't call onSaved to avoid auto-switching tabs
     }, 800);
   }, [saveAvailability, timezone]);
 
@@ -165,7 +206,6 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     setIsDragging(false);
   }, []);
 
-  // Touch support
   const handleTouchStart = useCallback((day: number, hour: number, minute: number) => {
     const key: SlotKey = `${day}-${hour}-${minute}`;
     const mode = selectedSlots.has(key) ? 'deselect' : 'select';
@@ -190,7 +230,6 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     setIsDragging(false);
   }, []);
 
-  // Add global mouse up listener
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('touchend', handleTouchEnd);
@@ -224,15 +263,29 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-6 text-sm">
-          <div className="flex items-center gap-2">
-            <span>Unavailable</span>
-            <div className="w-6 h-6 rounded bg-slot-unavailable border border-slot-border-unavailable" />
+        {/* Legend & Night toggle */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <span>Unavailable</span>
+              <div className="w-5 h-5 rounded bg-slot-unavailable border border-slot-border-unavailable" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span>Available</span>
+              <div className="w-5 h-5 rounded bg-slot-available border border-slot-border-available" />
+            </div>
           </div>
+          
           <div className="flex items-center gap-2">
-            <span>Available</span>
-            <div className="w-6 h-6 rounded bg-slot-available border border-slot-border-available" />
+            <Switch
+              id="night-hours"
+              checked={showNightHours}
+              onCheckedChange={setShowNightHours}
+            />
+            <Label htmlFor="night-hours" className="flex items-center gap-1 text-sm cursor-pointer">
+              <Moon className="h-4 w-4" />
+              Night hours
+            </Label>
           </div>
         </div>
 
@@ -245,15 +298,15 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
         {/* Grid */}
         <div 
           ref={gridRef}
-          className="overflow-x-auto touch-none"
+          className="overflow-x-auto touch-none max-h-[400px] overflow-y-auto"
           onTouchMove={handleTouchMove}
         >
           <div className="min-w-[420px] select-none">
-            {/* Header row */}
-            <div className="grid grid-cols-8 gap-0.5 mb-1">
+            {/* Header row - sticky */}
+            <div className="grid grid-cols-8 gap-0.5 mb-1 sticky top-0 bg-card z-10 py-1">
               <div className="text-xs text-muted-foreground text-right pr-2" />
               {DAYS.map(day => (
-                <div key={day} className="text-center font-medium text-sm py-2">
+                <div key={day} className="text-center font-medium text-sm py-1">
                   {day}
                 </div>
               ))}
@@ -274,7 +327,7 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
                       key={key}
                       data-slot={`${day}-${hour}-${minute}`}
                       className={cn(
-                        "h-6 rounded-sm cursor-pointer transition-colors border",
+                        "h-5 rounded-sm cursor-pointer transition-colors border",
                         isSelected 
                           ? "bg-slot-available border-slot-border-available hover:bg-slot-available-hover" 
                           : "bg-slot-unavailable border-slot-border-unavailable hover:bg-slot-unavailable-hover"
@@ -290,10 +343,21 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
           </div>
         </div>
 
-        {/* Summary */}
-        <div className="text-center pt-2 border-t">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{totalHours}</span> hours selected this week
+        {/* Per-day breakdown */}
+        <div className="pt-3 border-t space-y-2">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-sm">
+            {DAY_VALUES.map(day => {
+              const hours = perDayHours.get(day) || 0;
+              return (
+                <span key={day} className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{DAY_NAMES_FULL[day]}:</span>{' '}
+                  {hours > 0 ? `${hours}h` : '—'}
+                </span>
+              );
+            })}
+          </div>
+          <p className="text-center text-sm text-muted-foreground">
+            Total: <span className="font-medium text-foreground">{totalHours}</span> hours/week
           </p>
         </div>
 
