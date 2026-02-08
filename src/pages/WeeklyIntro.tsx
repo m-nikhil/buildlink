@@ -302,7 +302,11 @@ export default function WeeklyIntro() {
                             {intro.video_call_url && (
                               <Button 
                                 className="w-full mt-4 gap-2"
-                                onClick={() => window.open(intro.video_call_url!, '_blank')}
+                                onClick={() => {
+                                  const displayName = encodeURIComponent(profile?.full_name || 'Guest');
+                                  const urlWithName = `${intro.video_call_url}#userInfo.displayName="${displayName}"`;
+                                  window.open(urlWithName, '_blank');
+                                }}
                               >
                                 <Video className="h-4 w-4" />
                                 Join Video Call
