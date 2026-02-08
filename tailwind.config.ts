@@ -57,6 +57,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        slot: {
+          available: "hsl(var(--slot-available))",
+          "available-hover": "hsl(var(--slot-available-hover))",
+          unavailable: "hsl(var(--slot-unavailable))",
+          "unavailable-hover": "hsl(var(--slot-unavailable-hover))",
+          "border-available": "hsl(var(--slot-border-available))",
+          "border-unavailable": "hsl(var(--slot-border-unavailable))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

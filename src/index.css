@@ -44,6 +44,14 @@
     --linkedin-foreground: 0 0% 100%;
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+    
+    /* Availability picker */
+    --slot-available: 142 76% 42%;
+    --slot-available-hover: 142 76% 36%;
+    --slot-unavailable: 350 80% 92%;
+    --slot-unavailable-hover: 350 80% 86%;
+    --slot-border-available: 142 76% 36%;
+    --slot-border-unavailable: 350 60% 82%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -88,6 +96,14 @@
     --linkedin-foreground: 0 0% 100%;
     --success: 142 76% 46%;
     --success-foreground: 0 0% 100%;
+    
+    /* Availability picker */
+    --slot-available: 142 76% 50%;
+    --slot-available-hover: 142 76% 42%;
+    --slot-unavailable: 350 40% 25%;
+    --slot-unavailable-hover: 350 40% 32%;
+    --slot-border-available: 142 76% 42%;
+    --slot-border-unavailable: 350 40% 35%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

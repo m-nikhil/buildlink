@@ -1,148 +1,150 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Plus, Trash2, Save } from 'lucide-react';
-import { TimeSlot, getDayName, useUserAvailability, useSaveAvailability } from '@/hooks/useAvailability';
+import { Clock } from 'lucide-react';
+import { TimeSlot, useUserAvailability, useSaveAvailability } from '@/hooks/useAvailability';
+import { cn } from '@/lib/utils';
 
-const DAYS = [
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
-  { value: 0, label: 'Sunday' },
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_VALUES = [0, 1, 2, 3, 4, 5, 6]; // Sunday = 0
+
+const TIME_SLOTS = [
+  { hour: 9, label: '9:00 AM' },
+  { hour: 10, label: '10:00 AM' },
+  { hour: 11, label: '11:00 AM' },
+  { hour: 12, label: '12:00 PM' },
+  { hour: 13, label: '1:00 PM' },
+  { hour: 14, label: '2:00 PM' },
+  { hour: 15, label: '3:00 PM' },
+  { hour: 16, label: '4:00 PM' },
+  { hour: 17, label: '5:00 PM' },
 ];
-
-const TIME_OPTIONS = [
-  { value: '08:00', label: '8:00 AM' },
-  { value: '08:30', label: '8:30 AM' },
-  { value: '09:00', label: '9:00 AM' },
-  { value: '09:30', label: '9:30 AM' },
-  { value: '10:00', label: '10:00 AM' },
-  { value: '10:30', label: '10:30 AM' },
-  { value: '11:00', label: '11:00 AM' },
-  { value: '11:30', label: '11:30 AM' },
-  { value: '12:00', label: '12:00 PM' },
-  { value: '12:30', label: '12:30 PM' },
-  { value: '13:00', label: '1:00 PM' },
-  { value: '13:30', label: '1:30 PM' },
-  { value: '14:00', label: '2:00 PM' },
-  { value: '14:30', label: '2:30 PM' },
-  { value: '15:00', label: '3:00 PM' },
-  { value: '15:30', label: '3:30 PM' },
-  { value: '16:00', label: '4:00 PM' },
-  { value: '16:30', label: '4:30 PM' },
-  { value: '17:00', label: '5:00 PM' },
-  { value: '17:30', label: '5:30 PM' },
-  { value: '18:00', label: '6:00 PM' },
-  { value: '18:30', label: '6:30 PM' },
-  { value: '19:00', label: '7:00 PM' },
-  { value: '19:30', label: '7:30 PM' },
-  { value: '20:00', label: '8:00 PM' },
-];
-
-function formatTime(time: string): string {
-  const option = TIME_OPTIONS.find(t => t.value === time || t.value === time.slice(0, 5));
-  return option?.label || time;
-}
 
 interface AvailabilityPickerProps {
   onSaved?: () => void;
 }
 
+type SlotKey = `${number}-${number}`; // day-hour
+
 export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
   const { data: existingSlots, isLoading } = useUserAvailability();
   const saveAvailability = useSaveAvailability();
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [selectedSlots, setSelectedSlots] = useState<Set<SlotKey>>(new Set());
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize from existing data
   useEffect(() => {
     if (existingSlots && existingSlots.length > 0) {
-      const mappedSlots = existingSlots.map(s => ({
-        day_of_week: s.day_of_week,
-        start_time: s.start_time.slice(0, 5), // Remove seconds
-        end_time: s.end_time.slice(0, 5),
-        timezone: s.timezone,
-      }));
-      setSlots(mappedSlots);
-      setSelectedDays([...new Set(mappedSlots.map(s => s.day_of_week))]);
+      const slots = new Set<SlotKey>();
+      existingSlots.forEach(slot => {
+        const startHour = parseInt(slot.start_time.split(':')[0], 10);
+        const endHour = parseInt(slot.end_time.split(':')[0], 10);
+        // Mark each hour in the range as selected
+        for (let h = startHour; h < endHour; h++) {
+          slots.add(`${slot.day_of_week}-${h}`);
+        }
+      });
+      setSelectedSlots(slots);
     }
   }, [existingSlots]);
 
-  const toggleDay = (day: number) => {
-    if (selectedDays.includes(day)) {
-      setSelectedDays(selectedDays.filter(d => d !== day));
-      setSlots(slots.filter(s => s.day_of_week !== day));
-    } else {
-      setSelectedDays([...selectedDays, day]);
-      // Add a default slot for this day
-      setSlots([...slots, {
-        day_of_week: day,
-        start_time: '09:00',
-        end_time: '10:00',
-        timezone,
-      }]);
-    }
-  };
-
-  const addSlot = (day: number) => {
-    const daySlots = slots.filter(s => s.day_of_week === day);
-    const lastSlot = daySlots[daySlots.length - 1];
-    const newStartIndex = lastSlot 
-      ? TIME_OPTIONS.findIndex(t => t.value === lastSlot.end_time) 
-      : 0;
-    const newStart = TIME_OPTIONS[newStartIndex]?.value || '09:00';
-    const newEndIndex = Math.min(newStartIndex + 2, TIME_OPTIONS.length - 1);
-    const newEnd = TIME_OPTIONS[newEndIndex]?.value || '10:00';
-
-    setSlots([...slots, {
-      day_of_week: day,
-      start_time: newStart,
-      end_time: newEnd,
-      timezone,
-    }]);
-  };
-
-  const removeSlot = (day: number, index: number) => {
-    const daySlots = slots.filter(s => s.day_of_week === day);
-    const otherSlots = slots.filter(s => s.day_of_week !== day);
-    daySlots.splice(index, 1);
-    
-    if (daySlots.length === 0) {
-      setSelectedDays(selectedDays.filter(d => d !== day));
+  // Debounced save function
+  const saveSlots = useCallback((slots: Set<SlotKey>) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
     
-    setSlots([...otherSlots, ...daySlots]);
-  };
+    saveTimeoutRef.current = setTimeout(async () => {
+      // Convert selected slots to TimeSlot format
+      // Group consecutive hours per day
+      const slotsByDay = new Map<number, number[]>();
+      
+      slots.forEach(key => {
+        const [day, hour] = key.split('-').map(Number);
+        if (!slotsByDay.has(day)) {
+          slotsByDay.set(day, []);
+        }
+        slotsByDay.get(day)!.push(hour);
+      });
 
-  const updateSlot = (day: number, index: number, field: 'start_time' | 'end_time', value: string) => {
-    const newSlots = [...slots];
-    const daySlots = newSlots.filter(s => s.day_of_week === day);
-    const slotIndex = newSlots.findIndex(s => s === daySlots[index]);
+      const timeSlots: TimeSlot[] = [];
+      
+      slotsByDay.forEach((hours, day) => {
+        hours.sort((a, b) => a - b);
+        
+        // Group consecutive hours
+        let start = hours[0];
+        let end = hours[0];
+        
+        for (let i = 1; i <= hours.length; i++) {
+          if (i < hours.length && hours[i] === end + 1) {
+            end = hours[i];
+          } else {
+            timeSlots.push({
+              day_of_week: day,
+              start_time: `${start.toString().padStart(2, '0')}:00`,
+              end_time: `${(end + 1).toString().padStart(2, '0')}:00`,
+              timezone,
+            });
+            if (i < hours.length) {
+              start = hours[i];
+              end = hours[i];
+            }
+          }
+        }
+      });
+
+      await saveAvailability.mutateAsync(timeSlots);
+      onSaved?.();
+    }, 800);
+  }, [saveAvailability, timezone, onSaved]);
+
+  const toggleSlot = useCallback((day: number, hour: number, forceMode?: 'select' | 'deselect') => {
+    const key: SlotKey = `${day}-${hour}`;
     
-    if (slotIndex !== -1) {
-      newSlots[slotIndex] = { ...newSlots[slotIndex], [field]: value };
-      setSlots(newSlots);
-    }
-  };
-
-  const handleSave = async () => {
-    // Validate slots
-    const validSlots = slots.filter(slot => {
-      const startIndex = TIME_OPTIONS.findIndex(t => t.value === slot.start_time);
-      const endIndex = TIME_OPTIONS.findIndex(t => t.value === slot.end_time);
-      return startIndex < endIndex;
+    setSelectedSlots(prev => {
+      const newSlots = new Set(prev);
+      const mode = forceMode || (newSlots.has(key) ? 'deselect' : 'select');
+      
+      if (mode === 'select') {
+        newSlots.add(key);
+      } else {
+        newSlots.delete(key);
+      }
+      
+      // Trigger save
+      saveSlots(newSlots);
+      
+      return newSlots;
     });
+  }, [saveSlots]);
 
-    await saveAvailability.mutateAsync(validSlots);
-    onSaved?.();
-  };
+  const handleMouseDown = useCallback((day: number, hour: number) => {
+    const key: SlotKey = `${day}-${hour}`;
+    const mode = selectedSlots.has(key) ? 'deselect' : 'select';
+    setIsDragging(true);
+    setDragMode(mode);
+    toggleSlot(day, hour, mode);
+  }, [selectedSlots, toggleSlot]);
+
+  const handleMouseEnter = useCallback((day: number, hour: number) => {
+    if (isDragging) {
+      toggleSlot(day, hour, dragMode);
+    }
+  }, [isDragging, dragMode, toggleSlot]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Add global mouse up listener
+  useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseUp]);
 
   if (isLoading) {
     return (
@@ -164,113 +166,76 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
           Set Your Weekly Availability
         </CardTitle>
         <CardDescription>
-          Select the days and times you're available for a 30-minute intro call. 
-          We'll match you with someone who has overlapping availability.
+          Click and drag to toggle availability. Changes save automatically.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span>Unavailable</span>
+            <div className="w-6 h-6 rounded bg-slot-unavailable border border-slot-border-unavailable" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Available</span>
+            <div className="w-6 h-6 rounded bg-slot-available border border-slot-border-available" />
+          </div>
+        </div>
+
         {/* Timezone */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <span>Timezone:</span>
           <Badge variant="secondary">{timezone}</Badge>
         </div>
 
-        {/* Day Selection */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium">Available Days</label>
-          <div className="flex flex-wrap gap-2">
-            {DAYS.map(day => (
-              <div key={day.value} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`day-${day.value}`}
-                  checked={selectedDays.includes(day.value)}
-                  onCheckedChange={() => toggleDay(day.value)}
-                />
-                <label
-                  htmlFor={`day-${day.value}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                >
-                  {day.label}
-                </label>
+        {/* Grid */}
+        <div className="overflow-x-auto">
+          <div className="min-w-[400px] select-none">
+            {/* Header row */}
+            <div className="grid grid-cols-8 gap-1 mb-1">
+              <div className="text-xs text-muted-foreground text-right pr-2" />
+              {DAYS.map(day => (
+                <div key={day} className="text-center font-medium text-sm py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Time rows */}
+            {TIME_SLOTS.map(({ hour, label }) => (
+              <div key={hour} className="grid grid-cols-8 gap-1 mb-1">
+                <div className="text-xs text-muted-foreground text-right pr-2 flex items-center justify-end">
+                  {label}
+                </div>
+                {DAY_VALUES.map(day => {
+                  const key: SlotKey = `${day}-${hour}`;
+                  const isSelected = selectedSlots.has(key);
+                  
+                  return (
+                    <div
+                      key={key}
+                      className={cn(
+                        "h-10 rounded cursor-pointer transition-colors border",
+                        isSelected 
+                          ? "bg-slot-available border-slot-border-available hover:bg-slot-available-hover" 
+                          : "bg-slot-unavailable border-slot-border-unavailable hover:bg-slot-unavailable-hover"
+                      )}
+                      onMouseDown={() => handleMouseDown(day, hour)}
+                      onMouseEnter={() => handleMouseEnter(day, hour)}
+                    />
+                  );
+                })}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Time Slots per Day */}
-        {selectedDays.length > 0 && (
-          <div className="space-y-4">
-            <label className="text-sm font-medium">Time Slots</label>
-            {DAYS.filter(day => selectedDays.includes(day.value)).map(day => {
-              const daySlots = slots.filter(s => s.day_of_week === day.value);
-              return (
-                <div key={day.value} className="space-y-2 p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{day.label}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => addSlot(day.value)}
-                      className="h-7 text-xs"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Slot
-                    </Button>
-                  </div>
-                  {daySlots.map((slot, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <Select
-                        value={slot.start_time}
-                        onValueChange={(v) => updateSlot(day.value, idx, 'start_time', v)}
-                      >
-                        <SelectTrigger className="w-[120px] h-8">
-                          <SelectValue placeholder="Start" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIME_OPTIONS.map(t => (
-                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <span className="text-muted-foreground">to</span>
-                      <Select
-                        value={slot.end_time}
-                        onValueChange={(v) => updateSlot(day.value, idx, 'end_time', v)}
-                      >
-                        <SelectTrigger className="w-[120px] h-8">
-                          <SelectValue placeholder="End" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIME_OPTIONS.map(t => (
-                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => removeSlot(day.value, idx)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
+        {/* Saving indicator */}
+        {saveAvailability.isPending && (
+          <div className="text-center text-sm text-muted-foreground">
+            Saving...
           </div>
         )}
-
-        {/* Save Button */}
-        <Button 
-          onClick={handleSave} 
-          disabled={saveAvailability.isPending || slots.length === 0}
-          className="w-full"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {saveAvailability.isPending ? 'Saving...' : 'Save Availability'}
-        </Button>
       </CardContent>
     </Card>
   );
