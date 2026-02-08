@@ -85,7 +85,7 @@ export default function Settings() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Location</CardTitle>
-              <CardDescription>Where would you like to connect? (up to 3)</CardDescription>
+              <CardDescription>Where would you like to connect? (3 preferred)</CardDescription>
             </CardHeader>
             <CardContent>
               <LocationMultiSelect
