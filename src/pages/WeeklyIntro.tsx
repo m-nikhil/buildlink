@@ -276,8 +276,7 @@ export default function WeeklyIntro() {
                                 className="w-full mt-4 gap-2"
                                 onClick={() => {
                                   const displayName = encodeURIComponent(profile?.full_name || 'Guest');
-                                  const password = intro.video_call_password || '';
-                                  const urlWithConfig = `${intro.video_call_url}#userInfo.displayName="${displayName}"&config.prejoinConfig.enabled=false${password ? `&config.password="${password}"` : ''}`;
+                                  const urlWithConfig = `${intro.video_call_url}#userInfo.displayName="${displayName}"&config.prejoinConfig.enabled=false`;
                                   window.open(urlWithConfig, '_blank');
                                 }}
                               >
