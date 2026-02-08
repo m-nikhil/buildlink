@@ -19,6 +19,7 @@ export interface Profile {
   looking_for_text: string | null;
   skills: string[] | null;
   location: string | null;
+  timezone: string | null;
   // Match preferences
   preferred_experience_levels: ExperienceLevel[] | null;
   preferred_industries: string[] | null; // Now uses dynamic industry IDs

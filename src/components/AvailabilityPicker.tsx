@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -15,9 +14,55 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Clock, Moon } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Clock, Moon, Globe } from 'lucide-react';
 import { TimeSlot, useUserAvailability, useSaveAvailability } from '@/hooks/useAvailability';
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
+
+// Common timezones grouped by region
+const TIMEZONE_OPTIONS = [
+  { group: 'Americas', zones: [
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'America/Anchorage', label: 'Alaska Time' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii Time' },
+    { value: 'America/Toronto', label: 'Toronto' },
+    { value: 'America/Vancouver', label: 'Vancouver' },
+    { value: 'America/Mexico_City', label: 'Mexico City' },
+    { value: 'America/Sao_Paulo', label: 'São Paulo' },
+  ]},
+  { group: 'Europe & Africa', zones: [
+    { value: 'Europe/London', label: 'London (GMT/BST)' },
+    { value: 'Europe/Paris', label: 'Paris (CET)' },
+    { value: 'Europe/Berlin', label: 'Berlin (CET)' },
+    { value: 'Europe/Amsterdam', label: 'Amsterdam (CET)' },
+    { value: 'Europe/Stockholm', label: 'Stockholm (CET)' },
+    { value: 'Europe/Moscow', label: 'Moscow' },
+    { value: 'Africa/Cairo', label: 'Cairo' },
+    { value: 'Africa/Johannesburg', label: 'Johannesburg' },
+  ]},
+  { group: 'Asia & Pacific', zones: [
+    { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+    { value: 'Asia/Kolkata', label: 'India (IST)' },
+    { value: 'Asia/Singapore', label: 'Singapore' },
+    { value: 'Asia/Hong_Kong', label: 'Hong Kong' },
+    { value: 'Asia/Shanghai', label: 'Shanghai' },
+    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+    { value: 'Asia/Seoul', label: 'Seoul' },
+    { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
+    { value: 'Australia/Melbourne', label: 'Melbourne' },
+    { value: 'Pacific/Auckland', label: 'Auckland (NZST)' },
+  ]},
+];
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_NAMES_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -59,17 +104,45 @@ function formatTimeValue(hour: number, minute: number): string {
 
 export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
   const { data: existingSlots, isLoading } = useUserAvailability();
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
   const saveAvailability = useSaveAvailability();
   const [selectedSlots, setSelectedSlots] = useState<Set<SlotKey>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
   const [showNightHours, setShowNightHours] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+  // Get timezone from profile or detect from browser
+  const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const [timezone, setTimezone] = useState(detectedTimezone);
+  
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const TIME_SLOTS = generateTimeSlots(showNightHours);
+  
+  // Initialize timezone from profile
+  useEffect(() => {
+    if (profile?.timezone) {
+      setTimezone(profile.timezone);
+    }
+  }, [profile?.timezone]);
+  
+  // Get display label for current timezone
+  const timezoneLabel = useMemo(() => {
+    for (const group of TIMEZONE_OPTIONS) {
+      const found = group.zones.find(z => z.value === timezone);
+      if (found) return found.label;
+    }
+    return timezone; // Fallback to raw timezone
+  }, [timezone]);
+  
+  const handleTimezoneChange = async (newTimezone: string) => {
+    setTimezone(newTimezone);
+    // Save to profile
+    await updateProfile.mutateAsync({ timezone: newTimezone });
+  };
 
   // Initialize from existing data
   useEffect(() => {
@@ -308,10 +381,28 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
           </div>
         </div>
 
-        {/* Timezone */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Timezone:</span>
-          <Badge variant="secondary" className="text-xs font-normal">{timezone}</Badge>
+        {/* Timezone selector */}
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <Select value={timezone} onValueChange={handleTimezoneChange}>
+            <SelectTrigger className="h-8 w-auto min-w-[180px] text-xs">
+              <SelectValue>{timezoneLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEZONE_OPTIONS.map(group => (
+                <div key={group.group}>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                    {group.group}
+                  </div>
+                  {group.zones.map(zone => (
+                    <SelectItem key={zone.value} value={zone.value} className="text-xs">
+                      {zone.label}
+                    </SelectItem>
+                  ))}
+                </div>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Grid */}

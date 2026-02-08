@@ -166,6 +166,7 @@ export type Database = {
           preferred_industries: string[] | null
           preferred_locations: string[] | null
           skills: string[] | null
+          timezone: string | null
           updated_at: string | null
           user_id: string
         }
@@ -195,6 +196,7 @@ export type Database = {
           preferred_industries?: string[] | null
           preferred_locations?: string[] | null
           skills?: string[] | null
+          timezone?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -224,6 +226,7 @@ export type Database = {
           preferred_industries?: string[] | null
           preferred_locations?: string[] | null
           skills?: string[] | null
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string
         }
