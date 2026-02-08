@@ -229,12 +229,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_weekly_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_intros: {
         Row: {
           created_at: string
           id: string
           intro_completed_at: string | null
+          match_revealed_at: string | null
           matched_user_id: string
+          scheduled_at: string | null
           status: string
           updated_at: string
           user_id: string
@@ -245,7 +280,9 @@ export type Database = {
           created_at?: string
           id?: string
           intro_completed_at?: string | null
+          match_revealed_at?: string | null
           matched_user_id: string
+          scheduled_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -256,7 +293,9 @@ export type Database = {
           created_at?: string
           id?: string
           intro_completed_at?: string | null
+          match_revealed_at?: string | null
           matched_user_id?: string
+          scheduled_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string
