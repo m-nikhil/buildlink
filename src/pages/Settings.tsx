@@ -85,7 +85,7 @@ export default function Settings() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Location</CardTitle>
-              <CardDescription>Where would you like to connect? (3 preferred)</CardDescription>
+              <CardDescription>Where would you like to connect? (max 3)</CardDescription>
             </CardHeader>
             <CardContent>
               <LocationMultiSelect
@@ -101,7 +101,7 @@ export default function Settings() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Industry</CardTitle>
-              <CardDescription>What industries interest you? (3 preferred)</CardDescription>
+              <CardDescription>What industries interest you? (max 3)</CardDescription>
             </CardHeader>
             <CardContent>
               <IndustryMultiSelect
