@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Clock, Moon } from 'lucide-react';
+import { Clock, Moon, Trash2 } from 'lucide-react';
 import { TimeSlot, useUserAvailability, useSaveAvailability } from '@/hooks/useAvailability';
 import { cn } from '@/lib/utils';
 
@@ -188,6 +189,11 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     });
   }, [saveSlots]);
 
+  const handleClearAll = useCallback(() => {
+    setSelectedSlots(new Set());
+    saveSlots(new Set());
+  }, [saveSlots]);
+
   const handleMouseDown = useCallback((day: number, hour: number, minute: number) => {
     const key: SlotKey = `${day}-${hour}-${minute}`;
     const mode = selectedSlots.has(key) ? 'deselect' : 'select';
@@ -276,16 +282,29 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Switch
-              id="night-hours"
-              checked={showNightHours}
-              onCheckedChange={setShowNightHours}
-            />
-            <Label htmlFor="night-hours" className="flex items-center gap-1 text-sm cursor-pointer">
-              <Moon className="h-4 w-4" />
-              Night hours
-            </Label>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearAll}
+              disabled={selectedSlots.size === 0}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Clear all
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <Switch
+                id="night-hours"
+                checked={showNightHours}
+                onCheckedChange={setShowNightHours}
+              />
+              <Label htmlFor="night-hours" className="flex items-center gap-1 text-sm cursor-pointer">
+                <Moon className="h-4 w-4" />
+                Night hours
+              </Label>
+            </div>
           </div>
         </div>
 
