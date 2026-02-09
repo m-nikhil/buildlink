@@ -65,7 +65,7 @@ Think of it as intentional networking: You swipe through professionals who match
 
 No blind connection requests. No cold DMs. No hoping someone replies.
 
-Just real conversations with people who actually get what you're building — before you ever hit "connect."
+Just real conversations with people who actually get what you're after — before you ever hit "connect."
 
 If you're tired of growing your network the old way, try this:
 ${inviteUrl}
