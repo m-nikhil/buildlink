@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, Video, Sparkles, Users, MapPin, CheckCircle, RefreshCw, 
-  Clock, CalendarDays, Edit2
+  Clock, CalendarDays, Edit2, AlertCircle, Globe, Lightbulb
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EXPERIENCE_LABELS, GOAL_LABELS } from '@/types/profile';
@@ -31,6 +31,7 @@ export default function WeeklyIntro() {
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('intro');
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [noMatchResult, setNoMatchResult] = useState<{ message: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -49,8 +50,10 @@ export default function WeeklyIntro() {
     try {
       const result = await generateIntro.mutateAsync();
       if (result?.no_match) {
-        toast.info(result.message || 'No matches available right now. Try expanding your availability!');
+        setNoMatchResult({ message: result.message || 'No matches available right now.' });
+        toast.info('No matches found - see tips below!');
       } else {
+        setNoMatchResult(null);
         toast.success('Your weekly intro has been generated!');
       }
     } catch (error) {
@@ -346,6 +349,90 @@ export default function WeeklyIntro() {
                           </Button>
                         </div>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : noMatchResult ? (
+                /* No matches found - show tips */
+                <Card className="border-warning/30">
+                  <CardHeader className="text-center">
+                    <div className="mx-auto p-4 bg-warning/10 rounded-full w-fit mb-4">
+                      <AlertCircle className="h-12 w-12 text-warning" />
+                    </div>
+                    <CardTitle className="text-2xl">No Matches Available Yet</CardTitle>
+                    <CardDescription className="max-w-md mx-auto">
+                      {noMatchResult.message}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pb-8">
+                    {/* Tips to improve matching */}
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Lightbulb className="h-4 w-4 text-primary" />
+                        Tips to improve your matching chances:
+                      </div>
+                      <div className="grid gap-3">
+                        <div className="flex items-start gap-3 text-sm">
+                          <div className="p-1.5 bg-primary/10 rounded-full mt-0.5">
+                            <Clock className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Add more time slots</p>
+                            <p className="text-muted-foreground">
+                              The more availability you add, the higher your chances of finding a match.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm">
+                          <div className="p-1.5 bg-primary/10 rounded-full mt-0.5">
+                            <Globe className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Consider different time zones</p>
+                            <p className="text-muted-foreground">
+                              Adding early morning or evening slots can match with users in other regions.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 text-sm">
+                          <div className="p-1.5 bg-primary/10 rounded-full mt-0.5">
+                            <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Try again later</p>
+                            <p className="text-muted-foreground">
+                              More users are joining every day. Check back soon for new potential matches!
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-col items-center gap-3">
+                      <Button 
+                        size="lg" 
+                        className="gap-2"
+                        onClick={() => {
+                          setNoMatchResult(null);
+                          setActiveTab('availability');
+                        }}
+                      >
+                        <Edit2 className="h-5 w-5" />
+                        Expand My Availability
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => {
+                          setNoMatchResult(null);
+                          handleGenerateIntro();
+                        }}
+                        disabled={generateIntro.isPending}
+                      >
+                        <RefreshCw className={`h-4 w-4 ${generateIntro.isPending ? 'animate-spin' : ''}`} />
+                        {generateIntro.isPending ? 'Checking...' : 'Try Again'}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
