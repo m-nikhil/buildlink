@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyReferralCode, useInviteStats } from '@/hooks/useInvites';
-import { Copy, Check, Share2, Users, Gift, Sparkles, Linkedin, Loader2 } from 'lucide-react';
+import { Copy, Check, Share2, Users, Gift, Sparkles, Linkedin, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +21,7 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
   const [copied, setCopied] = useState(false);
   const [postContent, setPostContent] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
+  const [postSuccess, setPostSuccess] = useState(false);
 
   const inviteUrl = referralCode 
     ? `${window.location.origin}/auth?ref=${referralCode}`
@@ -104,6 +105,7 @@ ${inviteUrl}`;
         throw new Error(data.error);
       }
 
+      setPostSuccess(true);
       toast.success('Posted to LinkedIn! 🎉', { duration: 5000 });
     } catch (error) {
       console.error('LinkedIn post error:', error);
@@ -187,34 +189,60 @@ ${inviteUrl}`;
           </div>
         </div>
 
-        {/* Editable Post */}
-        {referralCode && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Your LinkedIn post</label>
-            <Textarea
-              value={postContent ?? defaultShareText}
-              onChange={(e) => setPostContent(e.target.value)}
-              className="min-h-[200px] text-sm resize-none"
-              placeholder="Write your LinkedIn post..."
-            />
+        {/* Success State */}
+        {postSuccess ? (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center gap-3 py-6 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
+              <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-full">
+                <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-green-700 dark:text-green-300">Posted to LinkedIn!</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your post is now live on your LinkedIn feed
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={() => setPostSuccess(false)} 
+              className="w-full"
+            >
+              Post again
+            </Button>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Editable Post */}
+            {referralCode && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Your LinkedIn post</label>
+                <Textarea
+                  value={postContent ?? defaultShareText}
+                  onChange={(e) => setPostContent(e.target.value)}
+                  className="min-h-[200px] text-sm resize-none"
+                  placeholder="Write your LinkedIn post..."
+                />
+              </div>
+            )}
 
-        {/* Post Button */}
-        <Button 
-          onClick={handlePostToLinkedIn} 
-          className="w-full gap-2"
-          size="lg"
-          disabled={!referralCode || isPosting}
-          style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
-        >
-          {isPosting ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Linkedin className="h-5 w-5" />
-          )}
-          {isPosting ? 'Posting...' : 'Post on LinkedIn'}
-        </Button>
+            {/* Post Button */}
+            <Button 
+              onClick={handlePostToLinkedIn} 
+              className="w-full gap-2"
+              size="lg"
+              disabled={!referralCode || isPosting}
+              style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
+            >
+              {isPosting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Linkedin className="h-5 w-5" />
+              )}
+              {isPosting ? 'Posting...' : 'Post on LinkedIn'}
+            </Button>
+          </>
+        )}
 
       </CardContent>
     </Card>
