@@ -226,34 +226,21 @@ ${inviteUrl}`;
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button 
-                onClick={handlePostToLinkedIn} 
-                className="w-full gap-2"
-                size="lg"
-                disabled={!referralCode || isPosting}
-                style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
-              >
-                {isPosting ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Linkedin className="h-5 w-5" />
-                )}
-                {isPosting ? 'Posting...' : 'Post on LinkedIn'}
-              </Button>
-
-              <Button 
-                onClick={handleShare} 
-                variant="outline"
-                className="w-full gap-2"
-                size="lg"
-                disabled={!referralCode}
-              >
-                <Share2 className="h-5 w-5" />
-                Share via other apps
-              </Button>
-            </div>
+            {/* Post Button */}
+            <Button 
+              onClick={handlePostToLinkedIn} 
+              className="w-full gap-2"
+              size="lg"
+              disabled={!referralCode || isPosting}
+              style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
+            >
+              {isPosting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Linkedin className="h-5 w-5" />
+              )}
+              {isPosting ? 'Posting...' : 'Post on LinkedIn'}
+            </Button>
           </>
         )}
 
