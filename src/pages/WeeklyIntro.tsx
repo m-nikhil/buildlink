@@ -30,6 +30,7 @@ export default function WeeklyIntro() {
   const updateStatus = useUpdateIntroStatus();
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('intro');
+  const [showVideoCall, setShowVideoCall] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -253,40 +254,55 @@ export default function WeeklyIntro() {
 
                       {/* Video Call Section */}
                       {intro.status === 'pending' && (
-                        <div className="mt-8 w-full max-w-md space-y-4">
-                          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-primary/10 rounded-full">
-                                <Video className="h-5 w-5 text-primary" />
+                        <div className="mt-8 w-full space-y-4">
+                          {showVideoCall && intro.video_call_url ? (
+                            <div className="space-y-4">
+                              <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border shadow-lg">
+                                <iframe
+                                  src={`${intro.video_call_url}#userInfo.displayName="${encodeURIComponent(profile?.full_name || 'Guest')}"&config.prejoinConfig.enabled=false`}
+                                  className="absolute inset-0 w-full h-full"
+                                  allow="camera; microphone; fullscreen; display-capture; autoplay"
+                                  allowFullScreen
+                                />
                               </div>
-                              <div className="flex-1">
-                                <p className="font-medium">Ready to connect?</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {scheduledAt 
-                                    ? `Your call is scheduled for ${format(scheduledAt, 'EEEE')} at ${format(scheduledAt, 'h:mm a')}`
-                                    : 'Join the video call when you\'re both ready'
-                                  }
-                                </p>
-                              </div>
-                            </div>
-
-                            
-                            {intro.video_call_url && (
                               <Button 
-                                className="w-full mt-4 gap-2"
-                                onClick={() => {
-                                  const displayName = encodeURIComponent(profile?.full_name || 'Guest');
-                                  const urlWithConfig = `${intro.video_call_url}#userInfo.displayName="${displayName}"&config.prejoinConfig.enabled=false`;
-                                  window.open(urlWithConfig, '_blank');
-                                }}
+                                variant="outline" 
+                                className="w-full gap-2"
+                                onClick={() => setShowVideoCall(false)}
                               >
-                                <Video className="h-4 w-4" />
-                                Join Video Call
+                                Hide Video Call
                               </Button>
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-md mx-auto">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-full">
+                                  <Video className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium">Ready to connect?</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {scheduledAt 
+                                      ? `Your call is scheduled for ${format(scheduledAt, 'EEEE')} at ${format(scheduledAt, 'h:mm a')}`
+                                      : 'Join the video call when you\'re both ready'
+                                    }
+                                  </p>
+                                </div>
+                              </div>
 
-                          <div className="flex gap-2">
+                              {intro.video_call_url && (
+                                <Button 
+                                  className="w-full mt-4 gap-2"
+                                  onClick={() => setShowVideoCall(true)}
+                                >
+                                  <Video className="h-4 w-4" />
+                                  Join Video Call
+                                </Button>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 max-w-md mx-auto">
                             <Button 
                               variant="outline" 
                               className="flex-1"
