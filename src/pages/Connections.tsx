@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConnections, useDisconnect } from '@/hooks/useConnections';
 import { useProfile, useProfiles } from '@/hooks/useProfile';
 import { Header } from '@/components/Header';
+import { MobileNav } from '@/components/MobileNav';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -66,7 +67,7 @@ export default function Connections() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container px-4 py-8 max-w-3xl">
+      <main className="container px-4 py-6 md:py-8 pb-20 md:pb-8 max-w-3xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Connections</h1>
           <p className="text-muted-foreground">Know before you connect</p>
@@ -241,6 +242,7 @@ export default function Connections() {
           otherProfile={chatConnection.profile}
         />
       )}
+      <MobileNav />
       <InviteBubble />
     </div>
   );

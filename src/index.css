@@ -146,4 +146,14 @@
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
   }
+
+  /* Safe area for mobile bottom nav */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* Page content with bottom padding for mobile nav */
+  .mobile-safe-bottom {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+  }
 }

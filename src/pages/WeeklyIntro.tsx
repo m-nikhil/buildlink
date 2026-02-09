@@ -6,6 +6,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useCurrentWeeklyIntro, useGenerateWeeklyIntro, useUpdateIntroStatus } from '@/hooks/useWeeklyIntro';
 import { useHasAvailability } from '@/hooks/useAvailability';
 import { Header } from '@/components/Header';
+import { MobileNav } from '@/components/MobileNav';
 import { AvailabilityPicker } from '@/components/AvailabilityPicker';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { InviteBubble } from '@/components/InviteBubble';
@@ -118,7 +119,7 @@ export default function WeeklyIntro() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container px-4 py-8">
+      <main className="container px-4 py-6 md:py-8 pb-20 md:pb-8">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -532,6 +533,7 @@ export default function WeeklyIntro() {
           </Tabs>
         </div>
       </main>
+      <MobileNav />
       <InviteBubble />
     </div>
   );

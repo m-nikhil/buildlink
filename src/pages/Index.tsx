@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/Header';
+import { MobileNav } from '@/components/MobileNav';
 import { UserProfile } from '@/components/UserProfile';
 import { SwipeFeed } from '@/components/SwipeFeed';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,9 +39,10 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container px-4 py-4">
+      <main className="container px-4 py-4 pb-20 md:pb-4">
         <SwipeFeed />
       </main>
+      <MobileNav />
       <InviteBubble />
     </div>
   );

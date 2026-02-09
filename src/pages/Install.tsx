@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, CheckCircle, Smartphone, Bell, Wifi } from 'lucide-react';
 import { Header } from '@/components/Header';
+import { MobileNav } from '@/components/MobileNav';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -70,7 +71,7 @@ export default function Install() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container max-w-2xl mx-auto px-4 py-8">
+      <main className="container max-w-2xl mx-auto px-4 py-6 md:py-8 pb-20 md:pb-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Install BuildLink</h1>
           <p className="text-muted-foreground">
@@ -166,6 +167,7 @@ export default function Install() {
           ))}
         </div>
       </main>
+      <MobileNav />
     </div>
   );
 }

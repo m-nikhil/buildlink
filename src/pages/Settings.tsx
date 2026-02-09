@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { Header } from '@/components/Header';
+import { MobileNav } from '@/components/MobileNav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -70,7 +71,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container px-4 py-8 max-w-2xl mx-auto">
+      <main className="container px-4 py-6 md:py-8 pb-24 md:pb-8 max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
@@ -166,6 +167,7 @@ export default function Settings() {
           </Button>
         </div>
       </main>
+      <MobileNav />
       <InviteBubble />
     </div>
   );
