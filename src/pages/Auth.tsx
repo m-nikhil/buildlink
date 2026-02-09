@@ -50,20 +50,26 @@ export default function Auth() {
     if (referralCode) {
       sessionStorage.setItem('referral_code', referralCode);
       
-      // Fetch inviter's name (case-insensitive match)
+      // Fetch inviter's name
       const fetchInviter = async () => {
-        // Use uppercase to match stored format
-        const normalizedCode = referralCode.toUpperCase();
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('full_name, initials')
-          .eq('referral_code', normalizedCode)
-          .maybeSingle();
-        
-        console.log('Inviter lookup:', { referralCode, data, error });
-        
-        if (data && (data.full_name || data.initials)) {
-          setInviterName(data.full_name || data.initials);
+        try {
+          // Use uppercase to match stored format
+          const normalizedCode = referralCode.toUpperCase();
+          console.log('Fetching inviter for code:', normalizedCode);
+          
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('full_name, initials, referral_code')
+            .eq('referral_code', normalizedCode)
+            .maybeSingle();
+          
+          console.log('Inviter lookup result:', { normalizedCode, data, error });
+          
+          if (data && (data.full_name || data.initials)) {
+            setInviterName(data.full_name || data.initials);
+          }
+        } catch (err) {
+          console.error('Inviter lookup failed:', err);
         }
       };
       fetchInviter();
