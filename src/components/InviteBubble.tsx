@@ -73,7 +73,7 @@ export function InviteBubble({ className }: InviteBubbleProps) {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Who should BuildLink not exist without?</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Invite them to join!
+              Growing circle by circle.
             </p>
           </div>
         </div>

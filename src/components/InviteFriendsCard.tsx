@@ -126,7 +126,7 @@ ${inviteUrl}`;
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold">Who should BuildLink not exist without?</h3>
               <p className="text-sm text-muted-foreground">
-                Invite them now!
+                Growing circle by circle
               </p>
             </div>
             <Button onClick={handleShare} className="gap-2 shrink-0">
@@ -147,8 +147,7 @@ ${inviteUrl}`;
         </div>
         <CardTitle className="text-2xl">Who should BuildLink not exist without?</CardTitle>
         <CardDescription className="max-w-md mx-auto">
-          The more people join, the better your chances of finding great matches!
-          Invite them now.
+          BuildLink is growing circle by circle. The best experience comes when you invite people you'd actually want to talk to.
         </CardDescription>
       </CardHeader>
       
