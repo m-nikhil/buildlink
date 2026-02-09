@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { code, redirectUri, forceSync } = await req.json();
+    const { code, redirectUri, forceSync, referralCode } = await req.json();
 
     if (!code) {
       return new Response(JSON.stringify({ error: 'Authorization code is required' }), {
@@ -206,6 +206,23 @@ serve(async (req) => {
       isNewUser = true;
       console.log('New user created:', userId);
 
+      // Look up referrer if referral code provided
+      let referredBy: string | null = null;
+      if (referralCode) {
+        const { data: referrerProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('user_id')
+          .eq('referral_code', referralCode.toUpperCase())
+          .maybeSingle();
+        
+        if (referrerProfile) {
+          referredBy = referrerProfile.user_id;
+          console.log('Referred by user:', referredBy);
+        } else {
+          console.log('Referral code not found:', referralCode);
+        }
+      }
+
       // Create initial profile with LinkedIn data including avatar, URL, headline, and location
       const { error: profileError } = await supabaseAdmin.from('profiles').insert({
         user_id: userId,
@@ -215,13 +232,14 @@ serve(async (req) => {
         linkedin_url: linkedinUrl,
         headline: linkedinHeadline,
         location: linkedinLocation,
+        referred_by: referredBy,
       });
 
       if (profileError) {
         console.error('Profile creation failed:', profileError);
         // Don't fail the auth flow, profile can be created later
       } else {
-        console.log('Profile created with LinkedIn data (avatar, URL, headline, location)');
+        console.log('Profile created with LinkedIn data (avatar, URL, headline, location)', referredBy ? `referred by ${referredBy}` : '');
       }
     }
     
