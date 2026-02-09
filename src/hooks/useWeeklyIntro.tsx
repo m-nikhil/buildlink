@@ -79,10 +79,17 @@ export function useGenerateWeeklyIntro() {
       if (error) throw new Error(error.message || 'Failed to generate intro');
       if (data?.error) throw new Error(data.error);
       
+      // Handle no_match case - not an error, just no available matches
+      if (data?.no_match) {
+        return { no_match: true, message: data.message };
+      }
+      
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-intro'] });
+    onSuccess: (data) => {
+      if (!data?.no_match) {
+        queryClient.invalidateQueries({ queryKey: ['weekly-intro'] });
+      }
     },
   });
 }

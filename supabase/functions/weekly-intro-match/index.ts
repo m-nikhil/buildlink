@@ -237,9 +237,10 @@ serve(async (req) => {
 
     if (usersWithOverlap.length === 0) {
       return new Response(JSON.stringify({ 
-        error: 'No users found with overlapping availability. Try expanding your availability or check back later.' 
+        no_match: true,
+        message: 'No users found with overlapping availability. Try expanding your availability or check back later.' 
       }), {
-        status: 404,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -253,9 +254,10 @@ serve(async (req) => {
 
     if (profilesError || !candidateProfiles || candidateProfiles.length === 0) {
       return new Response(JSON.stringify({ 
-        error: 'No available matches found with overlapping availability.' 
+        no_match: true,
+        message: 'No available matches found with overlapping availability.' 
       }), {
-        status: 404,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
