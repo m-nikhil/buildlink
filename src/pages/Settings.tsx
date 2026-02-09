@@ -15,6 +15,7 @@ import {
 } from '@/types/profile';
 import { IndustryMultiSelect } from '@/components/IndustryMultiSelect';
 import { LocationMultiSelect } from '@/components/LocationMultiSelect';
+import { InviteBubble } from '@/components/InviteBubble';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -161,10 +162,11 @@ export default function Settings() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Save Preferences
+          Save Preferences
           </Button>
         </div>
       </main>
+      <InviteBubble />
     </div>
   );
 }

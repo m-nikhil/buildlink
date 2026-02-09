@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Clock, Users, MessageCircle, UserMinus } from 'lucide-react';
 import { Profile, Connection } from '@/types/profile';
 import { ChatDialog } from '@/components/ChatDialog';
+import { InviteBubble } from '@/components/InviteBubble';
 
 export default function Connections() {
   const { user, loading: authLoading } = useAuth();
@@ -240,6 +241,7 @@ export default function Connections() {
           otherProfile={chatConnection.profile}
         />
       )}
+      <InviteBubble />
     </div>
   );
 }
