@@ -277,9 +277,9 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
           {isMutualLinkedIn && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-7 w-7">
                   <AvatarImage src={otherProfile.avatar_url ?? undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
