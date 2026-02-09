@@ -57,18 +57,20 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
     if (!inviteUrl) return;
     
     // Emotional, compelling message with the invite link included
-    const shareText = `The best opportunities in my career came from unexpected conversations with the right people.
+    const shareText = `Some of my best career moments started with a single conversation I almost didn't have.
 
-That's why I'm excited about BuildLink — a smarter way to grow your LinkedIn network. It matches you with professionals who share your goals, not just your industry.
+That's why I'm building my network differently now — with BuildLink.
 
-Here's how it works: We match, chat, and connect if meaningful. Every week, you get one curated intro to someone you should know.
+It's simple: You get matched with one person each week who shares your professional goals. You chat. If it clicks, you connect on LinkedIn.
 
-No endless scrolling. No cold outreach. Just intentional connections that actually matter.
+No cold DMs. No awkward networking events. No algorithm-chasing.
 
-If you're looking to grow your LinkedIn network with purpose, join me here:
+Just real conversations with people who actually get what you're trying to build.
+
+If you're tired of growing your network the old way, try this:
 ${inviteUrl}
 
-Sometimes the person you need to meet is just one conversation away. 🤝`;
+Your next opportunity might be one conversation away. 🤝`;
     
     // Copy text to clipboard first
     try {
