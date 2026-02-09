@@ -13,6 +13,7 @@ import ProfileComplete from "./pages/ProfileComplete";
 import Settings from "./pages/Settings";
 import WeeklyIntro from "./pages/WeeklyIntro";
 import Invite from "./pages/Invite";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/weekly-intro" element={<WeeklyIntro />} />
             <Route path="/invite" element={<Invite />} />
+            <Route path="/install" element={<Install />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
