@@ -35,11 +35,11 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-md">
-      <div className="container flex h-16 items-center justify-between px-4">
+      <div className="container flex h-14 md:h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <BuildLinkLogo size="sm" />
-          <span className="text-xl font-bold tracking-tight">BuildLink</span>
-          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary rounded-full border border-primary/20">
+          <span className="text-lg md:text-xl font-bold tracking-tight">BuildLink</span>
+          <span className="hidden sm:inline-flex px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary rounded-full border border-primary/20">
             Beta
           </span>
         </Link>
