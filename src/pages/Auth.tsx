@@ -52,15 +52,16 @@ export default function Auth() {
       
       // Fetch inviter's name (case-insensitive match)
       const fetchInviter = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('full_name, initials')
           .ilike('referral_code', referralCode)
           .maybeSingle();
         
-        if (data) {
-          // Use full name or initials for privacy
-          setInviterName(data.full_name || data.initials || null);
+        console.log('Inviter lookup:', { referralCode, data, error });
+        
+        if (data && (data.full_name || data.initials)) {
+          setInviterName(data.full_name || data.initials);
         }
       };
       fetchInviter();
