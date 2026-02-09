@@ -61,11 +61,11 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
 
 That's why I'm building my network differently now — with BuildLink.
 
-Think of it as intentional networking: You swipe through professionals who match your goals. When you both connect, you chat. If it clicks, you take it to LinkedIn.
+Think of it as intentional networking: You swipe through professionals who match your goals. When there's a mutual match, you have a real conversation first. If it's meaningful, you take it to LinkedIn.
 
-No cold DMs. No awkward networking events. No algorithm-chasing.
+No blind connection requests. No cold DMs. No hoping someone replies.
 
-Just real conversations with people who actually get what you're building.
+Just real conversations with people who actually get what you're building — before you ever hit "connect."
 
 If you're tired of growing your network the old way, try this:
 ${inviteUrl}
