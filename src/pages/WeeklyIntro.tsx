@@ -446,7 +446,7 @@ export default function WeeklyIntro() {
                 <Card>
                   <CardHeader className="text-center">
                     <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit mb-4">
-                      <Sparkles className="h-12 w-12 text-primary" />
+                      <Users className="h-12 w-12 text-primary" />
                     </div>
                     <CardTitle className="text-2xl">Ready for your weekly intro!</CardTitle>
                     <CardDescription className="max-w-md mx-auto">
@@ -461,7 +461,7 @@ export default function WeeklyIntro() {
                       onClick={handleGenerateIntro}
                       disabled={generateIntro.isPending}
                     >
-                      <Sparkles className="h-5 w-5" />
+                      <Users className="h-5 w-5" />
                       {generateIntro.isPending ? 'Finding your match...' : 'Generate My Intro'}
                     </Button>
                     <Button 
@@ -479,51 +479,51 @@ export default function WeeklyIntro() {
 
               {/* How it works */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">How Weekly Intros Work</CardTitle>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold">How Weekly Intros Work</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 sm:grid-cols-4">
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
                         1
                       </div>
                       <div>
-                        <p className="font-medium">Set Availability</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm font-medium">Set Availability</p>
+                        <p className="text-xs text-muted-foreground">
                           Tell us when you're free
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
                         2
                       </div>
                       <div>
-                        <p className="font-medium">AI Match</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm font-medium">AI Match</p>
+                        <p className="text-xs text-muted-foreground">
                           We find your best match
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
                         3
                       </div>
                       <div>
-                        <p className="font-medium">Scheduled Call</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm font-medium">Scheduled Call</p>
+                        <p className="text-xs text-muted-foreground">
                           Meeting at overlapping time
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
                         4
                       </div>
                       <div>
-                        <p className="font-medium">Auto-Connect</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm font-medium">Auto-Connect</p>
+                        <p className="text-xs text-muted-foreground">
                           Stay connected after
                         </p>
                       </div>
