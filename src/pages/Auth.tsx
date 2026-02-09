@@ -52,10 +52,12 @@ export default function Auth() {
       
       // Fetch inviter's name (case-insensitive match)
       const fetchInviter = async () => {
+        // Use uppercase to match stored format
+        const normalizedCode = referralCode.toUpperCase();
         const { data, error } = await supabase
           .from('profiles')
           .select('full_name, initials')
-          .ilike('referral_code', referralCode)
+          .eq('referral_code', normalizedCode)
           .maybeSingle();
         
         console.log('Inviter lookup:', { referralCode, data, error });
