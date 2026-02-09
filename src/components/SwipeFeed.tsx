@@ -82,9 +82,9 @@ export function SwipeFeed() {
   }
 
   return (
-    <div className="py-4">
+    <div className="py-2">
       {/* Progress indicator */}
-      <div className="flex items-center justify-center gap-2 mb-6">
+      <div className="flex items-center justify-center gap-2 mb-3">
         <span className="text-sm text-muted-foreground">
           {currentIndex + 1} of {matches.length} professionals
         </span>
