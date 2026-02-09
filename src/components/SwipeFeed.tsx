@@ -104,7 +104,7 @@ export function SwipeFeed() {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button className="fixed bottom-24 left-4 z-40 h-8 w-8 rounded-full bg-muted/80 backdrop-blur-sm border border-border flex items-center justify-center cursor-help shadow-md md:bottom-6">
+            <button className="fixed bottom-24 right-4 z-40 h-8 w-8 rounded-full bg-muted/80 backdrop-blur-sm border border-border flex items-center justify-center cursor-help shadow-md md:bottom-6">
               <HelpCircle className="h-4 w-4 text-muted-foreground" />
             </button>
           </TooltipTrigger>
