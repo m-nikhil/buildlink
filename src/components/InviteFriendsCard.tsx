@@ -159,6 +159,16 @@ Your next opportunity might be one swipe away. 🤝`;
           </div>
         </div>
 
+        {/* Post Preview */}
+        {referralCode && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Post preview</label>
+            <div className="bg-muted/50 rounded-lg p-4 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto border">
+              {getShareText()}
+            </div>
+          </div>
+        )}
+
         {/* Share Buttons */}
         <div className="flex gap-2">
           <Button 
