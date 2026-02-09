@@ -41,6 +41,7 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSeed, setSelectedSeed] = useState<string>('');
   const [isSeedLoading, setIsSeedLoading] = useState(false);
+  const [inviterName, setInviterName] = useState<string | null>(null);
 
   const referralCode = searchParams.get('ref');
 
@@ -48,6 +49,21 @@ export default function Auth() {
     // Store referral code in sessionStorage for use after signup
     if (referralCode) {
       sessionStorage.setItem('referral_code', referralCode);
+      
+      // Fetch inviter's name
+      const fetchInviter = async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, initials')
+          .eq('referral_code', referralCode)
+          .maybeSingle();
+        
+        if (data) {
+          // Use full name or initials for privacy
+          setInviterName(data.full_name || data.initials || null);
+        }
+      };
+      fetchInviter();
     }
   }, [referralCode]);
 
@@ -116,8 +132,11 @@ export default function Auth() {
         {referralCode && (
           <div className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
             <Users className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium">You were invited by a friend!</span>
-            <Badge variant="secondary" className="ml-1">{referralCode}</Badge>
+            <span className="text-sm font-medium">
+              {inviterName 
+                ? `You were invited by ${inviterName}!` 
+                : 'You were invited by a friend!'}
+            </span>
           </div>
         )}
 
