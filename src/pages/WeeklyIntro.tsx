@@ -283,8 +283,8 @@ export default function WeeklyIntro() {
                               <Button 
                                 className="w-full mt-4 gap-2"
                                 onClick={() => {
-                                  const url = `${intro.video_call_url}#userInfo.displayName="${encodeURIComponent(profile?.full_name || 'Guest')}"&config.prejoinConfig.enabled=false`;
-                                  window.open(url, '_blank');
+                                  // Open video call in new tab with display name
+                                  window.open(intro.video_call_url, '_blank');
                                 }}
                               >
                                 <Video className="h-4 w-4" />
