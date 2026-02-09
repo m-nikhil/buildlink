@@ -137,18 +137,6 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Referral Banner */}
-        {referralCode && (
-          <div className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
-            <Users className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium">
-              {inviterName 
-                ? `You were invited by ${inviterName}!` 
-                : 'You were invited by a friend!'}
-            </span>
-          </div>
-        )}
-
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
           <BuildLinkLogo size="lg" />
@@ -206,6 +194,18 @@ export default function Auth() {
             </p>
           </CardContent>
         </Card>
+
+        {/* Referral Banner - shown below login */}
+        {referralCode && (
+          <div className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <Users className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium">
+              {inviterName 
+                ? `You were invited by ${inviterName}!` 
+                : 'You were invited by a friend!'}
+            </span>
+          </div>
+        )}
 
         {/* Dev-only test account login */}
         {isDev && (
