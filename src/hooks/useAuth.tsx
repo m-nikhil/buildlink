@@ -65,10 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLinkedInCallback = async (code: string) => {
     const redirectUri = sessionStorage.getItem('linkedin_redirect_uri') || `${window.location.origin}/auth/callback`;
     const forceSync = sessionStorage.getItem('linkedin_force_sync') === 'true';
+    const referralCode = sessionStorage.getItem('referral_code') || null;
     
     // Call our edge function to exchange the code
     const { data, error } = await supabase.functions.invoke('linkedin-auth', {
-      body: { code, redirectUri, forceSync },
+      body: { code, redirectUri, forceSync, referralCode },
     });
 
     if (error) {
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('linkedin_oauth_state');
     sessionStorage.removeItem('linkedin_redirect_uri');
     sessionStorage.removeItem('linkedin_force_sync');
+    sessionStorage.removeItem('referral_code');
   };
 
   const signOut = async () => {
