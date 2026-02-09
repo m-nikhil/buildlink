@@ -143,9 +143,9 @@ export default function Settings() {
                 <Users className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold">Invite Friends</h3>
+                <h3 className="font-semibold">Who should BuildLink not exist without?</h3>
                 <p className="text-sm text-muted-foreground">
-                  Grow the network to find more matches
+                  Invite them to join!
                 </p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />

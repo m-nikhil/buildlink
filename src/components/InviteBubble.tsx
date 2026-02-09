@@ -71,9 +71,9 @@ export function InviteBubble({ className }: InviteBubbleProps) {
             <UserPlus className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">Invite Friends</p>
+            <p className="text-sm font-medium">Who should BuildLink not exist without?</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Share BuildLink with your network and grow together!
+              Invite them to join!
             </p>
           </div>
         </div>

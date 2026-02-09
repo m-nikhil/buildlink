@@ -124,9 +124,9 @@ ${inviteUrl}`;
               <Gift className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold">Invite Friends</h3>
+              <h3 className="font-semibold">Who should BuildLink not exist without?</h3>
               <p className="text-sm text-muted-foreground">
-                Grow the network, find more matches
+                Invite them now!
               </p>
             </div>
             <Button onClick={handleShare} className="gap-2 shrink-0">
@@ -145,10 +145,10 @@ ${inviteUrl}`;
         <div className="mx-auto p-4 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full w-fit mb-4">
           <Users className="h-10 w-10 text-primary" />
         </div>
-        <CardTitle className="text-2xl">Invite Friends to BuildLink</CardTitle>
+        <CardTitle className="text-2xl">Who should BuildLink not exist without?</CardTitle>
         <CardDescription className="max-w-md mx-auto">
           The more people join, the better your chances of finding great matches!
-          Share your personal invite link.
+          Invite them now.
         </CardDescription>
       </CardHeader>
       
