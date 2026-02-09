@@ -14,10 +14,10 @@ if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
       swRegistration = registration;
       
-      // Check for updates periodically
+      // Check for updates every hour
       setInterval(() => {
         registration.update();
-      }, 60 * 1000);
+      }, 60 * 60 * 1000);
       
       // Listen for new service worker
       registration.addEventListener('updatefound', () => {
