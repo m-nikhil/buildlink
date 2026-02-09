@@ -19,12 +19,14 @@ export interface WeeklyIntro {
   matched_profile?: Profile;
 }
 
-// Get the start of the current week (Monday)
+// Get the start of the current week (Monday) in UTC to match server
 function getWeekStart(): string {
   const now = new Date();
-  const dayOfWeek = now.getDay();
-  const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
+  // Create a UTC date to ensure consistency with server
+  const utcNow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const dayOfWeek = utcNow.getUTCDay();
+  const diff = utcNow.getUTCDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+  const monday = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), diff));
   return monday.toISOString().split('T')[0];
 }
 
