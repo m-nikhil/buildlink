@@ -50,12 +50,12 @@ export default function Auth() {
     if (referralCode) {
       sessionStorage.setItem('referral_code', referralCode);
       
-      // Fetch inviter's name
+      // Fetch inviter's name (case-insensitive match)
       const fetchInviter = async () => {
         const { data } = await supabase
           .from('profiles')
           .select('full_name, initials')
-          .eq('referral_code', referralCode)
+          .ilike('referral_code', referralCode)
           .maybeSingle();
         
         if (data) {
