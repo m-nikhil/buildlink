@@ -59,6 +59,8 @@
     --slot-unavailable-hover: 350 80% 86%;
     --slot-border-available: 142 76% 36%;
     --slot-border-unavailable: 350 60% 82%;
+    --slot-highlight: 45 93% 60%;
+    --slot-highlight-ring: 45 93% 47%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -111,6 +113,8 @@
     --slot-unavailable-hover: 350 40% 32%;
     --slot-border-available: 142 76% 42%;
     --slot-border-unavailable: 350 40% 35%;
+    --slot-highlight: 45 80% 45%;
+    --slot-highlight-ring: 45 80% 55%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
