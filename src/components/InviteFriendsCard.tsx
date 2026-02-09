@@ -56,25 +56,28 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
   const handleShareToLinkedIn = async () => {
     if (!inviteUrl) return;
     
-    // Pre-written message for user to paste
-    const shareText = `🔗 Looking to expand your professional network? I've been using BuildLink to connect with like-minded professionals.
+    // Emotional, compelling message with the invite link included
+    const shareText = `The best opportunities in my career came from unexpected conversations with the right people.
 
-Join me and let's grow together! 🚀`;
+That's why I'm excited about BuildLink — a platform that matches you with professionals who share your goals, not just your industry. Every week, you get one curated intro to someone you should know.
+
+No endless scrolling. No cold outreach. Just meaningful connections that actually matter.
+
+If you're looking to grow your network with intention, join me here:
+${inviteUrl}
+
+Sometimes the person you need to meet is just one conversation away. 🤝`;
     
     // Copy text to clipboard first
     try {
       await navigator.clipboard.writeText(shareText);
-      toast.success('Post text copied! Paste it in LinkedIn.', { duration: 4000 });
+      toast.success('Post copied! Paste it in LinkedIn (Cmd+V)', { duration: 5000 });
     } catch (error) {
-      // Fallback if clipboard fails
       console.log('Clipboard failed, opening LinkedIn anyway');
     }
     
-    // Open LinkedIn share dialog
-    const linkedInShareUrl = new URL('https://www.linkedin.com/sharing/share-offsite/');
-    linkedInShareUrl.searchParams.set('url', inviteUrl);
-    
-    window.open(linkedInShareUrl.toString(), '_blank', 'width=600,height=600');
+    // Open LinkedIn - just to create a new post (not using share URL since we have the full text)
+    window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank', 'width=700,height=700');
   };
 
   if (compact) {
