@@ -5,10 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyReferralCode, useInviteStats } from '@/hooks/useInvites';
-import { Copy, Check, Share2, Users, Gift, Sparkles, Linkedin, Loader2 } from 'lucide-react';
+import { Copy, Check, Share2, Users, Gift, Sparkles, Linkedin } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 
 interface InviteFriendsCardProps {
   compact?: boolean;
@@ -17,9 +15,7 @@ interface InviteFriendsCardProps {
 export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
   const { data: referralCode, isLoading: codeLoading } = useMyReferralCode();
   const { data: stats } = useInviteStats();
-  const { signOut } = useAuth();
   const [copied, setCopied] = useState(false);
-  const [isPosting, setIsPosting] = useState(false);
 
   const inviteUrl = referralCode 
     ? `${window.location.origin}/auth?ref=${referralCode}`
@@ -76,47 +72,14 @@ Your next opportunity might be one swipe away. 🤝`;
   const handleShareToLinkedIn = async () => {
     if (!inviteUrl) return;
     
-    setIsPosting(true);
     const shareText = getShareText();
     
     try {
-      const { data, error } = await supabase.functions.invoke('linkedin-share', {
-        body: { text: shareText },
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data.error) {
-        // Handle reauth requirement
-        if (data.requiresReauth) {
-          toast.error(data.message, {
-            action: {
-              label: 'Log out',
-              onClick: () => signOut(),
-            },
-            duration: 10000,
-          });
-          return;
-        }
-        throw new Error(data.error);
-      }
-
-      toast.success('Posted to LinkedIn! 🎉', { duration: 5000 });
+      await navigator.clipboard.writeText(shareText);
+      toast.success('Post copied! Paste it in LinkedIn (Ctrl/Cmd+V)', { duration: 5000 });
+      window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank');
     } catch (error) {
-      console.error('LinkedIn share error:', error);
-      // Fallback to copy-paste method
-      toast.error('Direct posting failed. Copying text instead...', { duration: 3000 });
-      try {
-        await navigator.clipboard.writeText(shareText);
-        toast.success('Post copied! Paste it in LinkedIn (Cmd+V)', { duration: 5000 });
-        window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank', 'width=700,height=700');
-      } catch (clipError) {
-        toast.error('Failed to copy. Please try again.');
-      }
-    } finally {
-      setIsPosting(false);
+      toast.error('Failed to copy. Please try again.');
     }
   };
 
@@ -202,15 +165,11 @@ Your next opportunity might be one swipe away. 🤝`;
             onClick={handleShareToLinkedIn} 
             className="flex-1 gap-2"
             size="lg"
-            disabled={!referralCode || isPosting}
+            disabled={!referralCode}
             style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
           >
-            {isPosting ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Linkedin className="h-5 w-5" />
-            )}
-            {isPosting ? 'Posting...' : 'Post to LinkedIn'}
+            <Linkedin className="h-5 w-5" />
+            Share on LinkedIn
           </Button>
           <Button 
             onClick={handleShare} 
