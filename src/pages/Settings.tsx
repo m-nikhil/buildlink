@@ -145,7 +145,7 @@ export default function Settings() {
               <div className="flex-1">
                 <h3 className="font-semibold">Who should BuildLink not exist without?</h3>
                 <p className="text-sm text-muted-foreground">
-                  Invite them to join!
+                  Growing circle by circle
                 </p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
