@@ -88,22 +88,23 @@ Your next opportunity might be one swipe away. 🤝`;
         body: { text: shareText },
       });
 
+      // Check data first - even on error status, data may contain useful info
+      if (data?.requiresReauth) {
+        toast.error(data.message || 'Please log out and log back in to connect LinkedIn.', {
+          action: {
+            label: 'Log out',
+            onClick: () => signOut(),
+          },
+          duration: 10000,
+        });
+        return;
+      }
+
       if (error) {
         throw new Error(error.message);
       }
 
-      if (data.error) {
-        // Handle reauth requirement
-        if (data.requiresReauth) {
-          toast.error(data.message, {
-            action: {
-              label: 'Log out',
-              onClick: () => signOut(),
-            },
-            duration: 10000,
-          });
-          return;
-        }
+      if (data?.error) {
         throw new Error(data.error);
       }
 
