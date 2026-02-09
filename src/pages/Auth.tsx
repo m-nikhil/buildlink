@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Linkedin, Loader2, FlaskConical, User, Mail, Briefcase, Check, ImageIcon } from 'lucide-react';
+import { Linkedin, Loader2, FlaskConical, User, Mail, Briefcase, Check, ImageIcon, Users } from 'lucide-react';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -35,10 +36,20 @@ const LINKEDIN_PERMISSIONS = [
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading, signInWithLinkedIn } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSeed, setSelectedSeed] = useState<string>('');
   const [isSeedLoading, setIsSeedLoading] = useState(false);
+
+  const referralCode = searchParams.get('ref');
+
+  useEffect(() => {
+    // Store referral code in sessionStorage for use after signup
+    if (referralCode) {
+      sessionStorage.setItem('referral_code', referralCode);
+    }
+  }, [referralCode]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -101,6 +112,15 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
+        {/* Referral Banner */}
+        {referralCode && (
+          <div className="flex items-center justify-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <Users className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium">You were invited by a friend!</span>
+            <Badge variant="secondary" className="ml-1">{referralCode}</Badge>
+          </div>
+        )}
+
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
           <BuildLinkLogo size="lg" />
