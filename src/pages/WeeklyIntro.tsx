@@ -47,8 +47,12 @@ export default function WeeklyIntro() {
 
   const handleGenerateIntro = async () => {
     try {
-      await generateIntro.mutateAsync();
-      toast.success('Your weekly intro has been generated!');
+      const result = await generateIntro.mutateAsync();
+      if (result?.no_match) {
+        toast.info(result.message || 'No matches available right now. Try expanding your availability!');
+      } else {
+        toast.success('Your weekly intro has been generated!');
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to generate intro');
     }
