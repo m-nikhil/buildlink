@@ -141,11 +141,8 @@ export default function Auth() {
         </div>
 
         <Card>
-          <CardHeader className="space-y-1">
+          <CardHeader className="space-y-1 pb-2">
             <CardTitle className="text-xl text-center">Welcome</CardTitle>
-            <CardDescription className="text-center">
-              Sign in with your LinkedIn account to get started
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
 
