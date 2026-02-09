@@ -53,9 +53,24 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
     }
   };
 
-  const handleShareToLinkedIn = () => {
+  const handleShareToLinkedIn = async () => {
     if (!inviteUrl) return;
     
+    // Pre-written message for user to paste
+    const shareText = `🔗 Looking to expand your professional network? I've been using BuildLink to connect with like-minded professionals.
+
+Join me and let's grow together! 🚀`;
+    
+    // Copy text to clipboard first
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast.success('Post text copied! Paste it in LinkedIn.', { duration: 4000 });
+    } catch (error) {
+      // Fallback if clipboard fails
+      console.log('Clipboard failed, opening LinkedIn anyway');
+    }
+    
+    // Open LinkedIn share dialog
     const linkedInShareUrl = new URL('https://www.linkedin.com/sharing/share-offsite/');
     linkedInShareUrl.searchParams.set('url', inviteUrl);
     
