@@ -59,11 +59,13 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
     // Emotional, compelling message with the invite link included
     const shareText = `The best opportunities in my career came from unexpected conversations with the right people.
 
-That's why I'm excited about BuildLink — a platform that matches you with professionals who share your goals, not just your industry. Every week, you get one curated intro to someone you should know.
+That's why I'm excited about BuildLink — a smarter way to grow your LinkedIn network. It matches you with professionals who share your goals, not just your industry.
 
-No endless scrolling. No cold outreach. Just meaningful connections that actually matter.
+Here's how it works: We match, chat, and connect if meaningful. Every week, you get one curated intro to someone you should know.
 
-If you're looking to grow your network with intention, join me here:
+No endless scrolling. No cold outreach. Just intentional connections that actually matter.
+
+If you're looking to grow your LinkedIn network with purpose, join me here:
 ${inviteUrl}
 
 Sometimes the person you need to meet is just one conversation away. 🤝`;
