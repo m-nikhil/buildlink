@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMyReferralCode, useInviteStats } from '@/hooks/useInvites';
-import { Copy, Check, Share2, Users, Gift, Sparkles, Linkedin, Loader2, CheckCircle2 } from 'lucide-react';
+import { useFirstConnection } from '@/hooks/useFirstConnection';
+import { Copy, Check, Share2, Users, Gift, Sparkles, Linkedin, Loader2, CheckCircle2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,6 +19,7 @@ interface InviteFriendsCardProps {
 export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
   const { data: referralCode, isLoading: codeLoading } = useMyReferralCode();
   const { data: stats } = useInviteStats();
+  const { data: firstConnection } = useFirstConnection();
   const { signOut } = useAuth();
   const [copied, setCopied] = useState(false);
   const [postContent, setPostContent] = useState<string | null>(null);
@@ -242,6 +245,42 @@ ${inviteUrl}`;
               {isPosting ? 'Posting...' : 'Post on LinkedIn'}
             </Button>
           </>
+        )}
+
+        {/* Share with connection */}
+        {firstConnection && !postSuccess && (
+          <div className="pt-4 border-t">
+            <p className="text-sm font-medium mb-3">Or share directly with a connection</p>
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={firstConnection.profile.avatar_url || undefined} />
+                <AvatarFallback>{firstConnection.profile.initials || firstConnection.profile.full_name?.charAt(0) || '?'}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{firstConnection.profile.full_name}</p>
+                <p className="text-xs text-muted-foreground truncate">{firstConnection.profile.headline}</p>
+              </div>
+              {firstConnection.profile.linkedin_url ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0"
+                  onClick={() => {
+                    // Copy invite URL to clipboard first
+                    navigator.clipboard.writeText(inviteUrl);
+                    toast.success('Invite link copied! Opening LinkedIn...');
+                    // Open their LinkedIn profile
+                    window.open(firstConnection.profile.linkedin_url!, '_blank');
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Share
+                </Button>
+              ) : (
+                <span className="text-xs text-muted-foreground">No LinkedIn</span>
+              )}
+            </div>
+          </div>
         )}
 
       </CardContent>
