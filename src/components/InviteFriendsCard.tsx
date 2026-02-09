@@ -216,24 +216,6 @@ ${inviteUrl}`;
           {isPosting ? 'Posting...' : 'Post on LinkedIn'}
         </Button>
 
-        {/* Benefits */}
-        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-          <p className="text-sm font-medium text-center">Why invite friends?</p>
-          <div className="grid gap-2 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-              More users means more Weekly Intro matches
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-              Connect with people in your network
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-              Help your friends find meaningful connections
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
