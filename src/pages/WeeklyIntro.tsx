@@ -7,6 +7,7 @@ import { useCurrentWeeklyIntro, useGenerateWeeklyIntro, useUpdateIntroStatus } f
 import { useHasAvailability } from '@/hooks/useAvailability';
 import { Header } from '@/components/Header';
 import { AvailabilityPicker } from '@/components/AvailabilityPicker';
+import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -434,6 +435,9 @@ export default function WeeklyIntro() {
                         {generateIntro.isPending ? 'Checking...' : 'Try Again'}
                       </Button>
                     </div>
+
+                    {/* Invite Friends */}
+                    <InviteFriendsCard compact />
                   </CardContent>
                 </Card>
               ) : (

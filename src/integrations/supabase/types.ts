@@ -107,6 +107,39 @@ export type Database = {
         }
         Relationships: []
       }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invitee_email: string | null
+          invitee_id: string | null
+          inviter_id: string
+          referral_code: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invitee_email?: string | null
+          invitee_id?: string | null
+          inviter_id: string
+          referral_code: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invitee_email?: string | null
+          invitee_id?: string | null
+          inviter_id?: string
+          referral_code?: string
+          status?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           connection_id: string
@@ -165,6 +198,8 @@ export type Database = {
           preferred_goals: string[] | null
           preferred_industries: string[] | null
           preferred_locations: string[] | null
+          referral_code: string | null
+          referred_by: string | null
           skills: string[] | null
           timezone: string | null
           updated_at: string | null
@@ -195,6 +230,8 @@ export type Database = {
           preferred_goals?: string[] | null
           preferred_industries?: string[] | null
           preferred_locations?: string[] | null
+          referral_code?: string | null
+          referred_by?: string | null
           skills?: string[] | null
           timezone?: string | null
           updated_at?: string | null
@@ -225,6 +262,8 @@ export type Database = {
           preferred_goals?: string[] | null
           preferred_industries?: string[] | null
           preferred_locations?: string[] | null
+          referral_code?: string | null
+          referred_by?: string | null
           skills?: string[] | null
           timezone?: string | null
           updated_at?: string | null

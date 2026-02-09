@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Users, ChevronRight } from 'lucide-react';
 import {
   ConnectionGoal,
   GOAL_LABELS,
@@ -129,6 +129,25 @@ export default function Settings() {
                   <Label htmlFor={`goal-${value}`} className="cursor-pointer">{label}</Label>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          {/* Invite Friends */}
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors border-primary/20"
+            onClick={() => navigate('/invite')}
+          >
+            <CardContent className="flex items-center gap-4 py-4">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Invite Friends</h3>
+                <p className="text-sm text-muted-foreground">
+                  Grow the network to find more matches
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
           </Card>
 
