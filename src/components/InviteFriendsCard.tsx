@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyReferralCode, useInviteStats } from '@/hooks/useInvites';
@@ -16,13 +16,14 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
   const { data: referralCode, isLoading: codeLoading } = useMyReferralCode();
   const { data: stats } = useInviteStats();
   const [copied, setCopied] = useState(false);
+  const [postContent, setPostContent] = useState<string | null>(null);
 
   const inviteUrl = referralCode 
     ? `${window.location.origin}/auth?ref=${referralCode}`
     : '';
 
-  // The share message for LinkedIn
-  const getShareText = () => `Some of my best career moments started with a single conversation I almost didn't have.
+  // Initialize post content when referralCode is available
+  const defaultShareText = `Some of my best career moments started with a single conversation I almost didn't have.
 
 That's why I'm building my network differently now — with BuildLink.
 
@@ -36,6 +37,9 @@ If you're tired of growing your network the old way, try this:
 ${inviteUrl}
 
 Your next opportunity might be one swipe away. 🤝`;
+
+  // Get the current share text (user-edited or default)
+  const getShareText = () => postContent ?? defaultShareText;
 
   const handleCopyLink = async () => {
     if (!inviteUrl) return;
@@ -132,17 +136,15 @@ Your next opportunity might be one swipe away. 🤝`;
         )}
 
         {/* Invite Link */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <label className="text-sm font-medium">Your invite link</label>
           <div className="flex gap-2">
             {codeLoading ? (
               <Skeleton className="h-10 flex-1" />
             ) : (
-              <Input 
-                readOnly 
-                value={inviteUrl}
-                className="font-mono text-sm bg-muted/50"
-              />
+              <div className="flex-1 font-mono text-sm bg-muted/50 rounded-md border px-3 py-2 truncate">
+                {inviteUrl}
+              </div>
             )}
             <Button 
               variant="outline" 
@@ -159,37 +161,30 @@ Your next opportunity might be one swipe away. 🤝`;
           </div>
         </div>
 
-        {/* Post Preview */}
+        {/* Editable Post */}
         {referralCode && (
           <div className="space-y-2">
-            <label className="text-sm font-medium">Post preview</label>
-            <div className="bg-muted/50 rounded-lg p-4 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto border">
-              {getShareText()}
-            </div>
+            <label className="text-sm font-medium">Your LinkedIn post</label>
+            <Textarea
+              value={postContent ?? defaultShareText}
+              onChange={(e) => setPostContent(e.target.value)}
+              className="min-h-[200px] text-sm resize-none"
+              placeholder="Write your LinkedIn post..."
+            />
           </div>
         )}
 
-        {/* Share Buttons */}
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleShareToLinkedIn} 
-            className="flex-1 gap-2"
-            size="lg"
-            disabled={!referralCode}
-            style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
-          >
-            <Linkedin className="h-5 w-5" />
-            Share on LinkedIn
-          </Button>
-          <Button 
-            onClick={handleShare} 
-            variant="outline"
-            size="lg"
-            disabled={!referralCode}
-          >
-            <Share2 className="h-5 w-5" />
-          </Button>
-        </div>
+        {/* Share Button */}
+        <Button 
+          onClick={handleShareToLinkedIn} 
+          className="w-full gap-2"
+          size="lg"
+          disabled={!referralCode}
+          style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
+        >
+          <Linkedin className="h-5 w-5" />
+          Post on LinkedIn
+        </Button>
 
         {/* Benefits */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
