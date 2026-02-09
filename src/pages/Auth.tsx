@@ -141,10 +141,7 @@ export default function Auth() {
         </div>
 
         <Card>
-          <CardHeader className="space-y-1 pb-2">
-            <CardTitle className="text-xl text-center">Welcome</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
 
             <Button
               onClick={handleLinkedInLogin}
