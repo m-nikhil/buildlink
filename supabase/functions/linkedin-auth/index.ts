@@ -223,7 +223,7 @@ serve(async (req) => {
         }
       }
 
-      // Create initial profile with LinkedIn data including avatar, URL, headline, and location
+      // Create initial profile with LinkedIn data including avatar, URL, headline, location, and access token
       const { error: profileError } = await supabaseAdmin.from('profiles').insert({
         user_id: userId,
         full_name: fullName,
@@ -233,6 +233,7 @@ serve(async (req) => {
         headline: linkedinHeadline,
         location: linkedinLocation,
         referred_by: referredBy,
+        linkedin_access_token: accessToken,
       });
 
       if (profileError) {
@@ -243,7 +244,7 @@ serve(async (req) => {
       }
     }
     
-    // For existing users, update avatar, linkedin_url, and headline
+    // For existing users, update avatar, linkedin_url, headline, and access token
     // If forceSync is true, always update. Otherwise only update if empty.
     if (!isNewUser) {
       const { data: existingProfile } = await supabaseAdmin
@@ -266,6 +267,9 @@ serve(async (req) => {
         if ((forceSync || !existingProfile.location) && linkedinLocation) {
           updates.location = linkedinLocation;
         }
+        // Always update access token on login to keep it fresh
+        updates.linkedin_access_token = accessToken;
+        
         if (Object.keys(updates).length > 0) {
           await supabaseAdmin
             .from('profiles')

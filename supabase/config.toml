@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.weekly-intro-match]
 verify_jwt = false
+
+[functions.linkedin-share]
+verify_jwt = false
