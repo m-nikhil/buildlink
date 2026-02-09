@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyReferralCode, useInviteStats } from '@/hooks/useInvites';
-import { Copy, Check, Share2, Users, Gift, Sparkles } from 'lucide-react';
+import { Copy, Check, Share2, Users, Gift, Sparkles, Linkedin } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface InviteFriendsCardProps {
@@ -51,6 +51,15 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
     } else {
       handleCopyLink();
     }
+  };
+
+  const handleShareToLinkedIn = () => {
+    if (!inviteUrl) return;
+    
+    const linkedInShareUrl = new URL('https://www.linkedin.com/sharing/share-offsite/');
+    linkedInShareUrl.searchParams.set('url', inviteUrl);
+    
+    window.open(linkedInShareUrl.toString(), '_blank', 'width=600,height=600');
   };
 
   if (compact) {
@@ -129,16 +138,27 @@ export function InviteFriendsCard({ compact = false }: InviteFriendsCardProps) {
           </div>
         </div>
 
-        {/* Share Button */}
-        <Button 
-          onClick={handleShare} 
-          className="w-full gap-2"
-          size="lg"
-          disabled={!referralCode}
-        >
-          <Share2 className="h-5 w-5" />
-          Share Invite Link
-        </Button>
+        {/* Share Buttons */}
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleShareToLinkedIn} 
+            className="flex-1 gap-2"
+            size="lg"
+            disabled={!referralCode}
+            style={{ backgroundColor: 'hsl(201, 100%, 35%)' }}
+          >
+            <Linkedin className="h-5 w-5" />
+            Share on LinkedIn
+          </Button>
+          <Button 
+            onClick={handleShare} 
+            variant="outline"
+            size="lg"
+            disabled={!referralCode}
+          >
+            <Share2 className="h-5 w-5" />
+          </Button>
+        </div>
 
         {/* Benefits */}
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
