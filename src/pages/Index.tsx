@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { UserProfile } from '@/components/UserProfile';
 import { SwipeFeed } from '@/components/SwipeFeed';
 import { Skeleton } from '@/components/ui/skeleton';
+import { InviteBubble } from '@/components/InviteBubble';
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -40,6 +41,7 @@ export default function Index() {
       <main className="container px-4 py-4">
         <SwipeFeed />
       </main>
+      <InviteBubble />
     </div>
   );
 }
