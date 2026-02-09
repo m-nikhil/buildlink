@@ -9,6 +9,7 @@ import { Header } from '@/components/Header';
 import { AvailabilityPicker } from '@/components/AvailabilityPicker';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { InviteBubble } from '@/components/InviteBubble';
+import { VideoCall } from '@/components/VideoCall';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,6 +34,7 @@ export default function WeeklyIntro() {
   const [showAvailabilityEditor, setShowAvailabilityEditor] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('intro');
   const [noMatchResult, setNoMatchResult] = useState<{ message: string } | null>(null);
+  const [showVideoCall, setShowVideoCall] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -263,35 +265,43 @@ export default function WeeklyIntro() {
                       {/* Video Call Section */}
                       {intro.status === 'pending' && (
                         <div className="mt-8 w-full space-y-4">
-                          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-md mx-auto">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-primary/10 rounded-full">
-                                <Video className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="font-medium">Ready to connect?</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {scheduledAt 
-                                    ? `Your call is scheduled for ${format(scheduledAt, 'EEEE')} at ${format(scheduledAt, 'h:mm a')}`
-                                    : 'Join the video call when you\'re both ready'
-                                  }
-                                </p>
-                              </div>
+                          {showVideoCall ? (
+                            <div className="max-w-2xl mx-auto">
+                              <VideoCall
+                                roomId={intro.id}
+                                remoteUserId={intro.user_id === user?.id ? intro.matched_user_id : intro.user_id}
+                                remoteUserName={matchedProfile?.full_name || undefined}
+                                remoteUserAvatar={matchedProfile?.avatar_url || undefined}
+                                remoteUserInitials={initials}
+                                onCallEnded={() => setShowVideoCall(false)}
+                              />
                             </div>
+                          ) : (
+                            <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-md mx-auto">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-full">
+                                  <Video className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium">Ready to connect?</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {scheduledAt 
+                                      ? `Your call is scheduled for ${format(scheduledAt, 'EEEE')} at ${format(scheduledAt, 'h:mm a')}`
+                                      : 'Start a P2P video call when you\'re both ready'
+                                    }
+                                  </p>
+                                </div>
+                              </div>
 
-                            {intro.video_call_url && (
                               <Button 
                                 className="w-full mt-4 gap-2"
-                                onClick={() => {
-                                  // Open video call in new tab with display name
-                                  window.open(intro.video_call_url, '_blank');
-                                }}
+                                onClick={() => setShowVideoCall(true)}
                               >
                                 <Video className="h-4 w-4" />
-                                Join Video Call
+                                Start Video Call
                               </Button>
-                            )}
-                          </div>
+                            </div>
+                          )}
 
                           <div className="flex gap-2 max-w-md mx-auto">
                             <Button 

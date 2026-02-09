@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mirror effect for local video preview */
+.mirror {
+  transform: scaleX(-1);
+}
+@tailwind components;
+@tailwind utilities;
+
 /* Professional Networking App Design System
    Color palette: Deep blues, cool grays, crisp whites
    Typography: Clean, professional sans-serif
