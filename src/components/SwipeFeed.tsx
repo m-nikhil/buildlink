@@ -89,16 +89,6 @@ export function SwipeFeed() {
         <span className="text-sm text-muted-foreground">
           {currentIndex + 1} of {matches.length} professionals
         </span>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[240px] text-center">
-              <p className="text-xs">Scrolling is intentional — we slow things down so you can thoughtfully consider each person, not just swipe on autopilot.</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
         <Button 
           onClick={handleRefresh} 
           variant="ghost" 
@@ -109,6 +99,20 @@ export function SwipeFeed() {
           <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} />
         </Button>
       </div>
+
+      {/* Floating help hint */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button className="fixed bottom-24 left-4 z-40 h-8 w-8 rounded-full bg-muted/80 backdrop-blur-sm border border-border flex items-center justify-center cursor-help shadow-md md:bottom-6">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-[240px]">
+            <p className="text-xs">Scrolling is intentional — we slow things down so you can thoughtfully consider each person, not just swipe on autopilot.</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       <SwipeCard
         key={currentMatch.profile_id}
