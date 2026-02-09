@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Linkedin, Loader2, FlaskConical, User, Mail, Briefcase, Check, ImageIcon, Users } from 'lucide-react';
+import { Linkedin, Loader2, FlaskConical, Users } from 'lucide-react';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,12 +27,6 @@ const SEED_ACCOUNTS = [
 const isProduction = window.location.hostname === 'linkbuild.lovable.app';
 const isDev = import.meta.env.DEV || !isProduction;
 
-const LINKEDIN_PERMISSIONS = [
-  { icon: User, label: 'Name', description: 'Your full name from your profile' },
-  { icon: Mail, label: 'Email', description: 'Your primary email address' },
-  { icon: Briefcase, label: 'Headline', description: 'Your professional headline' },
-  { icon: ImageIcon, label: 'Photo', description: 'Your profile picture' },
-];
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -154,26 +148,6 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* LinkedIn Permissions Info */}
-            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-              <p className="text-sm font-medium text-foreground">
-                We'll import from your LinkedIn:
-              </p>
-              <div className="space-y-2">
-                {LINKEDIN_PERMISSIONS.map((perm) => (
-                  <div key={perm.label} className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                      <perm.icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{perm.label}</p>
-                      <p className="text-xs text-muted-foreground">{perm.description}</p>
-                    </div>
-                    <Check className="h-4 w-4 text-primary" />
-                  </div>
-                ))}
-              </div>
-            </div>
 
             <Button
               onClick={handleLinkedInLogin}
