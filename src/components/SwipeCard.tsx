@@ -63,31 +63,31 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
     >
       <Card className="overflow-hidden shadow-xl">
         {/* Profile Image */}
-        <div className="relative h-52 bg-gradient-to-b from-primary/20 to-primary/5">
+        <div className="relative h-96 bg-gradient-to-b from-primary/20 to-primary/5">
           <Avatar className="absolute inset-0 h-full w-full rounded-none">
             <AvatarImage 
               src={profile.avatar_url || undefined} 
               alt={initials} 
               className="object-cover"
             />
-            <AvatarFallback className="text-4xl rounded-none bg-gradient-to-br from-primary/30 to-primary/10">
+            <AvatarFallback className="text-6xl rounded-none bg-gradient-to-br from-primary/30 to-primary/10">
               {initials}
             </AvatarFallback>
           </Avatar>
           
           {/* They Liked You Badge */}
           {theyLikedUs && (
-            <div className="absolute top-2 left-2 flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full shadow-lg animate-pulse">
-              <Heart className="h-3 w-3 fill-current" />
-              <span className="font-semibold text-xs">Likes you!</span>
+            <div className="absolute top-4 left-4 flex items-center gap-1 bg-green-500 text-white px-3 py-1.5 rounded-full shadow-lg animate-pulse">
+              <Heart className="h-4 w-4 fill-current" />
+              <span className="font-semibold text-sm">Likes you!</span>
             </div>
           )}
 
           {/* Match Score Badge */}
           {score && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-lg">
-              <Sparkles className="h-3 w-3 text-primary" />
-              <span className="font-semibold text-sm text-primary">{score}%</span>
+            <div className="absolute top-4 right-4 flex items-center gap-1 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="font-semibold text-primary">{score}% compatible</span>
             </div>
           )}
 
@@ -96,34 +96,34 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
         </div>
 
         {/* Profile Info */}
-        <div className="px-4 pb-4 -mt-10 relative">
-          <div className="text-center mb-1">
-            <h2 className="text-xl font-bold">{initials}</h2>
+        <div className="p-6 -mt-16 relative">
+          <div className="text-center mb-2">
+            <h2 className="text-2xl font-bold">{initials}</h2>
           </div>
 
           {profile.headline && (
-            <p className="text-center text-sm text-muted-foreground mb-2 line-clamp-1">
+            <p className="text-center text-muted-foreground mb-4 line-clamp-2">
               {profile.headline}
             </p>
           )}
 
           {profile.location && (
-            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-2">
-              <MapPin className="h-3 w-3" />
+            <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground mb-4">
+              <MapPin className="h-4 w-4" />
               <span>{profile.location}</span>
             </div>
           )}
 
           {/* Tags */}
-          <div className="flex flex-wrap justify-center gap-1.5 mb-2">
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
             {profile.industry && (
-              <Badge variant="secondary" className="gap-1 text-xs">
+              <Badge variant="secondary" className="gap-1">
                 <Briefcase className="h-3 w-3" />
                 {INDUSTRY_LABELS[profile.industry]}
               </Badge>
             )}
             {profile.experience_level && (
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline">
                 {EXPERIENCE_LABELS[profile.experience_level]}
               </Badge>
             )}
@@ -131,7 +131,7 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
 
           {/* Looking For */}
           {profile.looking_for && profile.looking_for.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-1 mb-2">
+            <div className="flex flex-wrap justify-center gap-1 mb-4">
               {profile.looking_for.map((goal) => (
                 <Badge key={goal} variant="secondary" className="text-xs">
                   {GOAL_LABELS[goal]}
@@ -140,17 +140,17 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
             </div>
           )}
 
-          {/* AI Match Reason */}
-          <div className="p-2 bg-primary/5 rounded-lg border border-primary/10 mb-2">
-            <p className="text-xs text-center text-muted-foreground line-clamp-3">
+          {/* AI Match Reason - always show with fallback */}
+          <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-4">
+            <p className="text-sm text-center text-muted-foreground">
               <span className="font-medium text-primary">Why connect:</span> {reason || 'Based on your professional interests and goals, this could be a great connection.'}
             </p>
           </div>
 
           {/* Looking For Text */}
           {profile.looking_for_text && (
-            <div className="p-2 bg-accent/30 rounded-lg border border-accent/50 mb-2">
-              <p className="text-xs text-center text-muted-foreground line-clamp-2">
+            <div className="p-3 bg-accent/30 rounded-lg border border-accent/50 mb-4">
+              <p className="text-sm text-center text-muted-foreground">
                 <span className="font-medium text-foreground">Looking for:</span> {profile.looking_for_text}
               </p>
             </div>
@@ -158,8 +158,8 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
 
           {/* Bio */}
           {profile.bio && (
-            <div className="p-2 bg-muted/50 rounded-lg mb-2">
-              <p className="text-xs text-muted-foreground text-center line-clamp-2">
+            <div className="p-3 bg-muted/50 rounded-lg mb-4">
+              <p className="text-sm text-muted-foreground text-center line-clamp-4">
                 {profile.bio}
               </p>
             </div>
@@ -167,10 +167,11 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
 
           {/* Tags (Skills) */}
           {profile.skills && profile.skills.length > 0 && (
-            <div className="mb-3">
-              <div className="flex flex-wrap justify-center gap-1">
+            <div className="mb-4">
+              <p className="text-xs font-medium text-muted-foreground text-center mb-2">Tags</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
                 {profile.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary" className="text-xs py-0">
+                  <Badge key={skill} variant="secondary" className="text-xs">
                     {skill}
                   </Badge>
                 ))}
@@ -180,28 +181,28 @@ export function SwipeCard({ profile, score, reason, likesYou, onLike, onPass }: 
 
           {/* Action Buttons */}
           {!isConnected && (
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-6">
               <Button
                 onClick={handlePass}
                 variant="outline"
-                size="icon"
-                className="h-12 w-12 rounded-full border-2 hover:border-destructive hover:bg-destructive/10 hover:text-destructive"
+                size="lg"
+                className="h-16 w-16 rounded-full border-2 hover:border-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                <X className="h-6 w-6" />
+                <X className="h-8 w-8" />
               </Button>
               <Button
                 onClick={handleLike}
-                size="icon"
-                className={`h-12 w-12 rounded-full shadow-lg ${theyLikedUs ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                size="lg"
+                className={`h-16 w-16 rounded-full shadow-lg ${theyLikedUs ? 'bg-green-500 hover:bg-green-600' : ''}`}
                 disabled={sendRequest.isPending}
               >
-                <UserPlus className="h-6 w-6" />
+                <UserPlus className="h-8 w-8" />
               </Button>
             </div>
           )}
 
           {theyLikedUs && !isConnected && (
-            <p className="text-center text-xs text-green-600 mt-2 font-medium">
+            <p className="text-center text-sm text-green-600 mt-3 font-medium">
               Like back to connect instantly!
             </p>
           )}

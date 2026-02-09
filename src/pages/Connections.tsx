@@ -67,10 +67,10 @@ export default function Connections() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container px-4 py-4 md:py-6 pb-20 md:pb-8 max-w-3xl">
-        <div className="mb-4">
-          <h1 className="text-xl font-bold tracking-tight">Connections</h1>
-          <p className="text-sm text-muted-foreground">Know before you connect</p>
+      <main className="container px-4 py-6 md:py-8 pb-20 md:pb-8 max-w-3xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">Connections</h1>
+          <p className="text-muted-foreground">Know before you connect</p>
         </div>
 
         <Tabs defaultValue="connections" className="w-full">
@@ -91,7 +91,7 @@ export default function Connections() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="connections" className="mt-4">
+          <TabsContent value="connections" className="mt-6">
             {connectionsLoading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
@@ -99,7 +99,7 @@ export default function Connections() {
                 ))}
               </div>
             ) : accepted.length > 0 ? (
-              <div className="space-y-1.5">
+              <div className="space-y-3">
                 {accepted.map((connection) => {
                   const otherUserId = connection.requester_id === user?.id 
                     ? connection.recipient_id 
@@ -114,15 +114,15 @@ export default function Connections() {
                     return (
                       <div 
                         key={connection.id} 
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                        className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                       >
                         <div 
-                          className="flex items-center gap-3 flex-1 cursor-pointer"
+                          className="flex items-center gap-4 flex-1 cursor-pointer"
                           onClick={() => openChat(connection)}
                         >
-                          <Avatar className="h-8 w-8">
+                          <Avatar className="h-12 w-12">
                             <AvatarImage src={otherProfile.avatar_url ?? undefined} />
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                               {getDisplayInitials(otherProfile)}
                             </AvatarFallback>
                           </Avatar>
@@ -186,19 +186,19 @@ export default function Connections() {
             )}
           </TabsContent>
 
-          <TabsContent value="sent" className="mt-4">
+          <TabsContent value="sent" className="mt-6">
             {pendingSent.length > 0 ? (
-              <div className="space-y-1.5">
+              <div className="space-y-3">
                 {pendingSent.map((connection) => {
                   const recipientProfile = getProfileByUserId(connection.recipient_id);
                   const sentDate = connection.created_at 
                     ? new Date(connection.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
                     : null;
                   return (
-                  <div key={connection.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border bg-card">
-                    <Avatar className="h-8 w-8">
+                  <div key={connection.id} className="flex items-center gap-4 p-4 rounded-lg border bg-card">
+                    <Avatar className="h-12 w-12">
                       <AvatarImage src={recipientProfile?.avatar_url ?? undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getDisplayInitials(recipientProfile)}
                       </AvatarFallback>
                     </Avatar>
