@@ -32,12 +32,11 @@ function getNextSlotDateTime(dayOfWeek: number, timeStr: string, weekStart: stri
   return targetDate;
 }
 
-// Generate a simple video call URL (using Jitsi Meet as a free option)
+// Generate a simple video call URL (using free Jitsi Meet)
 function generateVideoCallUrl(introId: string): string {
-  // Use a shorter, cleaner room name
-  const roomName = `BL${introId.substring(0, 8)}`;
-  // Use 8x8.vc which is Jitsi's free service without login requirement
-  return `https://8x8.vc/buildlink/${roomName}`;
+  // Use a unique room name based on intro ID
+  const roomName = `BuildLink-${introId.substring(0, 12)}`;
+  return `https://meet.jit.si/${roomName}`;
 }
 
 // Generate a random password for the video call room
