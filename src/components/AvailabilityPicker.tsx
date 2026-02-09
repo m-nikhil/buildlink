@@ -113,6 +113,10 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
   const [showNightHours, setShowNightHours] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   
+  // Mobile: track highlighted slot (first tap highlights, second tap confirms)
+  const [highlightedSlot, setHighlightedSlot] = useState<SlotKey | null>(null);
+  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Get timezone from profile or detect from browser
   const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [timezone, setTimezone] = useState(detectedTimezone);
@@ -297,28 +301,39 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     setIsDragging(false);
   }, []);
 
-  const handleTouchStart = useCallback((day: number, hour: number, minute: number) => {
+  // Mobile: two-tap selection (first tap highlights, second tap confirms)
+  const handleTouchStart = useCallback((day: number, hour: number, minute: number, e: React.TouchEvent) => {
     const key: SlotKey = `${day}-${hour}-${minute}`;
-    const mode = selectedSlots.has(key) ? 'deselect' : 'select';
-    setIsDragging(true);
-    setDragMode(mode);
-    toggleSlot(day, hour, minute, mode);
-  }, [selectedSlots, toggleSlot]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging || !gridRef.current) return;
     
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    if (element && element.getAttribute('data-slot')) {
-      const [day, hour, minute] = element.getAttribute('data-slot')!.split('-').map(Number);
-      toggleSlot(day, hour, minute, dragMode);
+    // Clear any existing highlight timeout
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
     }
-  }, [isDragging, dragMode, toggleSlot]);
+    
+    // If this slot is already highlighted, confirm the selection
+    if (highlightedSlot === key) {
+      const mode = selectedSlots.has(key) ? 'deselect' : 'select';
+      toggleSlot(day, hour, minute, mode);
+      setHighlightedSlot(null);
+      e.preventDefault(); // Prevent scroll on confirmation tap
+    } else {
+      // First tap: just highlight the slot
+      setHighlightedSlot(key);
+      
+      // Auto-clear highlight after 3 seconds
+      highlightTimeoutRef.current = setTimeout(() => {
+        setHighlightedSlot(null);
+      }, 3000);
+    }
+  }, [selectedSlots, toggleSlot, highlightedSlot]);
+
+  // Disable drag-to-select on mobile to allow scrolling
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    // Allow native scrolling - don't interfere
+  }, []);
 
   const handleTouchEnd = useCallback(() => {
-    setIsDragging(false);
+    // Don't reset dragging on touch end to allow two-tap flow
   }, []);
 
   useEffect(() => {
@@ -350,7 +365,9 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
           Set Your Weekly Availability
         </CardTitle>
         <CardDescription>
-          Click and drag to toggle. Changes save automatically.
+          <span className="hidden md:inline">Click and drag to toggle.</span>
+          <span className="md:hidden">Tap once to highlight, tap again to select.</span>
+          {' '}Changes save automatically.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -405,11 +422,10 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
           </Select>
         </div>
 
-        {/* Grid */}
+        {/* Grid - allow touch scrolling on mobile */}
         <div 
           ref={gridRef}
-          className="touch-none"
-          onTouchMove={handleTouchMove}
+          className="overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0"
         >
           <div className="select-none">
             {/* Header row */}
@@ -448,6 +464,7 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
                     {DAY_VALUES.map(day => {
                       const key: SlotKey = `${day}-${hour}-${minute}`;
                       const isSelected = selectedSlots.has(key);
+                      const isHighlighted = highlightedSlot === key;
                       
                       return (
                         <div
@@ -458,11 +475,13 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
                             isSelected 
                               ? "bg-slot-available hover:bg-slot-available-hover" 
                               : "bg-slot-unavailable hover:bg-slot-unavailable-hover",
-                            isRowHovered && !isSelected && "bg-slot-unavailable-hover"
+                            isRowHovered && !isSelected && "bg-slot-unavailable-hover",
+                            // Mobile highlight state
+                            isHighlighted && !isSelected && "bg-slot-highlight ring-2 ring-slot-highlight-ring ring-inset"
                           )}
                           onMouseDown={() => handleMouseDown(day, hour, minute)}
                           onMouseEnter={() => handleMouseEnter(day, hour, minute)}
-                          onTouchStart={() => handleTouchStart(day, hour, minute)}
+                          onTouchStart={(e) => handleTouchStart(day, hour, minute, e)}
                         />
                       );
                     })}

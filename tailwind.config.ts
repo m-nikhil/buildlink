@@ -64,6 +64,8 @@ export default {
           "unavailable-hover": "hsl(var(--slot-unavailable-hover))",
           "border-available": "hsl(var(--slot-border-available))",
           "border-unavailable": "hsl(var(--slot-border-unavailable))",
+          highlight: "hsl(var(--slot-highlight))",
+          "highlight-ring": "hsl(var(--slot-highlight-ring))",
         },
       },
       borderRadius: {
