@@ -3,9 +3,10 @@ import { useAIMatches } from '@/hooks/useAIMatches';
 import { SwipeCard } from './SwipeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, Users } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, Users, HelpCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function SwipeFeed() {
   const { data: matches, isLoading, error, refetch, isFetching } = useAIMatches();
@@ -88,6 +89,16 @@ export function SwipeFeed() {
         <span className="text-sm text-muted-foreground">
           {currentIndex + 1} of {matches.length} professionals
         </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[240px] text-center">
+              <p className="text-xs">Scrolling is intentional — we slow things down so you can thoughtfully consider each person, not just swipe on autopilot.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <Button 
           onClick={handleRefresh} 
           variant="ghost" 
