@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Calendar, UserPlus } from 'lucide-react';
+import { LogOut, User, Calendar, UserPlus, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 
@@ -45,7 +45,16 @@ export function Header() {
         </Link>
 
         {user ? (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => window.location.reload()}
+              title="Refresh app"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             <nav className="hidden md:flex items-center gap-6">
               <Link 
                 to="/" 
