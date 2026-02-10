@@ -17,7 +17,7 @@ import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 export function Header() {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
-  const { updateAvailable, applyUpdate } = usePWAUpdate();
+  const { updateAvailable, applyUpdate, fetchUpdate } = usePWAUpdate();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -48,17 +48,15 @@ export function Header() {
 
         {user ? (
           <div className="flex items-center gap-2 md:gap-4">
-            {updateAvailable && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-primary animate-pulse"
-                onClick={applyUpdate}
-                title="Update available — tap to refresh"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-9 w-9 ${updateAvailable ? 'text-primary animate-pulse' : 'text-muted-foreground'}`}
+              onClick={updateAvailable ? applyUpdate : fetchUpdate}
+              title={updateAvailable ? 'Update available — tap to refresh' : 'Fetch update'}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             <nav className="hidden md:flex items-center gap-6">
               <Link 
                 to="/" 

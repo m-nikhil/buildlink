@@ -57,9 +57,15 @@ export function usePWAUpdate() {
     window.location.reload();
   }, []);
 
+  const fetchUpdate = useCallback(async () => {
+    if (swRegistration) {
+      await swRegistration.update();
+    }
+  }, []);
+
   const dismiss = useCallback(() => {
     setUpdateAvailable(false);
   }, []);
 
-  return { updateAvailable, applyUpdate, dismiss };
+  return { updateAvailable, applyUpdate, fetchUpdate, dismiss };
 }
