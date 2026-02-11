@@ -195,15 +195,17 @@ export default function WeeklyIntro() {
                 <Card className="overflow-hidden border-primary/20">
                   <div className="h-20 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 relative">
                     <div className="absolute top-3 right-3">
-                      <Badge 
+                       <Badge 
                         variant={intro.status === 'completed' ? 'default' : 'secondary'}
                         className="gap-1"
-                      >
+                       >
                         {intro.status === 'completed' && <CheckCircle className="h-3 w-3" />}
                         {intro.status === 'pending' && <Sparkles className="h-3 w-3" />}
+                        {intro.status === 'accepted' && <Video className="h-3 w-3" />}
                         {intro.status === 'pending' ? 'This Week\'s Match' : 
+                         intro.status === 'accepted' ? 'Accepted' :
                          intro.status === 'completed' ? 'Completed' : intro.status}
-                      </Badge>
+                       </Badge>
                     </div>
                   </div>
                   
@@ -263,8 +265,52 @@ export default function WeeklyIntro() {
                         </div>
                       )}
 
-                      {/* Video Call Section */}
+                      {/* Accept Section */}
                       {intro.status === 'pending' && (
+                        <div className="mt-8 w-full space-y-4">
+                          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-md mx-auto text-center">
+                            <div className="flex items-center justify-center gap-3 mb-3">
+                              <div className="p-2 bg-primary/10 rounded-full">
+                                <Sparkles className="h-5 w-5 text-primary" />
+                              </div>
+                              <p className="font-medium">You've been matched!</p>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Accept this intro to unlock the video call with {matchedProfile?.full_name || 'your match'}.
+                            </p>
+                            <Button 
+                              className="w-full gap-2"
+                              onClick={async () => {
+                                if (!intro) return;
+                                try {
+                                  await updateStatus.mutateAsync({ introId: intro.id, status: 'accepted' });
+                                  toast.success('Intro accepted! You can now start a video call.');
+                                } catch (error) {
+                                  toast.error('Failed to accept intro');
+                                }
+                              }}
+                              disabled={updateStatus.isPending}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Accept Intro
+                            </Button>
+                          </div>
+
+                          <div className="flex gap-2 max-w-md mx-auto">
+                            <Button 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={handleSkip}
+                              disabled={updateStatus.isPending}
+                            >
+                              Skip this week
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Video Call Section - after accepting */}
+                      {intro.status === 'accepted' && (
                         <div className="mt-8 w-full space-y-4">
                           {showVideoCall ? (
                             <div className="max-w-2xl mx-auto">
@@ -286,10 +332,7 @@ export default function WeeklyIntro() {
                                 <div className="flex-1">
                                   <p className="font-medium">Ready to connect?</p>
                                   <p className="text-sm text-muted-foreground">
-                                    {scheduledAt 
-                                      ? `Your call is scheduled for ${format(scheduledAt, 'EEEE')} at ${format(scheduledAt, 'h:mm a')}`
-                                      : 'Start a P2P video call when you\'re both ready'
-                                    }
+                                    Start a P2P video call when you're both ready
                                   </p>
                                 </div>
                               </div>
