@@ -13,6 +13,7 @@ import {
 import { LogOut, User, Calendar, UserPlus, Download } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
+import { toast } from 'sonner';
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -54,7 +55,18 @@ export function Header() {
                 variant="ghost"
                 size="icon"
                 className={`h-9 w-9 ${updateAvailable ? 'text-primary animate-pulse' : 'text-muted-foreground'}`}
-                onClick={updateAvailable ? applyUpdate : fetchUpdate}
+                onClick={async () => {
+                  if (updateAvailable) {
+                    toast.info('Installing update…', { description: 'The app will refresh shortly.' });
+                    setTimeout(() => applyUpdate(), 1000);
+                  } else {
+                    toast.promise(fetchUpdate(), {
+                      loading: 'Checking for updates…',
+                      success: 'You are on the latest version.',
+                      error: 'Could not check for updates.',
+                    });
+                  }
+                }}
                 title={updateAvailable ? 'Update available — tap to install' : 'Check for updates'}
               >
                 <Download className="h-4 w-4" />
