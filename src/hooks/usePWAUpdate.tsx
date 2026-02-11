@@ -61,6 +61,8 @@ export function usePWAUpdate() {
     if (swRegistration) {
       await swRegistration.update();
     }
+    // Small delay to allow updatefound event to fire
+    await new Promise((r) => setTimeout(r, 1500));
   }, []);
 
   const dismiss = useCallback(() => {
