@@ -442,9 +442,13 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
                               ? "bg-slot-available hover:bg-slot-available-hover" 
                               : "bg-slot-unavailable hover:bg-slot-unavailable-hover"
                           )}
+                          style={{ touchAction: 'manipulation' }}
                           onMouseDown={() => handleMouseDown(day, hour, minute)}
                           onMouseEnter={() => handleMouseEnter(day, hour, minute)}
-                          onTouchStart={() => handleTouchStart(day, hour, minute)}
+                          onTouchStart={(e) => {
+                            e.preventDefault();
+                            handleTouchStart(day, hour, minute);
+                          }}
                         />
                       );
                     })}
