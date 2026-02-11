@@ -147,15 +147,10 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
   useEffect(() => {
     if (existingSlots && existingSlots.length > 0) {
       const slots = new Set<SlotKey>();
-      let hasNightSlots = false;
       
       existingSlots.forEach(slot => {
         const [startHour, startMin] = slot.start_time.split(':').map(Number);
         const [endHour, endMin] = slot.end_time.split(':').map(Number);
-        
-        if (startHour < 6) {
-          hasNightSlots = true;
-        }
         
         // Mark each 30-min slot in the range
         let h = startHour;
@@ -171,9 +166,6 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
       });
       
       setSelectedSlots(slots);
-      if (hasNightSlots) {
-        setShowNightHours(true);
-      }
     }
   }, [existingSlots]);
 
