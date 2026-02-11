@@ -153,7 +153,7 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
         const [startHour, startMin] = slot.start_time.split(':').map(Number);
         const [endHour, endMin] = slot.end_time.split(':').map(Number);
         
-        if (startHour < 6 || (endHour <= 6 && endHour > 0)) {
+        if (startHour < 6) {
           hasNightSlots = true;
         }
         
