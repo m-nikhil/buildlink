@@ -54,7 +54,7 @@ export function useCurrentWeeklyIntro() {
       const matchedUserId = data.user_id === user.id ? data.matched_user_id : data.user_id;
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, initials, avatar_url, headline, bio, experience_level, industry, industry_other, looking_for, looking_for_text, skills, location, timezone, preferred_experience_levels, preferred_industries, preferred_goals, created_at, updated_at')
         .eq('user_id', matchedUserId)
         .single();
 

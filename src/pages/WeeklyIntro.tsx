@@ -108,11 +108,7 @@ export default function WeeklyIntro() {
   if (!user) return null;
 
   const matchedProfile = intro?.matched_profile;
-  const initials = matchedProfile?.initials || matchedProfile?.full_name
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase() || '?';
+  const initials = matchedProfile?.initials || '?';
 
   const scheduledAt = intro?.scheduled_at ? new Date(intro.scheduled_at) : null;
 
@@ -216,7 +212,7 @@ export default function WeeklyIntro() {
                         <AvatarFallback className="text-2xl bg-primary/10">{initials}</AvatarFallback>
                       </Avatar>
                       
-                      <h2 className="mt-4 text-2xl font-bold">{matchedProfile?.full_name || initials}</h2>
+                      <h2 className="mt-4 text-2xl font-bold">{initials}</h2>
                       
                       {matchedProfile?.headline && (
                         <p className="text-muted-foreground text-center mt-1 max-w-md">
@@ -276,7 +272,7 @@ export default function WeeklyIntro() {
                               <p className="font-medium">You've been matched!</p>
                             </div>
                             <p className="text-sm text-muted-foreground mb-4">
-                              Accept this intro to unlock the video call with {matchedProfile?.full_name || 'your match'}.
+                              Accept this intro to unlock the video call with your match.
                             </p>
                             <Button 
                               className="w-full gap-2"
@@ -317,7 +313,7 @@ export default function WeeklyIntro() {
                               <VideoCall
                                 roomId={intro.id}
                                 remoteUserId={intro.user_id === user?.id ? intro.matched_user_id : intro.user_id}
-                                remoteUserName={matchedProfile?.full_name || undefined}
+                                remoteUserName={initials}
                                 remoteUserAvatar={matchedProfile?.avatar_url || undefined}
                                 remoteUserInitials={initials}
                                 onCallEnded={() => setShowVideoCall(false)}
