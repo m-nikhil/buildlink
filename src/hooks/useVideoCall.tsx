@@ -11,12 +11,10 @@ type CallStatus = 'idle' | 'joining' | 'connected' | 'error';
 export function useVideoCall({ roomId, onCallEnded }: UseVideoCallOptions) {
   const [status, setStatus] = useState<CallStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
 
-  // Generate a unique Jitsi room name from the roomId
-  const jitsiRoomName = `BuildLink-${roomId.replace(/[^a-zA-Z0-9]/g, '')}`;
-  const jitsiUrl = `https://meet.jit.si/${jitsiRoomName}`;
+  // Generate a unique MiroTalk room name from the roomId
+  const mirotalkRoomName = `buildlink-${roomId.replace(/[^a-zA-Z0-9]/g, '')}`;
+  const mirotalkUrl = `https://p2p.mirotalk.com/newcall?room=${mirotalkRoomName}`;
 
   const join = useCallback(() => {
     setStatus('connected');
@@ -28,27 +26,12 @@ export function useVideoCall({ roomId, onCallEnded }: UseVideoCallOptions) {
     onCallEnded?.();
   }, [onCallEnded]);
 
-  const toggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
-  }, []);
-
-  const toggleVideo = useCallback(() => {
-    setIsVideoOff(prev => !prev);
-  }, []);
-
   return {
     status,
     error,
-    isMuted,
-    isVideoOff,
-    remotePresent: false,
-    jitsiUrl,
-    jitsiRoomName,
+    mirotalkUrl,
+    mirotalkRoomName,
     join,
     leave,
-    toggleMute,
-    toggleVideo,
-    localVideoRef: { current: null },
-    remoteVideoRef: { current: null },
   };
 }
