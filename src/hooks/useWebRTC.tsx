@@ -47,10 +47,13 @@ export function useWebRTC(roomId: string, remoteUserId: string) {
 
   const userId = user?.id;
 
+  const localStreamRef = useRef<MediaStream | null>(null);
+
   // Clean up function
   const cleanup = useCallback(() => {
-    // Stop local stream tracks
-    state.localStream?.getTracks().forEach(track => track.stop());
+    // Stop local stream tracks using ref to avoid stale closure
+    localStreamRef.current?.getTracks().forEach(track => track.stop());
+    localStreamRef.current = null;
     
     // Close peer connection
     if (peerConnectionRef.current) {
@@ -72,7 +75,7 @@ export function useWebRTC(roomId: string, remoteUserId: string) {
       isVideoEnabled: true,
       error: null,
     });
-  }, [state.localStream]);
+  }, []);
 
   // Send signaling message via Supabase Realtime
   const sendSignal = useCallback((message: Omit<SignalingMessage, 'from'>) => {
@@ -84,6 +87,9 @@ export function useWebRTC(roomId: string, remoteUserId: string) {
       payload: { ...message, from: userId },
     });
   }, [userId]);
+
+  // Use a ref for handleSignal so channel listener always gets latest
+  const handleSignalRef = useRef<(message: SignalingMessage) => Promise<void>>();
 
   // Handle incoming signaling messages
   const handleSignal = useCallback(async (message: SignalingMessage) => {
@@ -145,6 +151,9 @@ export function useWebRTC(roomId: string, remoteUserId: string) {
     }
   }, [userId, sendSignal, cleanup]);
 
+  // Keep handleSignal ref updated
+  handleSignalRef.current = handleSignal;
+
   // Start the call
   const startCall = useCallback(async () => {
     if (!userId || !roomId) return;
@@ -158,6 +167,7 @@ export function useWebRTC(roomId: string, remoteUserId: string) {
         audio: true,
       });
 
+      localStreamRef.current = stream;
       setState(prev => ({ ...prev, localStream: stream }));
 
       // Create peer connection
@@ -207,7 +217,8 @@ export function useWebRTC(roomId: string, remoteUserId: string) {
 
       channel
         .on('broadcast', { event: 'webrtc-signal' }, ({ payload }) => {
-          handleSignal(payload as SignalingMessage);
+          // Use ref to always get latest handleSignal
+          handleSignalRef.current?.(payload as SignalingMessage);
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
@@ -242,32 +253,34 @@ export function useWebRTC(roomId: string, remoteUserId: string) {
 
   // Toggle audio
   const toggleAudio = useCallback(() => {
-    if (state.localStream) {
-      const audioTrack = state.localStream.getAudioTracks()[0];
+    const stream = localStreamRef.current;
+    if (stream) {
+      const audioTrack = stream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setState(prev => ({ ...prev, isAudioEnabled: audioTrack.enabled }));
       }
     }
-  }, [state.localStream]);
+  }, []);
 
   // Toggle video
   const toggleVideo = useCallback(() => {
-    if (state.localStream) {
-      const videoTrack = state.localStream.getVideoTracks()[0];
+    const stream = localStreamRef.current;
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setState(prev => ({ ...prev, isVideoEnabled: videoTrack.enabled }));
       }
     }
-  }, [state.localStream]);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       cleanup();
     };
-  }, []);
+  }, [cleanup]);
 
   return {
     ...state,
