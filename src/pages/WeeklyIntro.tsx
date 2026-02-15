@@ -309,7 +309,7 @@ export default function WeeklyIntro() {
                       {intro.status === 'accepted' && (
                         <div className="mt-8 w-full space-y-4">
                           {showVideoCall ? (
-                            <div className="max-w-2xl mx-auto">
+                            <div className="max-w-2xl mx-auto space-y-3">
                               <VideoCall
                                 roomId={intro.id}
                                 remoteUserId={intro.user_id === user?.id ? intro.matched_user_id : intro.user_id}
@@ -318,6 +318,23 @@ export default function WeeklyIntro() {
                                 remoteUserInitials={initials}
                                 onCallEnded={() => setShowVideoCall(false)}
                               />
+                              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg max-w-md mx-auto">
+                                <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <code className="text-xs text-muted-foreground truncate flex-1">
+                                  {`${window.location.origin}/call/${intro.id}`}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="shrink-0 h-7 text-xs"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/call/${intro.id}`);
+                                    toast.success('Call link copied!');
+                                  }}
+                                >
+                                  Copy
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-md mx-auto">
