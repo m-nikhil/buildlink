@@ -1,9 +1,9 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useVideoCall } from '@/hooks/useVideoCall';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Video, VideoOff, Mic, MicOff, PhoneOff, Phone, Loader2, Maximize, Minimize } from 'lucide-react';
+import { PhoneOff, Phone, Maximize, Minimize, ExternalLink } from 'lucide-react';
 
 interface VideoCallProps {
   roomId: string;
@@ -27,16 +27,9 @@ export function VideoCall({
 
   const {
     status,
-    error,
-    isMuted,
-    isVideoOff,
-    remotePresent,
-    localVideoRef,
-    remoteVideoRef,
+    jitsiUrl,
     join,
     leave,
-    toggleMute,
-    toggleVideo,
   } = useVideoCall({ roomId, remoteUserId, onCallEnded });
 
   const toggleFullscreen = useCallback(async () => {
@@ -48,6 +41,13 @@ export function VideoCall({
       await document.exitFullscreen();
       setIsFullscreen(false);
     }
+  }, []);
+
+  // Listen for fullscreen changes (e.g. user presses Esc)
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
   const displayName = remoteUserName || remoteUserInitials;
@@ -64,32 +64,13 @@ export function VideoCall({
           <div className="text-center">
             <h3 className="font-semibold text-lg">Ready to connect?</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Join the video room and wait for {displayName} to arrive
+              Join a video call with {displayName}
             </p>
           </div>
-          <Button size="lg" className="gap-2" onClick={join}>
-            <Phone className="h-5 w-5" />
-            Join Video Room
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Error state
-  if (status === 'error') {
-    return (
-      <Card className="overflow-hidden border-destructive/30">
-        <CardContent className="p-6 flex flex-col items-center gap-4">
-          <div className="text-center">
-            <h3 className="font-semibold text-lg text-destructive">Connection Error</h3>
-            <p className="text-sm text-muted-foreground mt-1">{error}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onCallEnded?.()}>Go Back</Button>
-            <Button onClick={join} className="gap-2">
-              <Phone className="h-4 w-4" />
-              Try Again
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            <Button size="lg" className="gap-2 w-full" onClick={join}>
+              <Phone className="h-5 w-5" />
+              Join Video Call
             </Button>
           </div>
         </CardContent>
@@ -97,91 +78,22 @@ export function VideoCall({
     );
   }
 
-  // Waiting / Connecting / Connected states — show video UI
+  // Connected — show Jitsi iframe
   return (
     <div ref={containerRef} className={isFullscreen ? 'fixed inset-0 z-50 bg-background flex flex-col' : ''}>
       <Card className={`overflow-hidden ${isFullscreen ? 'border-0 rounded-none flex-1 flex flex-col' : ''}`}>
         <CardContent className={`p-0 ${isFullscreen ? 'flex-1 flex flex-col' : ''}`}>
-          {/* Remote video / waiting state */}
           <div className={`relative w-full bg-muted ${isFullscreen ? 'flex-1' : ''}`} style={isFullscreen ? undefined : { aspectRatio: '16/9' }}>
-            {status === 'connected' ? (
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={remoteUserAvatar} alt={displayName} />
-                  <AvatarFallback className="text-2xl bg-primary/10">{remoteUserInitials}</AvatarFallback>
-                </Avatar>
-
-                {status === 'joining' && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Setting up camera...</span>
-                  </div>
-                )}
-
-                {status === 'waiting' && (
-                  <div className="text-center">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm font-medium">
-                        {remotePresent ? 'Partner found! Connecting...' : `Waiting for ${displayName}...`}
-                      </span>
-                    </div>
-                    {!remotePresent && (
-                      <p className="text-xs text-muted-foreground">
-                        They'll see you when they join
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {status === 'connecting' && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Establishing connection...</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Local video PiP */}
-            {(status === 'waiting' || status === 'connecting' || status === 'connected') && (
-              <div className={`absolute bottom-3 right-3 ${isFullscreen ? 'w-48' : 'w-32'} aspect-video rounded-lg overflow-hidden border-2 border-background shadow-lg bg-muted`}>
-                {isVideoOff ? (
-                  <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <VideoOff className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                ) : (
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                    style={{ transform: 'scaleX(-1)' }}
-                  />
-                )}
-              </div>
-            )}
+            <iframe
+              src={`${jitsiUrl}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false`}
+              allow="camera; microphone; fullscreen; display-capture; autoplay"
+              className="w-full h-full border-0"
+              style={{ minHeight: isFullscreen ? '100%' : '400px' }}
+            />
           </div>
 
           {/* Controls */}
           <div className="p-4 bg-background border-t flex items-center justify-center gap-3">
-            <Button
-              variant={isMuted ? 'destructive' : 'secondary'}
-              size="icon"
-              className="h-12 w-12 rounded-full"
-              onClick={toggleMute}
-            >
-              {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-            </Button>
-
             <Button
               variant="destructive"
               size="icon"
@@ -192,21 +104,22 @@ export function VideoCall({
             </Button>
 
             <Button
-              variant={isVideoOff ? 'destructive' : 'secondary'}
-              size="icon"
-              className="h-12 w-12 rounded-full"
-              onClick={toggleVideo}
-            >
-              {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
-            </Button>
-
-            <Button
               variant="secondary"
               size="icon"
               className="h-12 w-12 rounded-full"
               onClick={toggleFullscreen}
             >
               {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-12 rounded-full"
+              onClick={() => window.open(jitsiUrl, '_blank')}
+              title="Open in new tab"
+            >
+              <ExternalLink className="h-5 w-5" />
             </Button>
           </div>
         </CardContent>
