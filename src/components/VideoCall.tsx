@@ -11,6 +11,7 @@ interface VideoCallProps {
   remoteUserName?: string;
   remoteUserAvatar?: string;
   remoteUserInitials?: string;
+  myDisplayName?: string;
   onCallEnded?: () => void;
 }
 
@@ -20,6 +21,7 @@ export function VideoCall({
   remoteUserName,
   remoteUserAvatar,
   remoteUserInitials = '?',
+  myDisplayName,
   onCallEnded,
 }: VideoCallProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,7 +32,7 @@ export function VideoCall({
     mirotalkUrl,
     join,
     leave,
-  } = useVideoCall({ roomId, remoteUserId, onCallEnded });
+  } = useVideoCall({ roomId, remoteUserId, displayName: myDisplayName, onCallEnded });
 
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
