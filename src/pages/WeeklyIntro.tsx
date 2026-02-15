@@ -19,7 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, Video, Sparkles, Users, MapPin, CheckCircle, RefreshCw, 
-  Clock, CalendarDays, Edit2, AlertCircle, Globe, Lightbulb
+  Clock, CalendarDays, Edit2, AlertCircle, Globe, Lightbulb, Link2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EXPERIENCE_LABELS, GOAL_LABELS } from '@/types/profile';
@@ -333,13 +333,27 @@ export default function WeeklyIntro() {
                                 </div>
                               </div>
 
-                              <Button 
-                                className="w-full mt-4 gap-2"
-                                onClick={() => setShowVideoCall(true)}
-                              >
-                                <Video className="h-4 w-4" />
-                                Start Video Call
-                              </Button>
+                              <div className="flex gap-2 mt-4">
+                                <Button 
+                                  className="flex-1 gap-2"
+                                  onClick={() => setShowVideoCall(true)}
+                                >
+                                  <Video className="h-4 w-4" />
+                                  Start Video Call
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="gap-2"
+                                  onClick={() => {
+                                    const url = `${window.location.origin}/call/${intro.id}`;
+                                    navigator.clipboard.writeText(url);
+                                    toast.success('Call link copied! Share it with your match.');
+                                  }}
+                                >
+                                  <Link2 className="h-4 w-4" />
+                                  Copy Link
+                                </Button>
+                              </div>
                             </div>
                           )}
 
