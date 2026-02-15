@@ -27,7 +27,7 @@ export function VideoCall({
 
   const {
     status,
-    jitsiUrl,
+    mirotalkUrl,
     join,
     leave,
   } = useVideoCall({ roomId, remoteUserId, onCallEnded });
@@ -43,7 +43,6 @@ export function VideoCall({
     }
   }, []);
 
-  // Listen for fullscreen changes (e.g. user presses Esc)
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handler);
@@ -52,7 +51,6 @@ export function VideoCall({
 
   const displayName = remoteUserName || remoteUserInitials;
 
-  // Idle state — show join button
   if (status === 'idle') {
     return (
       <Card className="overflow-hidden">
@@ -78,21 +76,19 @@ export function VideoCall({
     );
   }
 
-  // Connected — show Jitsi iframe
   return (
     <div ref={containerRef} className={isFullscreen ? 'fixed inset-0 z-50 bg-background flex flex-col' : ''}>
       <Card className={`overflow-hidden ${isFullscreen ? 'border-0 rounded-none flex-1 flex flex-col' : ''}`}>
         <CardContent className={`p-0 ${isFullscreen ? 'flex-1 flex flex-col' : ''}`}>
           <div className={`relative w-full bg-muted ${isFullscreen ? 'flex-1' : ''}`} style={isFullscreen ? undefined : { aspectRatio: '16/9' }}>
             <iframe
-              src={`${jitsiUrl}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false`}
+              src={mirotalkUrl}
               allow="camera; microphone; fullscreen; display-capture; autoplay"
               className="w-full h-full border-0"
               style={{ minHeight: isFullscreen ? '100%' : '400px' }}
             />
           </div>
 
-          {/* Controls */}
           <div className="p-4 bg-background border-t flex items-center justify-center gap-3">
             <Button
               variant="destructive"
@@ -116,7 +112,7 @@ export function VideoCall({
               variant="outline"
               size="icon"
               className="h-12 w-12 rounded-full"
-              onClick={() => window.open(jitsiUrl, '_blank')}
+              onClick={() => window.open(mirotalkUrl, '_blank')}
               title="Open in new tab"
             >
               <ExternalLink className="h-5 w-5" />
