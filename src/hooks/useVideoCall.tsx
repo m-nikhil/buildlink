@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import Peer, { MediaConnection } from 'peerjs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -11,6 +10,12 @@ interface UseVideoCallOptions {
 
 type CallStatus = 'idle' | 'joining' | 'waiting' | 'connecting' | 'connected' | 'error';
 
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+];
+
 export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCallOptions) {
   const { user } = useAuth();
   const [status, setStatus] = useState<CallStatus>('idle');
@@ -19,26 +24,19 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [remotePresent, setRemotePresent] = useState(false);
 
-  const peerRef = useRef<Peer | null>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
-  const callRef = useRef<MediaConnection | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryCountRef = useRef(0);
+  const isInitiatorRef = useRef(false);
+  const hasJoinedRef = useRef(false);
 
   const cleanup = useCallback(() => {
-    if (retryTimerRef.current) {
-      clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = null;
-    }
-    retryCountRef.current = 0;
-    callRef.current?.close();
-    callRef.current = null;
-    peerRef.current?.destroy();
-    peerRef.current = null;
+    console.log('[VideoCall] Cleaning up');
+    pcRef.current?.close();
+    pcRef.current = null;
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     localStreamRef.current = null;
     remoteStreamRef.current = null;
@@ -46,75 +44,151 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+    hasJoinedRef.current = false;
   }, []);
 
-  const attachRemoteStream = useCallback((stream: MediaStream) => {
-    remoteStreamRef.current = stream;
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = stream;
-    }
-    setStatus('connected');
-  }, []);
+  const createPeerConnection = useCallback(() => {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
-  const handleIncomingCall = useCallback((call: MediaConnection) => {
-    callRef.current = call;
-    setStatus('connecting');
-    call.answer(localStreamRef.current!);
-    call.on('stream', attachRemoteStream);
-    call.on('close', () => {
-      console.log('[VideoCall] Incoming call closed');
-      setStatus('waiting');
-      setRemotePresent(false);
-      callRef.current = null;
+    // Add local tracks to the connection
+    localStreamRef.current?.getTracks().forEach(track => {
+      pc.addTrack(track, localStreamRef.current!);
     });
-    call.on('error', (err) => {
-      console.error('[VideoCall] Incoming call error:', err);
-      setError('Call connection failed');
-      setStatus('error');
-    });
-  }, [attachRemoteStream]);
 
-  const callPeer = useCallback((remotePeerId: string) => {
-    if (!peerRef.current || !localStreamRef.current) return;
-    if (callRef.current) return; // Already in a call
-    console.log('[VideoCall] Calling peer:', remotePeerId);
-    setStatus('connecting');
-    const call = peerRef.current.call(remotePeerId, localStreamRef.current);
-    callRef.current = call;
-    call.on('stream', (stream) => {
-      retryCountRef.current = 0; // Reset retries on successful connection
-      attachRemoteStream(stream);
-    });
-    call.on('close', () => {
-      console.log('[VideoCall] Outgoing call closed');
-      callRef.current = null;
-      // If we never connected, retry with backoff
-      if (retryCountRef.current < 5) {
-        retryCountRef.current++;
-        const delay = Math.min(2000 * retryCountRef.current, 8000);
-        console.log(`[VideoCall] Will retry in ${delay}ms (attempt ${retryCountRef.current})`);
-        setStatus('waiting');
-        retryTimerRef.current = setTimeout(() => {
-          // Only retry if remote is still present
-          if (peerRef.current && localStreamRef.current) {
-            callPeer(remotePeerId);
-          }
-        }, delay);
-      } else {
-        console.log('[VideoCall] Max retries reached, staying in waiting state');
+    // Handle remote tracks
+    pc.ontrack = (event) => {
+      console.log('[VideoCall] Got remote track:', event.track.kind);
+      if (event.streams[0]) {
+        remoteStreamRef.current = event.streams[0];
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+        setStatus('connected');
+      }
+    };
+
+    // Send ICE candidates via Supabase broadcast
+    pc.onicecandidate = (event) => {
+      if (event.candidate && channelRef.current) {
+        console.log('[VideoCall] Sending ICE candidate');
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'ice-candidate',
+          payload: {
+            candidate: event.candidate.toJSON(),
+            from: user!.id,
+          },
+        });
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('[VideoCall] ICE connection state:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setStatus('connected');
+      } else if (pc.iceConnectionState === 'disconnected') {
+        console.log('[VideoCall] Peer disconnected, waiting for reconnection...');
+      } else if (pc.iceConnectionState === 'failed') {
+        console.error('[VideoCall] ICE connection failed');
+        setError('Connection failed. The other person may be behind a strict firewall.');
+        setStatus('error');
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log('[VideoCall] Connection state:', pc.connectionState);
+      if (pc.connectionState === 'closed' || pc.connectionState === 'failed') {
         setStatus('waiting');
         setRemotePresent(false);
       }
-    });
-    call.on('error', (err) => {
-      console.error('[VideoCall] Outgoing call error:', err);
-      callRef.current = null;
-      setStatus('waiting');
-    });
-  }, [attachRemoteStream]);
+    };
+
+    pcRef.current = pc;
+    return pc;
+  }, [user]);
+
+  const startNegotiation = useCallback(async () => {
+    const pc = pcRef.current;
+    const channel = channelRef.current;
+    if (!pc || !channel || !user) return;
+
+    console.log('[VideoCall] Creating offer...');
+    setStatus('connecting');
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      console.log('[VideoCall] Sending offer');
+      channel.send({
+        type: 'broadcast',
+        event: 'offer',
+        payload: {
+          sdp: pc.localDescription?.toJSON(),
+          from: user.id,
+        },
+      });
+    } catch (err) {
+      console.error('[VideoCall] Failed to create offer:', err);
+      setError('Failed to establish connection');
+      setStatus('error');
+    }
+  }, [user]);
+
+  const handleOffer = useCallback(async (sdp: RTCSessionDescriptionInit, fromUserId: string) => {
+    if (!user || fromUserId === user.id) return;
+    console.log('[VideoCall] Received offer from', fromUserId);
+    
+    let pc = pcRef.current;
+    if (!pc) {
+      pc = createPeerConnection();
+    }
+
+    setStatus('connecting');
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      console.log('[VideoCall] Sending answer');
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'answer',
+        payload: {
+          sdp: pc.localDescription?.toJSON(),
+          from: user.id,
+        },
+      });
+    } catch (err) {
+      console.error('[VideoCall] Failed to handle offer:', err);
+      setError('Failed to connect');
+      setStatus('error');
+    }
+  }, [user, createPeerConnection]);
+
+  const handleAnswer = useCallback(async (sdp: RTCSessionDescriptionInit, fromUserId: string) => {
+    if (!user || fromUserId === user.id) return;
+    console.log('[VideoCall] Received answer from', fromUserId);
+    const pc = pcRef.current;
+    if (!pc) return;
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    } catch (err) {
+      console.error('[VideoCall] Failed to handle answer:', err);
+    }
+  }, [user]);
+
+  const handleIceCandidate = useCallback(async (candidate: RTCIceCandidateInit, fromUserId: string) => {
+    if (!user || fromUserId === user.id) return;
+    const pc = pcRef.current;
+    if (!pc) return;
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (err) {
+      console.error('[VideoCall] Failed to add ICE candidate:', err);
+    }
+  }, [user]);
 
   const join = useCallback(async () => {
-    if (!user) return;
+    if (!user || hasJoinedRef.current) return;
+    hasJoinedRef.current = true;
     setStatus('joining');
     setError(null);
 
@@ -127,71 +201,53 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
         localVideoRef.current.srcObject = stream;
       }
 
-      // Create PeerJS instance with STUN only
-      const peerId = `buildlink-${roomId}-${user.id}`.replace(/[^a-zA-Z0-9-]/g, '');
-      const peer = new Peer(peerId, {
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-          ],
-        },
-      });
-      peerRef.current = peer;
+      // Create the peer connection
+      createPeerConnection();
 
-      peer.on('open', (id) => {
-        console.log('[VideoCall] Peer open with ID:', id);
-        setStatus('waiting');
-        // Join Supabase Realtime presence channel
-        const channel = supabase.channel(`video-room:${roomId}`, {
-          config: { presence: { key: user.id } },
+      // Determine who initiates (smaller user ID creates the offer)
+      isInitiatorRef.current = user.id < remoteUserId;
+      console.log('[VideoCall] Is initiator:', isInitiatorRef.current);
+
+      // Set up Supabase Realtime channel for signaling + presence
+      const channel = supabase.channel(`video-room:${roomId}`, {
+        config: { presence: { key: user.id } },
+      });
+      channelRef.current = channel;
+
+      channel
+        .on('broadcast', { event: 'offer' }, ({ payload }) => {
+          handleOffer(payload.sdp, payload.from);
+        })
+        .on('broadcast', { event: 'answer' }, ({ payload }) => {
+          handleAnswer(payload.sdp, payload.from);
+        })
+        .on('broadcast', { event: 'ice-candidate' }, ({ payload }) => {
+          handleIceCandidate(payload.candidate, payload.from);
+        })
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState();
+          const userIds = Object.keys(state);
+          const otherPresent = userIds.includes(remoteUserId);
+          setRemotePresent(otherPresent);
+          console.log('[VideoCall] Presence sync - other present:', otherPresent, 'users:', userIds);
+
+          // If we're the initiator and the other person is here, start negotiation
+          if (otherPresent && isInitiatorRef.current && pcRef.current?.signalingState === 'stable' && !pcRef.current?.remoteDescription) {
+            // Delay slightly to ensure both sides are ready
+            setTimeout(() => startNegotiation(), 1000);
+          }
+        })
+        .subscribe(async (subStatus) => {
+          console.log('[VideoCall] Channel status:', subStatus);
+          if (subStatus === 'SUBSCRIBED') {
+            setStatus('waiting');
+            await channel.track({ user_id: user.id, joined_at: new Date().toISOString() });
+          }
         });
-        channelRef.current = channel;
 
-        channel
-          .on('presence', { event: 'sync' }, () => {
-            const state = channel.presenceState();
-            const userIds = Object.keys(state);
-            const otherPresent = userIds.includes(remoteUserId);
-            setRemotePresent(otherPresent);
-
-            // If remote user is present and we haven't connected yet, initiate call
-            // The user with the "smaller" ID initiates to avoid double-calling
-            // Add a small delay to let the remote PeerJS peer initialize
-            if (otherPresent && !callRef.current && user.id < remoteUserId) {
-              const remotePeerId = `buildlink-${roomId}-${remoteUserId}`.replace(/[^a-zA-Z0-9-]/g, '');
-              if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-              retryTimerRef.current = setTimeout(() => {
-                if (!callRef.current) {
-                  callPeer(remotePeerId);
-                }
-              }, 1500); // Wait 1.5s for remote peer to be ready
-            }
-          })
-          .subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-              await channel.track({ user_id: user.id, joined_at: new Date().toISOString() });
-            }
-          });
-      });
-
-      peer.on('call', handleIncomingCall);
-
-      peer.on('error', (err) => {
-        console.error('[VideoCall] PeerJS error:', err.type, err.message);
-        if (err.type === 'unavailable-id') {
-          setError('Session already active in another tab');
-          setStatus('error');
-        } else if (err.type === 'peer-unavailable') {
-          // Remote peer not ready yet — don't error, stay waiting
-          console.log('[VideoCall] Remote peer not available yet, retrying on next presence sync');
-        } else {
-          setError(`Connection error: ${err.message}`);
-          setStatus('error');
-        }
-      });
     } catch (err) {
-      console.error('Failed to join:', err);
+      console.error('[VideoCall] Failed to join:', err);
+      hasJoinedRef.current = false;
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
         setError('Camera/microphone permission denied. Please allow access and try again.');
       } else {
@@ -199,7 +255,7 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
       }
       setStatus('error');
     }
-  }, [user, roomId, remoteUserId, callPeer, handleIncomingCall]);
+  }, [user, roomId, remoteUserId, createPeerConnection, handleOffer, handleAnswer, handleIceCandidate, startNegotiation]);
 
   const leave = useCallback(() => {
     cleanup();
