@@ -1,21 +1,28 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 interface UseVideoCallOptions {
   roomId: string;
   remoteUserId: string;
+  displayName?: string;
   onCallEnded?: () => void;
 }
 
 type CallStatus = 'idle' | 'joining' | 'connected' | 'error';
 
-export function useVideoCall({ roomId, onCallEnded }: UseVideoCallOptions) {
+export function useVideoCall({ roomId, displayName, onCallEnded }: UseVideoCallOptions) {
   const [status, setStatus] = useState<CallStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
   const mirotalkRoomName = `buildlink-${roomId.replace(/[^a-zA-Z0-9]/g, '')}`;
 
-  // Use direct join URL to skip the lobby
-  const mirotalkUrl = `https://p2p.mirotalk.com/join?room=${mirotalkRoomName}&name=User&audio=1&video=1&screen=0&chat=0&hide=0&notify=0&duration=unlimited`;
+  // Generate a unique username to avoid "Username already in use" errors
+  const uniqueName = useMemo(() => {
+    const base = displayName || 'User';
+    const suffix = Math.random().toString(36).substring(2, 6);
+    return `${base}-${suffix}`;
+  }, [displayName]);
+
+  const mirotalkUrl = `https://p2p.mirotalk.com/join?room=${mirotalkRoomName}&name=${encodeURIComponent(uniqueName)}&audio=1&video=1&screen=0&chat=0&hide=0&notify=0&duration=unlimited`;
 
   const join = useCallback(() => {
     setStatus('connected');

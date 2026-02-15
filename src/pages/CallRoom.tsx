@@ -17,6 +17,8 @@ export default function CallRoom() {
     remoteUserId: string;
     remoteInitials: string;
     remoteAvatar?: string;
+    remoteFullName?: string;
+    myName?: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,14 +64,23 @@ export default function CallRoom() {
       // Fetch remote profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('initials, avatar_url')
+        .select('initials, avatar_url, full_name')
         .eq('user_id', remoteUserId)
+        .single();
+
+      // Fetch current user's name for video call display
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user!.id)
         .single();
 
       setIntroData({
         remoteUserId,
         remoteInitials: profile?.initials || '?',
         remoteAvatar: profile?.avatar_url || undefined,
+        remoteFullName: profile?.full_name || undefined,
+        myName: myProfile?.full_name || undefined,
       });
       setLoading(false);
     }
@@ -120,8 +131,10 @@ export default function CallRoom() {
           <VideoCall
             roomId={roomId}
             remoteUserId={introData.remoteUserId}
+            remoteUserName={introData.remoteFullName}
             remoteUserInitials={introData.remoteInitials}
             remoteUserAvatar={introData.remoteAvatar}
+            myDisplayName={introData.myName}
             onCallEnded={() => navigate('/weekly-intro')}
           />
         </div>
