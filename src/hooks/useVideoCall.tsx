@@ -26,8 +26,15 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
 
   const cleanup = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    retryCountRef.current = 0;
     callRef.current?.close();
     callRef.current = null;
     peerRef.current?.destroy();
@@ -69,23 +76,42 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
 
   const callPeer = useCallback((remotePeerId: string) => {
     if (!peerRef.current || !localStreamRef.current) return;
+    if (callRef.current) return; // Already in a call
     console.log('[VideoCall] Calling peer:', remotePeerId);
     setStatus('connecting');
     const call = peerRef.current.call(remotePeerId, localStreamRef.current);
     callRef.current = call;
-    call.on('stream', attachRemoteStream);
+    call.on('stream', (stream) => {
+      retryCountRef.current = 0; // Reset retries on successful connection
+      attachRemoteStream(stream);
+    });
     call.on('close', () => {
       console.log('[VideoCall] Outgoing call closed');
-      setStatus('waiting');
-      setRemotePresent(false);
       callRef.current = null;
+      // If we never connected, retry with backoff
+      if (retryCountRef.current < 5) {
+        retryCountRef.current++;
+        const delay = Math.min(2000 * retryCountRef.current, 8000);
+        console.log(`[VideoCall] Will retry in ${delay}ms (attempt ${retryCountRef.current})`);
+        setStatus('waiting');
+        retryTimerRef.current = setTimeout(() => {
+          // Only retry if remote is still present
+          if (peerRef.current && localStreamRef.current) {
+            callPeer(remotePeerId);
+          }
+        }, delay);
+      } else {
+        console.log('[VideoCall] Max retries reached, staying in waiting state');
+        setStatus('waiting');
+        setRemotePresent(false);
+      }
     });
     call.on('error', (err) => {
       console.error('[VideoCall] Outgoing call error:', err);
-      setError('Call connection failed');
-      setStatus('error');
+      callRef.current = null;
+      setStatus('waiting');
     });
-  }, [attachRemoteStream, onCallEnded]);
+  }, [attachRemoteStream]);
 
   const join = useCallback(async () => {
     if (!user) return;
@@ -131,9 +157,15 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
 
             // If remote user is present and we haven't connected yet, initiate call
             // The user with the "smaller" ID initiates to avoid double-calling
+            // Add a small delay to let the remote PeerJS peer initialize
             if (otherPresent && !callRef.current && user.id < remoteUserId) {
               const remotePeerId = `buildlink-${roomId}-${remoteUserId}`.replace(/[^a-zA-Z0-9-]/g, '');
-              callPeer(remotePeerId);
+              if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+              retryTimerRef.current = setTimeout(() => {
+                if (!callRef.current) {
+                  callPeer(remotePeerId);
+                }
+              }, 1500); // Wait 1.5s for remote peer to be ready
             }
           })
           .subscribe(async (status) => {
