@@ -55,28 +55,33 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
     call.answer(localStreamRef.current!);
     call.on('stream', attachRemoteStream);
     call.on('close', () => {
-      setStatus('idle');
-      onCallEnded?.();
+      console.log('[VideoCall] Incoming call closed');
+      setStatus('waiting');
+      setRemotePresent(false);
+      callRef.current = null;
     });
     call.on('error', (err) => {
-      console.error('Call error:', err);
+      console.error('[VideoCall] Incoming call error:', err);
       setError('Call connection failed');
       setStatus('error');
     });
-  }, [attachRemoteStream, onCallEnded]);
+  }, [attachRemoteStream]);
 
   const callPeer = useCallback((remotePeerId: string) => {
     if (!peerRef.current || !localStreamRef.current) return;
+    console.log('[VideoCall] Calling peer:', remotePeerId);
     setStatus('connecting');
     const call = peerRef.current.call(remotePeerId, localStreamRef.current);
     callRef.current = call;
     call.on('stream', attachRemoteStream);
     call.on('close', () => {
-      setStatus('idle');
-      onCallEnded?.();
+      console.log('[VideoCall] Outgoing call closed');
+      setStatus('waiting');
+      setRemotePresent(false);
+      callRef.current = null;
     });
     call.on('error', (err) => {
-      console.error('Call error:', err);
+      console.error('[VideoCall] Outgoing call error:', err);
       setError('Call connection failed');
       setStatus('error');
     });
@@ -88,8 +93,9 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
     setError(null);
 
     try {
-      // Get media
+      console.log('[VideoCall] Requesting media...');
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log('[VideoCall] Media acquired:', stream.getTracks().map(t => `${t.kind}:${t.readyState}`));
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
@@ -107,7 +113,8 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
       });
       peerRef.current = peer;
 
-      peer.on('open', () => {
+      peer.on('open', (id) => {
+        console.log('[VideoCall] Peer open with ID:', id);
         setStatus('waiting');
         // Join Supabase Realtime presence channel
         const channel = supabase.channel(`video-room:${roomId}`, {
@@ -139,14 +146,17 @@ export function useVideoCall({ roomId, remoteUserId, onCallEnded }: UseVideoCall
       peer.on('call', handleIncomingCall);
 
       peer.on('error', (err) => {
-        console.error('PeerJS error:', err);
-        // If peer ID is taken, it means we're reconnecting - try with a random suffix
+        console.error('[VideoCall] PeerJS error:', err.type, err.message);
         if (err.type === 'unavailable-id') {
           setError('Session already active in another tab');
+          setStatus('error');
+        } else if (err.type === 'peer-unavailable') {
+          // Remote peer not ready yet — don't error, stay waiting
+          console.log('[VideoCall] Remote peer not available yet, retrying on next presence sync');
         } else {
           setError(`Connection error: ${err.message}`);
+          setStatus('error');
         }
-        setStatus('error');
       });
     } catch (err) {
       console.error('Failed to join:', err);
