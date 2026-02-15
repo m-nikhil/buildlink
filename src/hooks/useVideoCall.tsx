@@ -12,9 +12,10 @@ export function useVideoCall({ roomId, onCallEnded }: UseVideoCallOptions) {
   const [status, setStatus] = useState<CallStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  // Generate a unique MiroTalk room name from the roomId
   const mirotalkRoomName = `buildlink-${roomId.replace(/[^a-zA-Z0-9]/g, '')}`;
-  const mirotalkUrl = `https://p2p.mirotalk.com/newcall?room=${mirotalkRoomName}`;
+
+  // Use direct join URL to skip the lobby
+  const mirotalkUrl = `https://p2p.mirotalk.com/join?room=${mirotalkRoomName}&name=User&audio=1&video=1&screen=0&chat=0&hide=0&notify=0&duration=unlimited`;
 
   const join = useCallback(() => {
     setStatus('connected');
