@@ -22,7 +22,7 @@ export function useVideoCall({ roomId, displayName, onCallEnded }: UseVideoCallO
     return `${base}-${suffix}`;
   }, [displayName]);
 
-  const mirotalkUrl = `https://p2p.mirotalk.com/join?room=${mirotalkRoomName}&name=${encodeURIComponent(uniqueName)}&audio=1&video=1&screen=0&chat=0&hide=0&notify=0&duration=unlimited`;
+  const mirotalkUrl = `https://c2c.mirotalk.com/join?room=${mirotalkRoomName}&name=${encodeURIComponent(uniqueName)}`;
 
   const join = useCallback(() => {
     setStatus('connected');
