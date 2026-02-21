@@ -116,7 +116,7 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
   const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [timezone, setTimezone] = useState(detectedTimezone);
   
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const TIME_SLOTS = generateTimeSlots(showNightHours);
@@ -185,67 +185,66 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
     };
   })();
 
-  // Debounced save function
-  const saveSlots = useCallback((slots: Set<SlotKey>) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
+  // Build time slots from selected grid slots
+  const buildTimeSlots = useCallback((slots: Set<SlotKey>): TimeSlot[] => {
+    const slotsByDay = new Map<number, { hour: number; minute: number }[]>();
     
-    saveTimeoutRef.current = setTimeout(async () => {
-      const slotsByDay = new Map<number, { hour: number; minute: number }[]>();
-      
-      slots.forEach(key => {
-        const [day, hour, minute] = key.split('-').map(Number);
-        if (!slotsByDay.has(day)) {
-          slotsByDay.set(day, []);
-        }
-        slotsByDay.get(day)!.push({ hour, minute });
-      });
+    slots.forEach(key => {
+      const [day, hour, minute] = key.split('-').map(Number);
+      if (!slotsByDay.has(day)) {
+        slotsByDay.set(day, []);
+      }
+      slotsByDay.get(day)!.push({ hour, minute });
+    });
 
-      const timeSlots: TimeSlot[] = [];
+    const timeSlots: TimeSlot[] = [];
+    
+    slotsByDay.forEach((times, day) => {
+      times.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
       
-      slotsByDay.forEach((times, day) => {
-        times.sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
+      if (times.length === 0) return;
+      
+      let startTime = times[0];
+      let endTime = times[0];
+      
+      for (let i = 1; i <= times.length; i++) {
+        const current = times[i];
+        const prevMinutes = endTime.hour * 60 + endTime.minute;
+        const currMinutes = current ? current.hour * 60 + current.minute : -1;
         
-        if (times.length === 0) return;
-        
-        let startTime = times[0];
-        let endTime = times[0];
-        
-        for (let i = 1; i <= times.length; i++) {
-          const current = times[i];
-          const prevMinutes = endTime.hour * 60 + endTime.minute;
-          const currMinutes = current ? current.hour * 60 + current.minute : -1;
+        if (current && currMinutes === prevMinutes + 30) {
+          endTime = current;
+        } else {
+          let endH = endTime.hour;
+          let endM = endTime.minute + 30;
+          if (endM >= 60) {
+            endM = 0;
+            endH += 1;
+          }
           
-          if (current && currMinutes === prevMinutes + 30) {
+          timeSlots.push({
+            day_of_week: day,
+            start_time: formatTimeValue(startTime.hour, startTime.minute),
+            end_time: formatTimeValue(endH, endM),
+            timezone,
+          });
+          
+          if (current) {
+            startTime = current;
             endTime = current;
-          } else {
-            // Calculate end time (add 30 min to last slot)
-            let endH = endTime.hour;
-            let endM = endTime.minute + 30;
-            if (endM >= 60) {
-              endM = 0;
-              endH += 1;
-            }
-            
-            timeSlots.push({
-              day_of_week: day,
-              start_time: formatTimeValue(startTime.hour, startTime.minute),
-              end_time: formatTimeValue(endH, endM),
-              timezone,
-            });
-            
-            if (current) {
-              startTime = current;
-              endTime = current;
-            }
           }
         }
-      });
+      }
+    });
 
-      await saveAvailability.mutateAsync(timeSlots);
-    }, 800);
-  }, [saveAvailability, timezone]);
+    return timeSlots;
+  }, [timezone]);
+
+  const handleSave = useCallback(async () => {
+    const timeSlots = buildTimeSlots(selectedSlots);
+    await saveAvailability.mutateAsync(timeSlots);
+    setHasChanges(false);
+  }, [buildTimeSlots, selectedSlots, saveAvailability]);
 
   const toggleSlot = useCallback((day: number, hour: number, minute: number, forceMode?: 'select' | 'deselect') => {
     const key: SlotKey = `${day}-${hour}-${minute}`;
@@ -260,15 +259,15 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
         newSlots.delete(key);
       }
       
-      saveSlots(newSlots);
+      setHasChanges(true);
       return newSlots;
     });
-  }, [saveSlots]);
+  }, []);
 
   const handleClearAll = useCallback(() => {
     setSelectedSlots(new Set());
-    saveSlots(new Set());
-  }, [saveSlots]);
+    setHasChanges(true);
+  }, []);
 
   const handleMouseDown = useCallback((day: number, hour: number, minute: number) => {
     const key: SlotKey = `${day}-${hour}-${minute}`;
@@ -501,10 +500,14 @@ export function AvailabilityPicker({ onSaved }: AvailabilityPickerProps) {
         </div>
 
         {/* Saving indicator */}
-        {saveAvailability.isPending && (
-          <div className="text-center text-xs text-muted-foreground">
-            Saving...
-          </div>
+        {hasChanges && (
+          <Button 
+            onClick={handleSave} 
+            disabled={saveAvailability.isPending}
+            className="w-full"
+          >
+            {saveAvailability.isPending ? 'Saving...' : 'Save Availability'}
+          </Button>
         )}
       </CardContent>
     </Card>
