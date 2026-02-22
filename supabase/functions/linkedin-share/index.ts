@@ -54,13 +54,13 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
+    const { data: secrets, error: secretsError } = await supabaseAdmin
+      .from('user_secrets')
       .select('linkedin_access_token')
       .eq('user_id', userId)
       .single();
 
-    if (profileError || !profile?.linkedin_access_token) {
+    if (secretsError || !secrets?.linkedin_access_token) {
       console.error('No LinkedIn access token found:', profileError);
       return new Response(JSON.stringify({ 
         error: 'LinkedIn not connected',
@@ -72,7 +72,7 @@ serve(async (req) => {
       });
     }
 
-    const accessToken = profile.linkedin_access_token;
+    const accessToken = secrets.linkedin_access_token;
 
     // First, get the user's LinkedIn URN (person ID)
     console.log('Fetching LinkedIn user info...');
