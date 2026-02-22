@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, CheckCircle, Smartphone, Bell, Share, Plus, SquareArrowOutUpRight } from 'lucide-react';
+import { Download, CheckCircle, Smartphone, Bell } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { MobileNav } from '@/components/MobileNav';
 
@@ -88,29 +88,14 @@ export default function Install() {
                   <CardTitle>Install on iOS</CardTitle>
                   <CardDescription>Follow these steps in Safari</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Visual share button hint */}
-                  <div className="flex flex-col items-center py-4">
-                    <p className="text-sm text-muted-foreground mb-3">Look for this icon at the bottom of Safari</p>
-                    <div className="relative">
-                      <div className="w-14 h-14 rounded-xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]">
-                        <SquareArrowOutUpRight className="h-7 w-7 text-primary" />
-                      </div>
-                      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-primary animate-bounce">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 5v14M5 12l7 7 7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
+                <CardContent className="space-y-4">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">1</div>
-                    <p>Tap the <strong>Share</strong> button <SquareArrowOutUpRight className="inline h-4 w-4 text-primary" /> at the bottom of Safari</p>
+                    <p>Tap the <strong>Share</strong> button in Safari (the square with an arrow)</p>
                   </div>
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">2</div>
-                    <p>Scroll down and tap <strong>"Add to Home Screen"</strong> <Plus className="inline h-4 w-4 text-primary" /></p>
+                    <p>Scroll down and tap <strong>"Add to Home Screen"</strong></p>
                   </div>
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">3</div>
