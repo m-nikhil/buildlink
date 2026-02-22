@@ -166,6 +166,35 @@ export default function Install() {
             </Card>
           ))}
         </div>
+
+        {/* What is a PWA? Explainer */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="text-lg">What is this? Is it an app?</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              BuildLink is a <strong className="text-foreground">Progressive Web App (PWA)</strong> — it's a website that can be installed on your phone or computer and used just like a regular app.
+            </p>
+            <p>
+              You won't find it in the App Store or Google Play. Instead, you install it directly from your browser. It still gets updates automatically, works offline, and sits on your home screen like any other app.
+            </p>
+            <p>
+              PWAs are used by companies like Twitter, Starbucks, and Pinterest. They're fast, lightweight, and don't take up much storage.
+            </p>
+            <p className="pt-1">
+              <span className="text-foreground font-medium">Curious to learn more?</span>{' '}
+              <a 
+                href="https://web.dev/explore/progressive-web-apps" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 hover:text-primary/80"
+              >
+                web.dev/progressive-web-apps
+              </a>
+            </p>
+          </CardContent>
+        </Card>
       </main>
       <MobileNav />
     </div>
