@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useConnections, useDisconnect } from '@/hooks/useConnections';
 import { useProfile, useProfiles } from '@/hooks/useProfile';
+import { useLastMessage } from '@/hooks/useMessages';
 import { Header } from '@/components/Header';
 import { MobileNav } from '@/components/MobileNav';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +17,75 @@ import { Clock, Users, MessageCircle, UserMinus } from 'lucide-react';
 import { Profile, Connection } from '@/types/profile';
 import { ChatDialog } from '@/components/ChatDialog';
 import { InviteBubble } from '@/components/InviteBubble';
+
+function ConnectionCard({ connection, otherProfile, getDisplayInitials, onOpenChat, onDisconnect }: {
+  connection: Connection;
+  otherProfile: Profile;
+  getDisplayInitials: (p: Profile | undefined) => string;
+  onOpenChat: () => void;
+  onDisconnect: () => void;
+}) {
+  const { data: lastMessage } = useLastMessage(connection.id);
+  const connectedDate = connection.updated_at 
+    ? new Date(connection.updated_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+      <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={onOpenChat}>
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={otherProfile.avatar_url ?? undefined} />
+          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+            {getDisplayInitials(otherProfile)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">{getDisplayInitials(otherProfile)}</p>
+          {lastMessage ? (
+            <p className="text-sm text-muted-foreground truncate">{lastMessage.content}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
+          )}
+          {connectedDate && !lastMessage && (
+            <p className="text-xs text-muted-foreground">Connected {connectedDate}</p>
+          )}
+          {lastMessage && (
+            <p className="text-xs text-muted-foreground">
+              {new Date(lastMessage.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+            </p>
+          )}
+        </div>
+      </div>
+      <Button variant="ghost" size="icon" onClick={onOpenChat}>
+        <MessageCircle className="h-5 w-5" />
+      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
+            <UserMinus className="h-5 w-5" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect from {getDisplayInitials(otherProfile)}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove your connection and chat history. They won't be notified, but you'll both appear in each other's discover feed again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onDisconnect}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
 
 export default function Connections() {
   const { user, loading: authLoading } = useAuth();
@@ -107,70 +177,16 @@ export default function Connections() {
                   const otherProfile = getProfileByUserId(otherUserId);
                   if (!otherProfile) return null;
                   
-                  const connectedDate = connection.updated_at 
-                    ? new Date(connection.updated_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
-                    : null;
-                    
-                    return (
-                      <div 
-                        key={connection.id} 
-                        className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                      >
-                        <div 
-                          className="flex items-center gap-4 flex-1 cursor-pointer"
-                          onClick={() => openChat(connection)}
-                        >
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={otherProfile.avatar_url ?? undefined} />
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                              {getDisplayInitials(otherProfile)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{getDisplayInitials(otherProfile)}</p>
-                            <p className="text-sm text-muted-foreground truncate">{otherProfile.headline}</p>
-                            {connectedDate && (
-                              <p className="text-xs text-muted-foreground">Connected {connectedDate}</p>
-                            )}
-                          </div>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => openChat(connection)}
-                        >
-                          <MessageCircle className="h-5 w-5" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <UserMinus className="h-5 w-5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Disconnect from {getDisplayInitials(otherProfile)}?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will remove your connection and chat history. They won't be notified, but you'll both appear in each other's discover feed again.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => disconnect.mutate(connection.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Disconnect
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    );
+                  return (
+                    <ConnectionCard
+                      key={connection.id}
+                      connection={connection}
+                      otherProfile={otherProfile}
+                      getDisplayInitials={getDisplayInitials}
+                      onOpenChat={() => openChat(connection)}
+                      onDisconnect={() => disconnect.mutate(connection.id)}
+                    />
+                  );
                 })}
               </div>
             ) : (

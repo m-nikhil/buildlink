@@ -55,6 +55,56 @@ export function useMessages(connectionId: string | undefined) {
   return query;
 }
 
+export function useLastMessage(connectionId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['last-message', connectionId],
+    queryFn: async () => {
+      if (!connectionId) return null;
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('connection_id', connectionId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as Message | null;
+    },
+    enabled: !!connectionId,
+  });
+
+  // Subscribe to realtime updates for last message
+  useEffect(() => {
+    if (!connectionId) return;
+
+    const channel = supabase
+      .channel(`last-msg-${connectionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `connection_id=eq.${connectionId}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['last-message', connectionId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [connectionId, queryClient]);
+
+  return query;
+}
+
 export function useMessageCount(connectionId: string | undefined) {
   const { data: messages } = useMessages(connectionId);
   return messages?.length ?? 0;
