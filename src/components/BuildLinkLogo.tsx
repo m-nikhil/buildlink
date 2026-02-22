@@ -34,28 +34,22 @@ export function BuildLinkLogo({ size = 'md', className }: BuildLinkLogoProps) {
         xmlns="http://www.w3.org/2000/svg"
         className="text-primary-foreground"
       >
-        {/* Left puzzle piece */}
+        {/* Left puzzle piece with tab on right */}
         <path
-          d="M4 8h7v3a3 3 0 1 0 0 6v3H4V8z"
+          d="M3 6h9v4a2.5 2.5 0 0 1 0 5v4h1v4a2.5 2.5 0 0 1 0 5v4H3V6z"
           stroke="currentColor"
-          strokeWidth="2"
-          fill="none"
+          strokeWidth="1.8"
+          fill="currentColor"
+          fillOpacity="0.15"
           strokeLinejoin="round"
         />
-        {/* Right puzzle piece — interlocking */}
+        {/* Right puzzle piece with socket on left */}
         <path
-          d="M17 8h7v10H17v-3a3 3 0 1 1 0-6V8z"
+          d="M19 6h10v26H19v-4a2.5 2.5 0 0 1 0-5v-4h-1v-4a2.5 2.5 0 0 1 0-5V6z"
           stroke="currentColor"
-          strokeWidth="2"
-          fill="none"
-          strokeLinejoin="round"
-        />
-        {/* Bottom connector to suggest "building" */}
-        <path
-          d="M4 20h20v4H4z"
-          stroke="currentColor"
-          strokeWidth="2"
-          fill="none"
+          strokeWidth="1.8"
+          fill="currentColor"
+          fillOpacity="0.3"
           strokeLinejoin="round"
         />
       </svg>
