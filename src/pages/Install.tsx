@@ -61,11 +61,6 @@ export default function Install() {
       title: 'Push Notifications',
       description: 'Get notified about new matches and messages',
     },
-    {
-      icon: Wifi,
-      title: 'Works Offline',
-      description: 'Browse your connections even without internet',
-    },
   ];
 
   return (
