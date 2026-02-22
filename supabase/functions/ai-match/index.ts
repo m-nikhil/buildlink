@@ -92,7 +92,7 @@ serve(async (req) => {
       profilesQuery = profilesQuery.neq('email', user.email);
     }
     
-    const { data: otherProfiles, error: profilesError } = await profilesQuery;
+    const { data: otherProfiles, error: profilesError } = await profilesQuery.limit(50);
 
     if (profilesError) {
       throw profilesError;
