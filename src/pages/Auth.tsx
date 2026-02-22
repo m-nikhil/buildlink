@@ -24,8 +24,7 @@ const SEED_ACCOUNTS = [
 ];
 
 // Show test accounts in dev mode OR preview environments (not production)
-const isProduction = window.location.hostname === 'linkbuild.lovable.app';
-const isDev = import.meta.env.DEV || !isProduction;
+const isDev = import.meta.env.DEV || window.location.hostname.includes('preview');
 
 
 export default function Auth() {
