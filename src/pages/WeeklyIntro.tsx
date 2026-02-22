@@ -118,24 +118,14 @@ export default function WeeklyIntro() {
       <main className="container px-4 py-6 md:py-8 pb-20 md:pb-8">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Calendar className="h-8 w-8 text-primary" />
-                Weekly Intro
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                One meaningful connection every week
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => refetch()}
-              disabled={introLoading}
-            >
-              <RefreshCw className={`h-4 w-4 ${introLoading ? 'animate-spin' : ''}`} />
-            </Button>
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Calendar className="h-8 w-8 text-primary" />
+              Weekly Intro
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              One meaningful connection every week
+            </p>
           </div>
 
           {/* Tabs */}
