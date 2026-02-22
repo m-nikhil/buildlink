@@ -72,14 +72,9 @@ export default function Settings() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container px-4 py-6 md:py-8 pb-24 md:pb-8 max-w-2xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Connection Preferences</h1>
-            <p className="text-muted-foreground">These preferences are considered in matching, not strict filters</p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Connection Preferences</h1>
+          <p className="text-muted-foreground">These preferences are considered in matching, not strict filters</p>
         </div>
 
         <div className="space-y-6">
