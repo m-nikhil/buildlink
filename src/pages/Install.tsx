@@ -169,7 +169,7 @@ export default function Install() {
               You won't find it in the App Store or Google Play. Instead, you install it directly from your browser. It gets updates automatically and sits on your home screen like any other app.
             </p>
             <p>
-              PWAs are used by companies like Twitter, Starbucks, and Pinterest. They're fast, lightweight, and don't take up much storage.
+              PWAs are widely used across the industry. They're fast, lightweight, and don't take up much storage.
             </p>
             <p className="pt-1">
               <span className="text-foreground font-medium">Curious to learn more?</span>{' '}
