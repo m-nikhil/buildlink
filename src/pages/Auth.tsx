@@ -24,7 +24,7 @@ const SEED_ACCOUNTS = [
 ];
 
 // Show test accounts in dev mode OR preview environments (not production)
-const isDev = import.meta.env.DEV || window.location.hostname.includes('preview');
+const isDev = import.meta.env.DEV;
 
 
 export default function Auth() {
