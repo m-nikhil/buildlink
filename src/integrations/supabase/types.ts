@@ -190,7 +190,6 @@ export type Database = {
           initials: string | null
           is_seed: boolean | null
           last_active: string | null
-          linkedin_access_token: string | null
           linkedin_url: string | null
           location: string | null
           looking_for: string[] | null
@@ -223,7 +222,6 @@ export type Database = {
           initials?: string | null
           is_seed?: boolean | null
           last_active?: string | null
-          linkedin_access_token?: string | null
           linkedin_url?: string | null
           location?: string | null
           looking_for?: string[] | null
@@ -256,7 +254,6 @@ export type Database = {
           initials?: string | null
           is_seed?: boolean | null
           last_active?: string | null
-          linkedin_access_token?: string | null
           linkedin_url?: string | null
           location?: string | null
           looking_for?: string[] | null
@@ -270,6 +267,27 @@ export type Database = {
           skills?: string[] | null
           timezone?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_secrets: {
+        Row: {
+          created_at: string
+          linkedin_access_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          linkedin_access_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          linkedin_access_token?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

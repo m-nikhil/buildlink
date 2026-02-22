@@ -233,8 +233,13 @@ serve(async (req) => {
         headline: linkedinHeadline,
         location: linkedinLocation,
         referred_by: referredBy,
-        linkedin_access_token: accessToken,
       });
+
+      // Store LinkedIn access token in user_secrets table (service role only)
+      await supabaseAdmin.from('user_secrets').upsert({
+        user_id: userId,
+        linkedin_access_token: accessToken,
+      }, { onConflict: 'user_id' });
 
       if (profileError) {
         console.error('Profile creation failed:', profileError);
@@ -267,9 +272,6 @@ serve(async (req) => {
         if ((forceSync || !existingProfile.location) && linkedinLocation) {
           updates.location = linkedinLocation;
         }
-        // Always update access token on login to keep it fresh
-        updates.linkedin_access_token = accessToken;
-        
         if (Object.keys(updates).length > 0) {
           await supabaseAdmin
             .from('profiles')
@@ -277,6 +279,12 @@ serve(async (req) => {
             .eq('user_id', userId);
           console.log('Updated existing profile with LinkedIn data:', Object.keys(updates), forceSync ? '(force sync)' : '');
         }
+
+        // Always update access token in user_secrets on login to keep it fresh
+        await supabaseAdmin.from('user_secrets').upsert({
+          user_id: userId,
+          linkedin_access_token: accessToken,
+        }, { onConflict: 'user_id' });
       }
     }
 
