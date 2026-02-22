@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Calendar, UserPlus, Settings } from 'lucide-react';
+import { Home, Users, Calendar, UserPlus, Settings, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { href: '/weekly-intro', icon: Calendar, label: 'Weekly' },
   { href: '/connections', icon: Users, label: 'Connections' },
   { href: '/invite', icon: UserPlus, label: 'Invite' },
+  { href: '/install', icon: Download, label: 'Install' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
