@@ -517,15 +517,6 @@ export default function WeeklyIntro() {
                       <Users className="h-5 w-5" />
                       {generateIntro.isPending ? 'Finding your match...' : 'Generate My Intro'}
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="gap-2 text-muted-foreground"
-                      onClick={() => setActiveTab('availability')}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Edit my availability
-                    </Button>
                   </CardContent>
                 </Card>
               )}
