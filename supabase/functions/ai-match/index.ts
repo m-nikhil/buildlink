@@ -34,6 +34,31 @@ serve(async (req) => {
       });
     }
 
+    const DAILY_LIMIT = 5;
+
+    // Check daily swipe count
+    const today = new Date().toISOString().split('T')[0];
+    const { data: dailySwipe } = await supabase
+      .from('daily_swipes')
+      .select('swipe_count')
+      .eq('user_id', user.id)
+      .eq('swipe_date', today)
+      .maybeSingle();
+
+    const swipesUsed = dailySwipe?.swipe_count ?? 0;
+    const remaining = Math.max(0, DAILY_LIMIT - swipesUsed);
+
+    if (remaining <= 0) {
+      return new Response(JSON.stringify({ 
+        matches: [], 
+        daily_limit_reached: true,
+        swipes_used: swipesUsed,
+        daily_limit: DAILY_LIMIT
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get current user's profile
     const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
@@ -232,7 +257,7 @@ Candidate ${i + 1} (ID: ${p.id}):
     
     // Enrich matches with full profile data and likes_you flag
     let enrichedMatches = matchResults.matches
-      .slice(0, 10) // Top 10 matches
+      .slice(0, remaining) // Cap to remaining daily swipes
       .map((match: any) => {
         const profile = availableProfiles.find(p => p.id === match.profile_id);
         return {
@@ -267,7 +292,11 @@ Candidate ${i + 1} (ID: ${p.id}):
       return b.score - a.score;
     });
 
-    return new Response(JSON.stringify({ matches: enrichedMatches }), {
+    return new Response(JSON.stringify({ 
+      matches: enrichedMatches,
+      swipes_used: swipesUsed,
+      daily_limit: DAILY_LIMIT
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

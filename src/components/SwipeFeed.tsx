@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { useAIMatches } from '@/hooks/useAIMatches';
+import { useAIMatches, useRecordSwipe } from '@/hooks/useAIMatches';
 import { SwipeCard } from './SwipeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, Users, HelpCircle } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, Users, HelpCircle, Clock } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function SwipeFeed() {
-  const { data: matches, isLoading, error, refetch, isFetching } = useAIMatches();
+  const { data: matchResult, isLoading, error, refetch, isFetching } = useAIMatches();
+  const recordSwipe = useRecordSwipe();
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const matches = matchResult?.matches ?? [];
+  const dailyLimit = matchResult?.daily_limit ?? 5;
+  const swipesUsed = (matchResult?.swipes_used ?? 0) + currentIndex;
+  const remaining = Math.max(0, dailyLimit - swipesUsed);
 
   const handleRefresh = () => {
     setCurrentIndex(0);
@@ -20,10 +26,12 @@ export function SwipeFeed() {
   };
 
   const handleLike = () => {
+    recordSwipe.mutate();
     setCurrentIndex(prev => prev + 1);
   };
 
   const handlePass = () => {
+    recordSwipe.mutate();
     setCurrentIndex(prev => prev + 1);
   };
 
@@ -50,6 +58,30 @@ export function SwipeFeed() {
         <div className="w-full max-w-sm mx-auto">
           <Skeleton className="h-[500px] w-full rounded-xl" />
         </div>
+      </div>
+    );
+  }
+
+  // Daily limit reached
+  if (matchResult?.daily_limit_reached || (matches.length > 0 && !matches[currentIndex] && remaining <= 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Card className="w-full max-w-sm mx-auto text-center">
+          <CardContent className="pt-12 pb-8">
+            <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+              <Clock className="h-10 w-10 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">
+              You've used all {dailyLimit} intros today
+            </h3>
+            <p className="text-muted-foreground mb-2">
+              Quality over quantity — take time to connect with today's matches.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              New profiles available tomorrow ✨
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -87,7 +119,7 @@ export function SwipeFeed() {
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-6">
         <span className="text-sm text-muted-foreground">
-          {currentIndex + 1} of {matches.length} professionals
+          {currentIndex + 1} of {matches.length} • {remaining} left today
         </span>
         <Button 
           onClick={handleRefresh} 
@@ -109,7 +141,7 @@ export function SwipeFeed() {
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" className="max-w-[240px]">
-            <p className="text-xs">Scrolling is intentional — we slow things down so you can thoughtfully consider each person, not just swipe on autopilot.</p>
+            <p className="text-xs">You get {dailyLimit} profiles per day. We slow things down so you can thoughtfully consider each person.</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
