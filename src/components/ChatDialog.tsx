@@ -57,9 +57,16 @@ export function ChatDialog({ open, onOpenChange, connectionId, otherProfile }: C
     .toUpperCase() || '?';
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    // Use setTimeout to ensure DOM has rendered the new messages
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   const handleSend = async () => {
