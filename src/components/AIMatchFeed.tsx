@@ -6,7 +6,8 @@ import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function AIMatchFeed() {
-  const { data: matches, isLoading, error, refetch, isFetching } = useAIMatches();
+  const { data: matchResult, isLoading, error, refetch, isFetching } = useAIMatches();
+  const matches = matchResult?.matches ?? [];
   const queryClient = useQueryClient();
 
   const handleRefresh = () => {
