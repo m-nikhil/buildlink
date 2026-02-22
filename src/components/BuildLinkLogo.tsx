@@ -34,30 +34,13 @@ export function BuildLinkLogo({ size = 'md', className }: BuildLinkLogoProps) {
         xmlns="http://www.w3.org/2000/svg"
         className="text-primary-foreground"
       >
-        {/* Interlocking chain links using mask for proper over/under */}
-        <defs>
-          <mask id={`mask-${size}`}>
-            <rect width="32" height="32" fill="white" />
-            {/* Cut out left link's bottom segment in overlap zone */}
-            <rect x="12" y="16" width="7" height="6" fill="black" rx="1" />
-          </mask>
-        </defs>
-
-        {/* Left link - full, but bottom masked in overlap zone */}
-        <rect
-          x="2" y="10" width="16" height="12" rx="6"
-          stroke="currentColor" strokeWidth="2.4" fill="none"
-          mask={`url(#mask-${size})`}
-        />
-
-        {/* Right link - full (passes over left at bottom) */}
-        <rect
-          x="14" y="10" width="16" height="12" rx="6"
-          stroke="currentColor" strokeWidth="2.4" fill="none"
-        />
-
-        {/* Redraw left link top segment in overlap zone (passes over right at top) */}
-        <line x1="13" y1="10" x2="19" y2="10" stroke="currentColor" strokeWidth="2.4" />
+        {/* Simple two-link chain — rotated 45° for dynamic feel */}
+        <g transform="rotate(-45 16 16)">
+          {/* Left link */}
+          <rect x="2" y="12" width="16" height="8" rx="4" stroke="currentColor" strokeWidth="2.2" fill="none" />
+          {/* Right link */}
+          <rect x="14" y="12" width="16" height="8" rx="4" stroke="currentColor" strokeWidth="2.2" fill="none" />
+        </g>
       </svg>
     </div>
   );
