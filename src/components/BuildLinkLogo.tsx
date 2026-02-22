@@ -34,28 +34,24 @@ export function BuildLinkLogo({ size = 'md', className }: BuildLinkLogoProps) {
         xmlns="http://www.w3.org/2000/svg"
         className="text-primary-foreground"
       >
-        {/* Two interlocking chain links */}
-        {/* Left chain link */}
-        <rect
-          x="4"
-          y="10"
-          width="14"
-          height="12"
-          rx="6"
+        {/* "B" letter stylized as interlocking links */}
+        {/* Vertical bar */}
+        <rect x="7" y="5" width="3" height="22" rx="1.5" fill="currentColor" />
+        {/* Top bump of B - link shape */}
+        <path
+          d="M10 5h5.5a5.5 5.5 0 0 1 0 11H10"
           stroke="currentColor"
           strokeWidth="2.5"
           fill="none"
+          strokeLinecap="round"
         />
-        {/* Right chain link */}
-        <rect
-          x="14"
-          y="10"
-          width="14"
-          height="12"
-          rx="6"
+        {/* Bottom bump of B - link shape */}
+        <path
+          d="M10 16h7a5.5 5.5 0 0 1 0 11H10"
           stroke="currentColor"
           strokeWidth="2.5"
           fill="none"
+          strokeLinecap="round"
         />
       </svg>
     </div>
