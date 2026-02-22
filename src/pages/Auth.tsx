@@ -183,7 +183,7 @@ export default function Auth() {
                 Dev Mode: Test Accounts
               </CardTitle>
               <CardDescription className="text-xs">
-                Login as a seed account for testing (password: TestPassword123!)
+                Login as a seed account for testing
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
