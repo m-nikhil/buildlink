@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
-import type { Group, GroupMember, GroupTimeslot, TimeslotSubscription } from '@/types/group';
-import { MAX_GROUPS_PER_USER, MAX_TIMESLOTS_PER_GROUP } from '@/types/group';
+import type { Group, GroupMember, GroupTimeslot, TimeslotSubscription, TimeslotConfirmation, GroupMatch } from '@/types/group';
+import { MAX_GROUPS_PER_USER, MAX_TIMESLOTS_PER_GROUP, getWeekOf } from '@/types/group';
 
 // Fetch groups the current user is a member of
 export function useMyGroups() {
@@ -69,12 +69,36 @@ export function useGroupDetail(groupId: string | undefined) {
         ? await supabase.from('timeslot_subscriptions').select('*').in('timeslot_id', timeslotIds)
         : { data: [] };
 
+      // Fetch confirmations for the current & next week
+      const thisWeek = getWeekOf(new Date());
+      const nextWeekDate = new Date();
+      nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+      const nextWeek = getWeekOf(nextWeekDate);
+
+      const { data: confirmations } = timeslotIds.length
+        ? await supabase
+            .from('timeslot_confirmations')
+            .select('*')
+            .in('timeslot_id', timeslotIds)
+            .in('week_of', [thisWeek, nextWeek])
+        : { data: [] };
+
+      // Fetch matches for the current & next week
+      const { data: matches } = await supabase
+        .from('group_matches')
+        .select('*')
+        .eq('group_id', groupId)
+        .in('week_of', [thisWeek, nextWeek])
+        .order('created_at', { ascending: false });
+
       return {
         group: groupRes.data as Group,
         members: (membersRes.data ?? []) as GroupMember[],
         profiles: profiles ?? [],
         timeslots: (timeslotsRes.data ?? []) as GroupTimeslot[],
         subscriptions: (subscriptions ?? []) as TimeslotSubscription[],
+        confirmations: (confirmations ?? []) as TimeslotConfirmation[],
+        matches: (matches ?? []) as GroupMatch[],
         isOwner: groupRes.data?.owner_id === user?.id,
         isMember: (membersRes.data ?? []).some((m: any) => m.user_id === user?.id),
       };
@@ -322,6 +346,108 @@ export function useUnsubscribeTimeslot() {
     },
     onSuccess: (groupId) => {
       queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+    },
+  });
+}
+
+// Confirm availability for a timeslot this week
+export function useConfirmTimeslot() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ timeslotId, groupId, weekOf }: { timeslotId: string; groupId: string; weekOf: string }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase.from('timeslot_confirmations').insert({
+        timeslot_id: timeslotId,
+        user_id: user.id,
+        week_of: weekOf,
+      });
+
+      if (error) throw error;
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+      toast.success('Confirmed for this week!');
+    },
+    onError: (err: Error) => {
+      if (err.message?.includes('duplicate')) {
+        toast.info('Already confirmed');
+      } else {
+        toast.error(err.message);
+      }
+    },
+  });
+}
+
+// Withdraw confirmation
+export function useUnconfirmTimeslot() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ timeslotId, groupId, weekOf }: { timeslotId: string; groupId: string; weekOf: string }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('timeslot_confirmations')
+        .delete()
+        .eq('timeslot_id', timeslotId)
+        .eq('user_id', user.id)
+        .eq('week_of', weekOf);
+
+      if (error) throw error;
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+    },
+  });
+}
+
+// Update match status (completed / skipped)
+export function useUpdateMatchStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ matchId, status, groupId }: { matchId: string; status: 'completed' | 'skipped'; groupId: string }) => {
+      const { error } = await supabase
+        .from('group_matches')
+        .update({ status })
+        .eq('id', matchId);
+
+      if (error) throw error;
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+      toast.success('Match updated');
+    },
+  });
+}
+
+// Trigger matching for a specific timeslot (owner action)
+export function useTriggerMatching() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ timeslotId, groupId }: { timeslotId: string; groupId: string }) => {
+      const { data, error } = await supabase.functions.invoke('group-match', {
+        body: { timeslot_id: timeslotId },
+      });
+
+      if (error) throw new Error(error.message || 'Failed to run matching');
+      if (data?.error) throw new Error(data.error);
+      return { ...data, groupId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['group-detail', result.groupId] });
+      toast.success(`Matching complete! ${result.matches_created} matches created.`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

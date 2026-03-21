@@ -5,6 +5,7 @@ import { useGroupDetail, useLeaveGroup, useDeleteGroup } from '@/hooks/useGroups
 import { Header } from '@/components/Header';
 import { MobileNav } from '@/components/MobileNav';
 import { TimeslotManager } from '@/components/TimeslotManager';
+import { MatchesList } from '@/components/MatchesList';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +64,7 @@ export default function GroupDetail() {
     );
   }
 
-  const { group, members, profiles, timeslots, subscriptions, isOwner } = data;
+  const { group, members, profiles, timeslots, subscriptions, confirmations, matches, isOwner } = data;
 
   const getInitials = (name: string | null) => {
     if (!name) return '?';
@@ -166,11 +167,20 @@ export default function GroupDetail() {
           </CardContent>
         </Card>
 
+        {/* Matches */}
+        <MatchesList
+          groupId={group.id}
+          matches={matches}
+          timeslots={timeslots}
+          profiles={profiles}
+        />
+
         {/* Timeslots */}
         <TimeslotManager
           groupId={group.id}
           timeslots={timeslots}
           subscriptions={subscriptions}
+          confirmations={confirmations}
           isOwner={isOwner}
           profiles={profiles}
         />
