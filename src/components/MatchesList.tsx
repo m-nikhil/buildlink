@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpdateMatchStatus } from '@/hooks/useGroups';
+import { useSubmitFeedback } from '@/hooks/useMatchHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Video, CheckCircle, XCircle, Calendar } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Video, CheckCircle, XCircle, Calendar, Star, MessageSquare } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { GroupMatch } from '@/types/group';
 import { DAY_LABELS } from '@/types/group';
 
@@ -15,11 +19,31 @@ interface MatchesListProps {
   profiles: any[];
 }
 
+function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button key={star} type="button" onClick={() => onChange(star)} className="p-0.5">
+          <Star
+            className={cn(
+              'h-5 w-5 transition-colors',
+              star <= value ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'
+            )}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesListProps) {
   const { user } = useAuth();
   const updateStatus = useUpdateMatchStatus();
+  const submitFeedback = useSubmitFeedback();
+  const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null);
+  const [rating, setRating] = useState(0);
+  const [note, setNote] = useState('');
 
-  // Only show matches involving the current user, or all if there are few
   const myMatches = matches.filter(
     (m) => m.user_a_id === user?.id || m.user_b_id === user?.id
   );
@@ -39,6 +63,20 @@ export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesLi
   const getTimeslot = (timeslotId: string) =>
     timeslots.find((t: any) => t.id === timeslotId);
 
+  const handleSubmitFeedback = (matchId: string) => {
+    if (rating === 0) return;
+    submitFeedback.mutate(
+      { matchId, rating, note },
+      {
+        onSuccess: () => {
+          setFeedbackOpen(null);
+          setRating(0);
+          setNote('');
+        },
+      }
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -51,6 +89,7 @@ export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesLi
         {myMatches.map((match) => {
           const partner = getPartnerProfile(match);
           const slot = getTimeslot(match.timeslot_id);
+          const showFeedbackForm = feedbackOpen === match.id;
 
           return (
             <Card key={match.id} className="border-primary/20">
@@ -90,7 +129,7 @@ export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesLi
                   <p className="text-sm italic text-muted-foreground">"{match.match_reason}"</p>
                 )}
 
-                {/* Actions */}
+                {/* Actions for scheduled */}
                 {match.status === 'scheduled' && (
                   <div className="flex items-center gap-2">
                     {match.video_call_url && (
@@ -124,6 +163,54 @@ export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesLi
                       Skip
                     </Button>
                   </div>
+                )}
+
+                {/* Feedback for completed */}
+                {match.status === 'completed' && (
+                  <>
+                    {showFeedbackForm ? (
+                      <div className="space-y-2 pt-2 border-t">
+                        <p className="text-xs font-medium">How was the conversation?</p>
+                        <StarRating value={rating} onChange={setRating} />
+                        <Textarea
+                          placeholder="Optional note..."
+                          value={note}
+                          onChange={(e) => setNote(e.target.value)}
+                          className="text-sm h-16"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSubmitFeedback(match.id)}
+                            disabled={rating === 0 || submitFeedback.isPending}
+                          >
+                            Submit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setFeedbackOpen(null);
+                              setRating(0);
+                              setNote('');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => setFeedbackOpen(match.id)}
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        Leave feedback
+                      </Button>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

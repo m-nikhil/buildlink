@@ -20,6 +20,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Save, Loader2, Plus, X, RefreshCw, Linkedin, AlertTriangle } from 'lucide-react';
 import { LocationSelect } from '@/components/LocationSelect';
+import { MatchHistory } from '@/components/MatchHistory';
 import {
   ExperienceLevel,
   ConnectionGoal,
@@ -376,6 +377,11 @@ export default function ProfileEdit() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Match History */}
+        <div className="mt-6">
+          <MatchHistory />
+        </div>
       </main>
     </div>
   );

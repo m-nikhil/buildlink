@@ -13,6 +13,7 @@ import {
 import { LogOut, User, UserPlus, Download, UsersRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
+import { NotificationBell } from '@/components/NotificationBell';
 import { toast } from 'sonner';
 
 export function Header() {
@@ -107,6 +108,8 @@ export function Header() {
                 Preferences
               </Link>
             </nav>
+
+            <NotificationBell />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

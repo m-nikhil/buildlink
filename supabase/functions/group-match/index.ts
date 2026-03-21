@@ -15,6 +15,42 @@ function getWeekOf(date: Date): string {
   return d.toISOString().split('T')[0];
 }
 
+// Send match notification to both users
+async function notifyMatch(
+  supabaseAdmin: any,
+  userAId: string,
+  userBId: string,
+  groupId: string,
+  groupName: string,
+  reason: string,
+  profiles: any[],
+) {
+  const profileA = profiles.find((p: any) => p.user_id === userAId);
+  const profileB = profiles.find((p: any) => p.user_id === userBId);
+  const nameA = profileA?.full_name?.split(' ')[0] || 'Someone';
+  const nameB = profileB?.full_name?.split(' ')[0] || 'Someone';
+
+  const notifications = [
+    {
+      user_id: userAId,
+      type: 'match_created',
+      title: `New match in ${groupName}`,
+      body: `You've been matched with ${nameB}! ${reason}`,
+      link: `/groups/${groupId}`,
+    },
+    {
+      user_id: userBId,
+      type: 'match_created',
+      title: `New match in ${groupName}`,
+      body: `You've been matched with ${nameA}! ${reason}`,
+      link: `/groups/${groupId}`,
+    },
+  ];
+
+  const { error } = await supabaseAdmin.from('notifications').insert(notifications);
+  if (error) console.error('Error sending match notifications:', error);
+}
+
 // Generate a Jitsi video call URL
 function generateVideoCallUrl(matchId: string): string {
   const roomName = `BuildLink-Group-${matchId.substring(0, 12)}`;
@@ -242,6 +278,7 @@ ${pastPairsList.length > 0 ? `\nPast pairings to AVOID repeating:\n${pastPairsLi
             video_call_url: generateVideoCallUrl(matchId),
             status: 'scheduled',
           });
+          await notifyMatch(supabaseAdmin, shuffled[i], shuffled[i + 1], groupId, (timeslot as any).groups?.name || 'your group', 'Randomly paired', profiles);
           totalMatchesCreated++;
         }
         continue;
@@ -289,6 +326,7 @@ ${pastPairsList.length > 0 ? `\nPast pairings to AVOID repeating:\n${pastPairsLi
           continue;
         }
 
+        await notifyMatch(supabaseAdmin, pair.user_a_id, pair.user_b_id, groupId, (timeslot as any).groups?.name || 'your group', pair.reason, profiles);
         usedUserIds.add(pair.user_a_id);
         usedUserIds.add(pair.user_b_id);
         totalMatchesCreated++;
