@@ -12,10 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, CheckCircle, Circle, CalendarCheck, Clock, Zap } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Circle, CalendarCheck, Clock, Zap, Users } from 'lucide-react';
 import type { GroupTimeslot, TimeslotSubscription, TimeslotConfirmation } from '@/types/group';
 import {
   DAY_LABELS,
@@ -69,10 +69,9 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
       .filter((s) => s.timeslot_id === timeslotId)
       .map((s) => {
         const profile = profiles.find((p: any) => p.user_id === s.user_id);
-        return profile?.full_name ?? 'Unknown';
+        return profile?.full_name?.split(' ')[0] ?? 'Unknown';
       });
 
-  // Confirmation helpers for a specific timeslot
   const getWeekOfForSlot = (dayOfWeek: number) => {
     const next = getNextOccurrence(dayOfWeek);
     return getWeekOf(next);
@@ -85,29 +84,32 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
     confirmations.filter((c) => c.timeslot_id === timeslotId && c.week_of === weekOf).length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Timeslots</h3>
-        {isOwner && timeslots.length < MAX_TIMESLOTS_PER_GROUP && (
-          <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowAdd(!showAdd)}>
-            <Plus className="h-4 w-4" />
-            Add Timeslot
-          </Button>
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            Timeslots
+          </CardTitle>
+          {isOwner && timeslots.length < MAX_TIMESLOTS_PER_GROUP && (
+            <Button variant="outline" size="sm" className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5" onClick={() => setShowAdd(!showAdd)}>
+              <Plus className="h-3.5 w-3.5" />
+              Add
+            </Button>
+          )}
+        </div>
+        {isOwner && timeslots.length >= MAX_TIMESLOTS_PER_GROUP && (
+          <p className="text-xs text-muted-foreground">Maximum {MAX_TIMESLOTS_PER_GROUP} timeslots reached</p>
         )}
-      </div>
-
-      {isOwner && timeslots.length >= MAX_TIMESLOTS_PER_GROUP && (
-        <p className="text-sm text-muted-foreground">Maximum {MAX_TIMESLOTS_PER_GROUP} timeslots reached.</p>
-      )}
-
-      {showAdd && isOwner && (
-        <Card>
-          <CardContent className="pt-4 space-y-3">
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {showAdd && isOwner && (
+          <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Day</Label>
+                <Label className="text-xs font-medium">Day</Label>
                 <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(DAY_LABELS).map(([val, lbl]) => (
                       <SelectItem key={val} value={val}>{lbl}</SelectItem>
@@ -116,18 +118,19 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
                 </Select>
               </div>
               <div>
-                <Label>Label (optional)</Label>
+                <Label className="text-xs font-medium">Label (optional)</Label>
                 <Input
                   placeholder="e.g. Morning sync"
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
+                  className="mt-1"
                 />
               </div>
             </div>
             <div>
-              <Label>Start Time (30-min slot)</Label>
+              <Label className="text-xs font-medium">Start Time</Label>
               <Select value={startTime} onValueChange={setStartTime}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select time" />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,23 +146,26 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <Button size="sm" onClick={handleAdd} disabled={addTimeslot.isPending}>
-                {addTimeslot.isPending ? 'Adding...' : 'Add'}
+                {addTimeslot.isPending ? 'Adding...' : 'Add Timeslot'}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {timeslots.length === 0 && (
-        <p className="text-sm text-muted-foreground py-4 text-center">
-          {isOwner ? 'Add timeslots for members to subscribe to.' : 'No timeslots yet. The group owner will add them.'}
-        </p>
-      )}
+        {timeslots.length === 0 && (
+          <div className="text-center py-8">
+            <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+              <Clock className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {isOwner ? 'Add your first timeslot for members to subscribe to.' : 'No timeslots yet. The group owner will add them.'}
+            </p>
+          </div>
+        )}
 
-      <div className="space-y-3">
         {timeslots.map((slot) => {
           const subscribed = isSubscribed(slot.id);
           const count = subscriberCount(slot.id);
@@ -171,138 +177,134 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
           const confirmed = isConfirmed(slot.id, weekOf);
           const numConfirmed = confirmedCount(slot.id, weekOf);
 
-          // Status label
-          let statusBadge = null;
-          if (windowOpen) {
-            statusBadge = (
-              <Badge variant="default" className="gap-1 text-xs bg-amber-500 hover:bg-amber-500">
-                <CalendarCheck className="h-3 w-3" />
-                Confirm by {days - 1}d
-              </Badge>
-            );
-          } else if (windowClosed) {
-            statusBadge = (
-              <Badge variant="default" className="gap-1 text-xs bg-green-600 hover:bg-green-600">
-                <Clock className="h-3 w-3" />
-                Matching {days === 1 ? 'today' : 'tomorrow'}
-              </Badge>
-            );
-          } else {
-            statusBadge = (
-              <Badge variant="outline" className="gap-1 text-xs">
-                <Clock className="h-3 w-3" />
-                In {days} days
-              </Badge>
-            );
-          }
-
           return (
-            <Card key={slot.id} className={subscribed ? 'border-primary/50 bg-primary/5' : ''}>
-              <CardContent className="py-3 space-y-2">
-                {/* Top row: day, time, badges */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium">{DAY_LABELS[slot.day_of_week]}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
-                    </span>
-                    {slot.label && <Badge variant="secondary" className="text-xs">{slot.label}</Badge>}
-                    {statusBadge}
-                  </div>
+            <div
+              key={slot.id}
+              className={`relative rounded-lg border p-3 transition-all ${
+                subscribed
+                  ? 'border-primary/40 bg-gradient-to-r from-primary/5 to-accent/5 shadow-sm'
+                  : 'hover:border-border/80'
+              }`}
+            >
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm">{DAY_LABELS[slot.day_of_week]}</span>
+                  <span className="text-sm text-muted-foreground font-mono">
+                    {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
+                  </span>
+                  {slot.label && (
+                    <Badge variant="secondary" className="text-[11px] font-normal">{slot.label}</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {windowOpen ? (
+                    <Badge className="gap-1 text-[11px] bg-amber-500/15 text-amber-600 border-amber-300 hover:bg-amber-500/15">
+                      <CalendarCheck className="h-3 w-3" />
+                      Confirm by {days - 1}d
+                    </Badge>
+                  ) : windowClosed ? (
+                    <Badge className="gap-1 text-[11px] bg-green-500/15 text-green-600 border-green-300 hover:bg-green-500/15">
+                      <Zap className="h-3 w-3" />
+                      {days === 1 ? 'Today' : 'Tomorrow'}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="gap-1 text-[11px]">
+                      <Clock className="h-3 w-3" />
+                      {days}d
+                    </Badge>
+                  )}
                   {isOwner && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
                       onClick={() => removeTimeslot.mutate({ timeslotId: slot.id, groupId })}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </div>
+              </div>
 
-                {/* Subscriber info */}
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground">{count} subscribed</span>
-                  {names.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      — {names.slice(0, 3).join(', ')}{names.length > 3 ? ` +${names.length - 3}` : ''}
-                    </span>
-                  )}
-                  {numConfirmed > 0 && (
-                    <span className="text-xs text-green-600 ml-2">
-                      {numConfirmed} confirmed this week
-                    </span>
-                  )}
-                </div>
+              {/* Subscriber row */}
+              <div className="flex items-center gap-1.5 mb-2.5 text-xs text-muted-foreground">
+                <Users className="h-3 w-3" />
+                <span>{count} subscribed</span>
+                {names.length > 0 && (
+                  <span className="truncate">
+                    — {names.slice(0, 3).join(', ')}{names.length > 3 ? ` +${names.length - 3}` : ''}
+                  </span>
+                )}
+                {numConfirmed > 0 && (
+                  <Badge className="ml-auto text-[10px] h-4 bg-green-500/10 text-green-600 border-green-200 hover:bg-green-500/10">
+                    {numConfirmed} confirmed
+                  </Badge>
+                )}
+              </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Subscribe/unsubscribe */}
+              {/* Actions */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  variant={subscribed ? 'default' : 'outline'}
+                  size="sm"
+                  className={`gap-1.5 h-8 text-xs ${subscribed ? '' : 'text-primary border-primary/30 hover:bg-primary/5'}`}
+                  onClick={() => {
+                    if (subscribed) {
+                      unsubscribe.mutate({ timeslotId: slot.id, groupId });
+                    } else {
+                      subscribe.mutate({ timeslotId: slot.id, groupId });
+                    }
+                  }}
+                  disabled={subscribe.isPending || unsubscribe.isPending}
+                >
+                  {subscribed ? <CheckCircle className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
+                  {subscribed ? 'Subscribed' : 'Subscribe'}
+                </Button>
+
+                {subscribed && windowOpen && (
                   <Button
-                    variant={subscribed ? 'default' : 'outline'}
+                    variant={confirmed ? 'default' : 'outline'}
                     size="sm"
-                    className="gap-1"
+                    className={`gap-1.5 h-8 text-xs ${confirmed ? 'bg-green-600 hover:bg-green-700' : 'border-amber-400 text-amber-600 hover:bg-amber-50'}`}
                     onClick={() => {
-                      if (subscribed) {
-                        unsubscribe.mutate({ timeslotId: slot.id, groupId });
+                      if (confirmed) {
+                        unconfirm.mutate({ timeslotId: slot.id, groupId, weekOf });
                       } else {
-                        subscribe.mutate({ timeslotId: slot.id, groupId });
+                        confirm.mutate({ timeslotId: slot.id, groupId, weekOf });
                       }
                     }}
-                    disabled={subscribe.isPending || unsubscribe.isPending}
+                    disabled={confirm.isPending || unconfirm.isPending}
                   >
-                    {subscribed ? <CheckCircle className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                    {subscribed ? 'Subscribed' : 'Subscribe'}
+                    <CalendarCheck className="h-3.5 w-3.5" />
+                    {confirmed ? 'Confirmed' : 'Confirm this week'}
                   </Button>
+                )}
 
-                  {/* Confirm/unconfirm (only if subscribed and window is open) */}
-                  {subscribed && windowOpen && (
-                    <Button
-                      variant={confirmed ? 'default' : 'outline'}
-                      size="sm"
-                      className={`gap-1 ${confirmed ? 'bg-green-600 hover:bg-green-700' : 'border-amber-500 text-amber-600 hover:bg-amber-50'}`}
-                      onClick={() => {
-                        if (confirmed) {
-                          unconfirm.mutate({ timeslotId: slot.id, groupId, weekOf });
-                        } else {
-                          confirm.mutate({ timeslotId: slot.id, groupId, weekOf });
-                        }
-                      }}
-                      disabled={confirm.isPending || unconfirm.isPending}
-                    >
-                      <CalendarCheck className="h-4 w-4" />
-                      {confirmed ? 'Confirmed' : 'Confirm this week'}
-                    </Button>
-                  )}
+                {subscribed && windowClosed && confirmed && (
+                  <Badge className="text-[11px] bg-green-500/15 text-green-600 border-green-300 hover:bg-green-500/15">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Confirmed
+                  </Badge>
+                )}
 
-                  {/* Already confirmed but window closed */}
-                  {subscribed && windowClosed && confirmed && (
-                    <Badge variant="outline" className="text-green-600 border-green-300">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Confirmed
-                    </Badge>
-                  )}
-
-                  {/* Owner: trigger matching */}
-                  {isOwner && windowClosed && numConfirmed >= 2 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 border-primary text-primary"
-                      onClick={() => triggerMatching.mutate({ timeslotId: slot.id, groupId })}
-                      disabled={triggerMatching.isPending}
-                    >
-                      <Zap className="h-4 w-4" />
-                      {triggerMatching.isPending ? 'Matching...' : 'Run Matching'}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                {isOwner && windowClosed && numConfirmed >= 2 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-8 text-xs ml-auto border-accent text-accent hover:bg-accent/10"
+                    onClick={() => triggerMatching.mutate({ timeslotId: slot.id, groupId })}
+                    disabled={triggerMatching.isPending}
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    {triggerMatching.isPending ? 'Matching...' : 'Run Matching'}
+                  </Button>
+                )}
+              </div>
+            </div>
           );
         })}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

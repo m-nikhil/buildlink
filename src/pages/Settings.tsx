@@ -77,9 +77,9 @@ export default function Settings() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container px-4 py-6 md:py-8 pb-24 md:pb-8 max-w-2xl mx-auto">
-        <div className="mb-6">
+        <div className="relative overflow-hidden rounded-xl gradient-subtle border border-border/50 p-5 mb-6">
           <h1 className="text-2xl font-bold">Connection Preferences</h1>
-          <p className="text-muted-foreground">These preferences are considered in matching, not strict filters</p>
+          <p className="text-sm text-muted-foreground mt-0.5">These preferences are considered in matching, not strict filters</p>
         </div>
 
         <div className="space-y-6">
@@ -160,27 +160,27 @@ export default function Settings() {
           </Card>
 
           {/* Invite Friends */}
-          <Card 
-            className="cursor-pointer hover:bg-muted/50 transition-colors border-primary/20"
+          {/* Invite Friends */}
+          <div
+            className="relative overflow-hidden rounded-xl border border-primary/20 cursor-pointer hover:border-primary/40 transition-all hover:shadow-sm group"
             onClick={() => navigate('/invite')}
           >
-            <CardContent className="flex items-center gap-4 py-4">
-              <div className="p-3 bg-primary/10 rounded-full">
-                <Users className="h-6 w-6 text-primary" />
+            <div className="h-0.5 w-full gradient-primary" />
+            <div className="flex items-center gap-4 p-4">
+              <div className="p-2.5 bg-gradient-to-br from-primary/15 to-accent/15 rounded-xl">
+                <Users className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold">Who should BuildLink not exist without?</h3>
-                <p className="text-sm text-muted-foreground">
-                  Growing circle by circle
-                </p>
+                <h3 className="font-semibold text-sm">Who should BuildLink not exist without?</h3>
+                <p className="text-xs text-muted-foreground">Growing circle by circle</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </CardContent>
-          </Card>
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
+          </div>
 
           <Button
-            onClick={handleSave} 
-            className="w-full gap-2"
+            onClick={handleSave}
+            className="w-full gap-2 gradient-primary text-white hover:opacity-90"
             disabled={updateProfile.isPending}
           >
             {updateProfile.isPending ? (
@@ -188,7 +188,7 @@ export default function Settings() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-          Save Preferences
+            Save Preferences
           </Button>
         </div>
       </main>

@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BarChart3, Users, CheckCircle, XCircle, Calendar, Star, TrendingUp } from 'lucide-react';
-import { DAY_LABELS } from '@/types/group';
+import { BarChart3, Users, CheckCircle, XCircle, Calendar, Star } from 'lucide-react';
 
 interface GroupAnalyticsProps {
   groupId: string;
@@ -23,21 +22,18 @@ export function GroupAnalytics({ groupId, profiles }: GroupAnalyticsProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['group-analytics', groupId],
     queryFn: async () => {
-      // Fetch all matches for this group
       const { data: matches } = await supabase
         .from('group_matches')
         .select('*')
         .eq('group_id', groupId)
         .order('week_of', { ascending: false });
 
-      // Fetch all members with join dates
       const { data: members } = await supabase
         .from('group_members')
         .select('*')
         .eq('group_id', groupId)
         .order('joined_at', { ascending: true });
 
-      // Fetch feedback for this group's matches
       const matchIds = (matches ?? []).map((m: any) => m.id);
       const { data: feedbacks } = matchIds.length
         ? await supabase.from('match_feedback').select('*').in('match_id', matchIds)
@@ -57,18 +53,14 @@ export function GroupAnalytics({ groupId, profiles }: GroupAnalyticsProps) {
 
   if (matches.length === 0 && members.length <= 1) return null;
 
-  // Aggregate stats
   const totalMatches = matches.length;
   const completed = matches.filter((m: any) => m.status === 'completed').length;
-  const skipped = matches.filter((m: any) => m.status === 'skipped').length;
   const completionRate = totalMatches > 0 ? Math.round((completed / totalMatches) * 100) : 0;
 
-  // Average feedback rating
   const avgRating = feedbacks.length > 0
     ? (feedbacks.reduce((sum: number, f: any) => sum + f.rating, 0) / feedbacks.length).toFixed(1)
     : null;
 
-  // Per-week stats
   const weekMap = new Map<string, WeekStats>();
   matches.forEach((m: any) => {
     if (!weekMap.has(m.week_of)) {
@@ -82,7 +74,6 @@ export function GroupAnalytics({ groupId, profiles }: GroupAnalyticsProps) {
   });
   const weeks = Array.from(weekMap.values()).slice(0, 8);
 
-  // Per-user pairing stats
   const userPairCount = new Map<string, { paired: number; completed: number }>();
   matches.forEach((m: any) => {
     [m.user_a_id, m.user_b_id].forEach((uid: string) => {
@@ -100,69 +91,62 @@ export function GroupAnalytics({ groupId, profiles }: GroupAnalyticsProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
-          Group Analytics
+          <BarChart3 className="h-5 w-5 text-primary" />
+          Analytics
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold">{members.length}</p>
-            <p className="text-xs text-muted-foreground">Members</p>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold">{totalMatches}</p>
-            <p className="text-xs text-muted-foreground">Total Matches</p>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold text-green-600">{completionRate}%</p>
-            <p className="text-xs text-muted-foreground">Completion Rate</p>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold text-amber-500">{avgRating ?? '—'}</p>
-            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-              <Star className="h-3 w-3" /> Avg Rating
-            </p>
-          </div>
+      <CardContent className="space-y-5">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { value: members.length, label: 'Members', color: 'from-primary/10 to-primary/5' },
+            { value: totalMatches, label: 'Matches', color: 'from-accent/10 to-accent/5' },
+            { value: `${completionRate}%`, label: 'Complete', color: 'from-green-500/10 to-green-500/5' },
+            { value: avgRating ?? '—', label: 'Avg Rating', color: 'from-amber-500/10 to-amber-500/5', icon: true },
+          ].map((stat) => (
+            <div key={stat.label} className={`text-center p-3 rounded-lg bg-gradient-to-br ${stat.color} border border-border/50`}>
+              <p className="text-xl font-bold">{stat.value}</p>
+              <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1">
+                {stat.icon && <Star className="h-2.5 w-2.5" />}
+                {stat.label}
+              </p>
+            </div>
+          ))}
         </div>
 
         {/* Weekly History */}
         {weeks.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
+            <h4 className="text-sm font-semibold mb-2.5 flex items-center gap-1.5">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
               Weekly History
             </h4>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {weeks.map((w) => (
-                <div key={w.weekOf} className="flex items-center gap-2 text-sm">
-                  <span className="text-xs text-muted-foreground w-24 shrink-0">
-                    Week of {w.weekOf}
+                <div key={w.weekOf} className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground w-20 shrink-0 font-mono">
+                    {w.weekOf}
                   </span>
-                  <div className="flex-1 flex items-center gap-1.5">
-                    <span className="text-green-600 flex items-center gap-0.5">
-                      <CheckCircle className="h-3 w-3" />{w.completed}
-                    </span>
-                    {w.skipped > 0 && (
-                      <span className="text-muted-foreground flex items-center gap-0.5">
-                        <XCircle className="h-3 w-3" />{w.skipped}
-                      </span>
-                    )}
-                    {w.scheduled > 0 && (
-                      <Badge variant="outline" className="text-xs h-5">
-                        {w.scheduled} pending
-                      </Badge>
-                    )}
+                  <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full flex">
+                      <div
+                        className="h-full bg-green-500 first:rounded-l-full"
+                        style={{ width: `${w.totalMatches > 0 ? (w.completed / w.totalMatches) * 100 : 0}%` }}
+                      />
+                      {w.skipped > 0 && (
+                        <div
+                          className="h-full bg-muted-foreground/30"
+                          style={{ width: `${(w.skipped / w.totalMatches) * 100}%` }}
+                        />
+                      )}
+                    </div>
                   </div>
-                  {/* Visual bar */}
-                  <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-green-500 rounded-full"
-                      style={{ width: `${w.totalMatches > 0 ? (w.completed / w.totalMatches) * 100 : 0}%` }}
-                    />
+                  <div className="flex items-center gap-1 text-[11px] w-16 shrink-0 justify-end">
+                    <span className="text-green-600">{w.completed}</span>
+                    <span className="text-muted-foreground/50">/</span>
+                    <span className="text-muted-foreground">{w.totalMatches}</span>
                   </div>
                 </div>
               ))}
@@ -172,33 +156,30 @@ export function GroupAnalytics({ groupId, profiles }: GroupAnalyticsProps) {
 
         {/* Member Activity */}
         <div>
-          <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
-            <Users className="h-4 w-4" />
+          <h4 className="text-sm font-semibold mb-2.5 flex items-center gap-1.5">
+            <Users className="h-4 w-4 text-muted-foreground" />
             Member Activity
           </h4>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {members.map((member: any) => {
               const profile = profiles.find((p: any) => p.user_id === member.user_id);
               const stats = userPairCount.get(member.user_id);
               return (
-                <div key={member.id} className="flex items-center gap-2">
-                  <Avatar className="h-7 w-7">
+                <div key={member.id} className="flex items-center gap-2 py-1">
+                  <Avatar className="h-6 w-6">
                     <AvatarImage src={profile?.avatar_url ?? undefined} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
                       {getInitials(profile?.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm flex-1 truncate">{profile?.full_name ?? 'Unknown'}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Joined {new Date(member.joined_at).toLocaleDateString()}
-                  </span>
                   {stats ? (
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span>{stats.paired} paired</span>
-                      <span className="text-green-600">{stats.completed} done</span>
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="text-muted-foreground">{stats.paired} paired</span>
+                      <span className="text-green-600 font-medium">{stats.completed} done</span>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">No matches yet</span>
+                    <span className="text-[11px] text-muted-foreground">—</span>
                   )}
                 </div>
               );
