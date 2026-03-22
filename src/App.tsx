@@ -8,10 +8,8 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
-import Connections from "./pages/Connections";
 import ProfileEdit from "./pages/ProfileEdit";
 import ProfileComplete from "./pages/ProfileComplete";
-import Settings from "./pages/Settings";
 import Groups from "./pages/Groups";
 import GroupDetail from "./pages/GroupDetail";
 import Invite from "./pages/Invite";
@@ -33,10 +31,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/connections" element={<Connections />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />
             <Route path="/profile/complete" element={<ProfileComplete />} />
-            <Route path="/settings" element={<Settings />} />
             <Route path="/groups" element={<Groups />} />
             <Route path="/groups/:groupId" element={<GroupDetail />} />
             <Route path="/invite" element={<Invite />} />

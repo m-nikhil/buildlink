@@ -82,13 +82,7 @@ export function Header() {
                 Groups
               </Link>
               <Link
-                to="/connections"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Connections
-              </Link>
-              <Link 
-                to="/invite" 
+                to="/invite"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground flex items-center gap-1"
               >
                 <UserPlus className="h-4 w-4" />
@@ -100,12 +94,6 @@ export function Header() {
               >
                 <Download className="h-4 w-4" />
                 Install
-              </Link>
-              <Link 
-                to="/settings" 
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Preferences
               </Link>
             </nav>
 

@@ -5,6 +5,53 @@ import { toast } from 'sonner';
 import type { Group, GroupMember, GroupTimeslot, TimeslotSubscription, TimeslotConfirmation, GroupMatch } from '@/types/group';
 import { MAX_GROUPS_PER_USER, MAX_TIMESLOTS_PER_GROUP, getWeekOf } from '@/types/group';
 
+// Fetch public groups for browsing
+export function usePublicGroups() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['public-groups', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      // Fetch all public groups
+      const { data: groups, error } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch user's memberships to mark which groups they're already in
+      const { data: memberships } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      const memberGroupIds = new Set((memberships ?? []).map((m: any) => m.group_id));
+
+      // Get member counts for each group
+      const groupIds = (groups ?? []).map((g: any) => g.id);
+      const { data: allMembers } = groupIds.length
+        ? await supabase.from('group_members').select('group_id').in('group_id', groupIds)
+        : { data: [] };
+
+      const countByGroup: Record<string, number> = {};
+      (allMembers ?? []).forEach((m: any) => {
+        countByGroup[m.group_id] = (countByGroup[m.group_id] ?? 0) + 1;
+      });
+
+      return (groups ?? []).map((g: any) => ({
+        ...g,
+        isMember: memberGroupIds.has(g.id),
+        memberCount: countByGroup[g.id] ?? 0,
+      })) as (Group & { isMember: boolean; memberCount: number })[];
+    },
+    enabled: !!user,
+  });
+}
+
 // Fetch groups the current user is a member of
 export function useMyGroups() {
   const { user } = useAuth();
