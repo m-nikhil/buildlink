@@ -11,16 +11,16 @@ import { BuildLinkLogo } from '@/components/BuildLinkLogo';
 import { supabase } from '@/integrations/supabase/client';
 
 const SEED_ACCOUNTS = [
-  { email: 'sarah.chen@example.com', name: 'Sarah Chen' },
-  { email: 'marcus.j@example.com', name: 'Marcus Johnson' },
-  { email: 'emily.r@example.com', name: 'Emily Rodriguez' },
-  { email: 'david.kim@example.com', name: 'David Kim' },
-  { email: 'priya.p@example.com', name: 'Priya Patel' },
-  { email: 'james.w@example.com', name: 'James Wilson' },
-  { email: 'lisa.t@example.com', name: 'Lisa Thompson' },
-  { email: 'alex.r@example.com', name: 'Alex Rivera' },
-  { email: 'nicole.z@example.com', name: 'Nicole Zhang' },
-  { email: 'michael.b@example.com', name: 'Michael Brown' },
+  { email: 'sarah.chen@buildlink.test', name: 'Sarah Chen' },
+  { email: 'marcus.j@buildlink.test', name: 'Marcus Johnson' },
+  { email: 'emily.r@buildlink.test', name: 'Emily Rodriguez' },
+  { email: 'david.kim@buildlink.test', name: 'David Kim' },
+  { email: 'priya.p@buildlink.test', name: 'Priya Patel' },
+  { email: 'james.w@buildlink.test', name: 'James Wilson' },
+  { email: 'lisa.t@buildlink.test', name: 'Lisa Thompson' },
+  { email: 'alex.r@buildlink.test', name: 'Alex Rivera' },
+  { email: 'nicole.z@buildlink.test', name: 'Nicole Zhang' },
+  { email: 'michael.b@buildlink.test', name: 'Michael Brown' },
 ];
 
 // Show test accounts in dev mode OR preview environments (not production)
