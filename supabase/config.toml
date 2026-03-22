@@ -1,4 +1,4 @@
-project_id = "cxfywiqnylxsdyeesfdb"
+project_id = "vdnriomhngrusvluebgw"
 
 [functions.configure-linkedin-auth]
 verify_jwt = false

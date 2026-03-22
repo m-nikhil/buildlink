@@ -12,7 +12,8 @@ import Connections from "./pages/Connections";
 import ProfileEdit from "./pages/ProfileEdit";
 import ProfileComplete from "./pages/ProfileComplete";
 import Settings from "./pages/Settings";
-import WeeklyIntro from "./pages/WeeklyIntro";
+import Groups from "./pages/Groups";
+import GroupDetail from "./pages/GroupDetail";
 import Invite from "./pages/Invite";
 import Install from "./pages/Install";
 import CallRoom from "./pages/CallRoom";
@@ -36,7 +37,8 @@ const App = () => (
             <Route path="/profile/edit" element={<ProfileEdit />} />
             <Route path="/profile/complete" element={<ProfileComplete />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/weekly-intro" element={<WeeklyIntro />} />
+            <Route path="/groups" element={<Groups />} />
+            <Route path="/groups/:groupId" element={<GroupDetail />} />
             <Route path="/invite" element={<Invite />} />
             <Route path="/install" element={<Install />} />
             <Route path="/call/:roomId" element={<CallRoom />} />

@@ -10,9 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Calendar, UserPlus, Download } from 'lucide-react';
+import { LogOut, User, UserPlus, Download, UsersRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BuildLinkLogo } from '@/components/BuildLinkLogo';
+import { NotificationBell } from '@/components/NotificationBell';
 import { toast } from 'sonner';
 
 export function Header() {
@@ -73,21 +74,15 @@ export function Header() {
               </Button>
             )}
             <nav className="hidden md:flex items-center gap-6">
-              <Link 
-                to="/" 
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Discover
-              </Link>
-              <Link 
-                to="/weekly-intro" 
+              <Link
+                to="/groups"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground flex items-center gap-1"
               >
-                <Calendar className="h-4 w-4" />
-                Weekly Intro
+                <UsersRound className="h-4 w-4" />
+                Groups
               </Link>
-              <Link 
-                to="/connections" 
+              <Link
+                to="/connections"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Connections
@@ -113,6 +108,8 @@ export function Header() {
                 Preferences
               </Link>
             </nav>
+
+            <NotificationBell />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

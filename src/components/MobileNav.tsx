@@ -1,10 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Calendar, UserPlus, Settings, Download } from 'lucide-react';
+import { Users, UserPlus, Settings, Download, UsersRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', icon: Home, label: 'Discover' },
-  { href: '/weekly-intro', icon: Calendar, label: 'Weekly' },
+  { href: '/groups', icon: UsersRound, label: 'Groups' },
   { href: '/connections', icon: Users, label: 'Connections' },
   { href: '/invite', icon: UserPlus, label: 'Invite' },
   { href: '/install', icon: Download, label: 'Install' },
