@@ -9,7 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, Loader2, Users, ChevronRight } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Clock, Save, Loader2, Users, ChevronRight } from 'lucide-react';
+import { COMMON_TIMEZONES } from '@/types/group';
 import {
   ConnectionGoal,
   GOAL_LABELS,
@@ -27,6 +29,7 @@ export default function Settings() {
   const [preferredLocations, setPreferredLocations] = useState<string[]>([]);
   const [preferredIndustries, setPreferredIndustries] = useState<string[]>([]);
   const [preferredGoals, setPreferredGoals] = useState<ConnectionGoal[]>([]);
+  const [timezone, setTimezone] = useState<string>(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -39,6 +42,7 @@ export default function Settings() {
       setPreferredLocations((profile as any).preferred_locations || []);
       setPreferredIndustries(profile.preferred_industries || []);
       setPreferredGoals(profile.preferred_goals || []);
+      setTimezone((profile as any).timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
     }
   }, [profile]);
 
@@ -47,6 +51,7 @@ export default function Settings() {
       preferred_locations: preferredLocations,
       preferred_industries: preferredIndustries,
       preferred_goals: preferredGoals,
+      timezone,
     } as any);
   };
 
@@ -126,6 +131,31 @@ export default function Settings() {
                   <Label htmlFor={`goal-${value}`} className="cursor-pointer">{label}</Label>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          {/* Timezone */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Timezone
+              </CardTitle>
+              <CardDescription>
+                Your system timezone is {Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, ' ')}. Override it below if needed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>{tz.replace(/_/g, ' ')}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 
