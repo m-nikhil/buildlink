@@ -49,12 +49,11 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
   const [showAdd, setShowAdd] = useState(false);
   const [dayOfWeek, setDayOfWeek] = useState('1');
   const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('09:30');
   const [label, setLabel] = useState('');
 
   const handleAdd = () => {
     addTimeslot.mutate(
-      { groupId, dayOfWeek: parseInt(dayOfWeek), startTime, endTime, label: label.trim() || undefined },
+      { groupId, dayOfWeek: parseInt(dayOfWeek), startTime, label: label.trim() || undefined },
       { onSuccess: () => { setShowAdd(false); setLabel(''); } }
     );
   };
@@ -125,15 +124,9 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Start Time</Label>
-                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-              </div>
-              <div>
-                <Label>End Time</Label>
-                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-              </div>
+            <div>
+              <Label>Start Time (30-min slot)</Label>
+              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
             </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAdd} disabled={addTimeslot.isPending}>

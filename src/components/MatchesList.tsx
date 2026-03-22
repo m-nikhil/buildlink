@@ -94,16 +94,15 @@ export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesLi
           return (
             <Card key={match.id} className="border-primary/20">
               <CardContent className="py-3 space-y-3">
-                {/* Partner info */}
+                {/* Partner info - names hidden, initials only */}
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={partner?.avatar_url ?? undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                    <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
                       {getInitials(partner?.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{partner?.full_name ?? 'Unknown'}</p>
+                    <p className="font-medium truncate">{getInitials(partner?.full_name)}</p>
                     {partner?.headline && (
                       <p className="text-sm text-muted-foreground truncate">{partner.headline}</p>
                     )}

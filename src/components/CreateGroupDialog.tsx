@@ -21,6 +21,7 @@ export function CreateGroupDialog() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+  const [approvalRequired, setApprovalRequired] = useState(true);
   const createGroup = useCreateGroup();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -28,13 +29,19 @@ export function CreateGroupDialog() {
     if (!name.trim()) return;
 
     createGroup.mutate(
-      { name: name.trim(), description: description.trim(), visibility: isPublic ? 'public' : 'private' },
+      {
+        name: name.trim(),
+        description: description.trim(),
+        visibility: isPublic ? 'public' : 'private',
+        approvalRequired: isPublic ? approvalRequired : false,
+      },
       {
         onSuccess: () => {
           setOpen(false);
           setName('');
           setDescription('');
           setIsPublic(false);
+          setApprovalRequired(true);
         },
       }
     );
@@ -81,11 +88,22 @@ export function CreateGroupDialog() {
               <div>
                 <Label htmlFor="public">Public Group</Label>
                 <p className="text-sm text-muted-foreground">
-                  {isPublic ? 'Anyone can discover and request to join' : 'Invite-only via invite code'}
+                  {isPublic ? 'Anyone can discover this group' : 'Invite-only via invite code'}
                 </p>
               </div>
               <Switch id="public" checked={isPublic} onCheckedChange={setIsPublic} />
             </div>
+            {isPublic && (
+              <div className="flex items-center justify-between pl-4 border-l-2">
+                <div>
+                  <Label htmlFor="approval">Require Approval</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {approvalRequired ? 'You review each request before they join' : 'Anyone can join instantly'}
+                  </p>
+                </div>
+                <Switch id="approval" checked={approvalRequired} onCheckedChange={setApprovalRequired} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

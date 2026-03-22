@@ -7,8 +7,27 @@ export interface Group {
   visibility: GroupVisibility;
   owner_id: string;
   invite_code: string;
+  approval_required: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface GroupJoinRequest {
+  id: string;
+  group_id: string;
+  user_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface UserAvailability {
+  id: string;
+  user_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  created_at: string;
 }
 
 export interface GroupMember {
@@ -68,7 +87,8 @@ export interface GroupMatch {
 }
 
 export const MAX_GROUPS_PER_USER = 5;
-export const MAX_TIMESLOTS_PER_GROUP = 10;
+export const MAX_TIMESLOTS_PER_GROUP = 5;
+export const TIMESLOT_DURATION_MINUTES = 30;
 
 // Confirmation window: opens 3 days before, closes 1 day before
 export const CONFIRM_WINDOW_OPEN_DAYS = 3;

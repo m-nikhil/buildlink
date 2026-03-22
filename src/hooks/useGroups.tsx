@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
-import type { Group, GroupMember, GroupTimeslot, TimeslotSubscription, TimeslotConfirmation, GroupMatch } from '@/types/group';
-import { MAX_GROUPS_PER_USER, MAX_TIMESLOTS_PER_GROUP, getWeekOf } from '@/types/group';
+import type { Group, GroupMember, GroupTimeslot, TimeslotSubscription, TimeslotConfirmation, GroupMatch, GroupJoinRequest, UserAvailability } from '@/types/group';
+import { MAX_GROUPS_PER_USER, MAX_TIMESLOTS_PER_GROUP, TIMESLOT_DURATION_MINUTES, getWeekOf } from '@/types/group';
 
 // Fetch public groups for browsing
 export function usePublicGroups() {
@@ -42,11 +42,43 @@ export function usePublicGroups() {
         countByGroup[m.group_id] = (countByGroup[m.group_id] ?? 0) + 1;
       });
 
+      // Fetch owner profiles
+      const ownerIds = [...new Set((groups ?? []).map((g: any) => g.owner_id))];
+      const { data: ownerProfiles } = ownerIds.length
+        ? await supabase.from('profiles').select('user_id, full_name, linkedin_url, avatar_url').in('user_id', ownerIds)
+        : { data: [] };
+
+      const ownerMap: Record<string, any> = {};
+      (ownerProfiles ?? []).forEach((p: any) => { ownerMap[p.user_id] = p; });
+
+      // Fetch user's pending join requests
+      const { data: myRequests } = await supabase
+        .from('group_join_requests')
+        .select('group_id, status')
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
+
+      const pendingRequestGroupIds = new Set((myRequests ?? []).map((r: any) => r.group_id));
+
+      // Fetch timeslots for all groups (for availability filtering)
+      const { data: allTimeslots } = groupIds.length
+        ? await supabase.from('group_timeslots').select('group_id, day_of_week, start_time, end_time').in('group_id', groupIds)
+        : { data: [] };
+
+      const timeslotsByGroup: Record<string, any[]> = {};
+      (allTimeslots ?? []).forEach((t: any) => {
+        if (!timeslotsByGroup[t.group_id]) timeslotsByGroup[t.group_id] = [];
+        timeslotsByGroup[t.group_id].push(t);
+      });
+
       return (groups ?? []).map((g: any) => ({
         ...g,
         isMember: memberGroupIds.has(g.id),
         memberCount: countByGroup[g.id] ?? 0,
-      })) as (Group & { isMember: boolean; memberCount: number })[];
+        ownerProfile: ownerMap[g.owner_id] ?? null,
+        hasPendingRequest: pendingRequestGroupIds.has(g.id),
+        timeslots: timeslotsByGroup[g.id] ?? [],
+      })) as (Group & { isMember: boolean; memberCount: number; ownerProfile: any; hasPendingRequest: boolean; timeslots: any[] })[];
     },
     enabled: !!user,
   });
@@ -138,6 +170,30 @@ export function useGroupDetail(groupId: string | undefined) {
         .in('week_of', [thisWeek, nextWeek])
         .order('created_at', { ascending: false });
 
+      // Fetch pending join requests (for owner)
+      const isOwner = groupRes.data?.owner_id === user?.id;
+      let joinRequests: GroupJoinRequest[] = [];
+      let requestProfiles: any[] = [];
+      if (isOwner) {
+        const { data: requests } = await supabase
+          .from('group_join_requests')
+          .select('*')
+          .eq('group_id', groupId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: true });
+
+        joinRequests = (requests ?? []) as GroupJoinRequest[];
+
+        if (joinRequests.length > 0) {
+          const reqUserIds = joinRequests.map((r) => r.user_id);
+          const { data: reqProfiles } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('user_id', reqUserIds);
+          requestProfiles = reqProfiles ?? [];
+        }
+      }
+
       return {
         group: groupRes.data as Group,
         members: (membersRes.data ?? []) as GroupMember[],
@@ -146,7 +202,9 @@ export function useGroupDetail(groupId: string | undefined) {
         subscriptions: (subscriptions ?? []) as TimeslotSubscription[],
         confirmations: (confirmations ?? []) as TimeslotConfirmation[],
         matches: (matches ?? []) as GroupMatch[],
-        isOwner: groupRes.data?.owner_id === user?.id,
+        joinRequests,
+        requestProfiles,
+        isOwner,
         isMember: (membersRes.data ?? []).some((m: any) => m.user_id === user?.id),
       };
     },
@@ -160,7 +218,7 @@ export function useCreateGroup() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ name, description, visibility }: { name: string; description?: string; visibility: 'public' | 'private' }) => {
+    mutationFn: async ({ name, description, visibility, approvalRequired }: { name: string; description?: string; visibility: 'public' | 'private'; approvalRequired?: boolean }) => {
       if (!user) throw new Error('Not authenticated');
 
       // Check group limit
@@ -175,7 +233,7 @@ export function useCreateGroup() {
 
       const { data: group, error } = await supabase
         .from('groups')
-        .insert({ name, description: description || null, visibility, owner_id: user.id })
+        .insert({ name, description: description || null, visibility, owner_id: user.id, approval_required: approvalRequired ?? false })
         .select()
         .single();
 
@@ -291,13 +349,17 @@ export function useAddTimeslot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ groupId, dayOfWeek, startTime, endTime, label }: {
+    mutationFn: async ({ groupId, dayOfWeek, startTime, label }: {
       groupId: string;
       dayOfWeek: number;
       startTime: string;
-      endTime: string;
       label?: string;
     }) => {
+      // Auto-calculate end time as start + 30 minutes
+      const [h, m] = startTime.split(':').map(Number);
+      const endMinutes = h * 60 + m + TIMESLOT_DURATION_MINUTES;
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
       // Check timeslot limit
       const { count } = await supabase
         .from('group_timeslots')
@@ -495,6 +557,187 @@ export function useTriggerMatching() {
     },
     onError: (err: Error) => {
       toast.error(err.message);
+    },
+  });
+}
+
+// Update group (owner only)
+export function useUpdateGroup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ groupId, description }: { groupId: string; description: string }) => {
+      const { error } = await supabase
+        .from('groups')
+        .update({ description: description || null, updated_at: new Date().toISOString() })
+        .eq('id', groupId);
+
+      if (error) throw error;
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['my-groups'] });
+      toast.success('Group updated');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+// Request to join a public group
+export function useRequestJoinGroup() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase.from('group_join_requests').insert({
+        group_id: groupId,
+        user_id: user.id,
+      });
+
+      if (error) {
+        if (error.message?.includes('duplicate')) throw new Error('Request already sent');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['public-groups'] });
+      toast.success('Join request sent! The owner will review it.');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+// Approve a join request (owner action)
+export function useApproveJoinRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, groupId, userId }: { requestId: string; groupId: string; userId: string }) => {
+      // Update request status
+      const { error: updateErr } = await supabase
+        .from('group_join_requests')
+        .update({ status: 'approved', resolved_at: new Date().toISOString() })
+        .eq('id', requestId);
+
+      if (updateErr) throw updateErr;
+
+      // Add user as member
+      const { error: insertErr } = await supabase.from('group_members').insert({
+        group_id: groupId,
+        user_id: userId,
+        role: 'member',
+      });
+
+      if (insertErr) throw insertErr;
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+      toast.success('Member approved!');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+// Reject a join request (owner action)
+export function useRejectJoinRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ requestId, groupId }: { requestId: string; groupId: string }) => {
+      const { error } = await supabase
+        .from('group_join_requests')
+        .update({ status: 'rejected', resolved_at: new Date().toISOString() })
+        .eq('id', requestId);
+
+      if (error) throw error;
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+      toast.success('Request rejected');
+    },
+  });
+}
+
+// Fetch user availability
+export function useUserAvailability() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['user-availability', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_availability')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('day_of_week')
+        .order('start_time');
+
+      if (error) throw error;
+      return (data ?? []) as UserAvailability[];
+    },
+    enabled: !!user,
+  });
+}
+
+// Add availability slot
+export function useAddAvailability() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ dayOfWeek, startTime }: { dayOfWeek: number; startTime: string }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const [h, m] = startTime.split(':').map(Number);
+      const endMinutes = h * 60 + m + TIMESLOT_DURATION_MINUTES;
+      const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+
+      const { error } = await supabase.from('user_availability').insert({
+        user_id: user.id,
+        day_of_week: dayOfWeek,
+        start_time: startTime,
+        end_time: endTime,
+      });
+
+      if (error) {
+        if (error.message?.includes('duplicate')) throw new Error('Already added');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-availability'] });
+      toast.success('Availability added');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+// Remove availability slot
+export function useRemoveAvailability() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('user_availability').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-availability'] });
     },
   });
 }
