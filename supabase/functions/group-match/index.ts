@@ -75,30 +75,58 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const targetTimeslotId = body.timeslot_id; // optional: match only this timeslot
 
-    // Determine the week we're matching for.
-    // The scheduler runs 1 day before the timeslot, so we figure out which
-    // timeslots happen tomorrow.
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowDayOfWeek = tomorrow.getDay(); // 0=Sun..6=Sat
-    const weekOf = getWeekOf(tomorrow);
+    // Helper: get "tomorrow" in a specific IANA timezone
+    function getTomorrowInTimezone(tz: string): { dayOfWeek: number; dateStr: string } {
+      const now = new Date();
+      // Get tomorrow's date in the group's timezone
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        weekday: 'short',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      const parts = formatter.formatToParts(tomorrow);
+      const weekdayStr = parts.find(p => p.type === 'weekday')?.value ?? '';
+      const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      const dayOfWeek = dayMap[weekdayStr] ?? tomorrow.getUTCDay();
 
-    // Find timeslots happening tomorrow (or a specific one)
+      // Build a Date object representing tomorrow in that timezone (for getWeekOf)
+      const month = parts.find(p => p.type === 'month')?.value ?? '';
+      const day = parts.find(p => p.type === 'day')?.value ?? '';
+      const year = parts.find(p => p.type === 'year')?.value ?? '';
+      const dateStr = `${year}-${month}-${day}`;
+      return { dayOfWeek, dateStr };
+    }
+
+    // Fetch all timeslots with their group info (including timezone)
     let timeslotQuery = supabaseAdmin
       .from('group_timeslots')
-      .select('*, groups!inner(id, name, owner_id)');
+      .select('*, groups!inner(id, name, owner_id, timezone)');
 
     if (targetTimeslotId) {
       timeslotQuery = timeslotQuery.eq('id', targetTimeslotId);
-    } else {
-      timeslotQuery = timeslotQuery.eq('day_of_week', tomorrowDayOfWeek);
     }
 
-    const { data: timeslots, error: tsError } = await timeslotQuery;
+    const { data: allTimeslots, error: tsError } = await timeslotQuery;
     if (tsError) throw tsError;
-    if (!timeslots || timeslots.length === 0) {
-      return new Response(JSON.stringify({ message: 'No timeslots to match for tomorrow', matches_created: 0 }), {
+    if (!allTimeslots || allTimeslots.length === 0) {
+      return new Response(JSON.stringify({ message: 'No timeslots found', matches_created: 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Filter timeslots to only those whose day_of_week matches "tomorrow"
+    // in the group's timezone (skip this filter if targeting a specific timeslot)
+    const timeslots = targetTimeslotId ? allTimeslots : allTimeslots.filter((ts: any) => {
+      const tz = (ts as any).groups?.timezone || 'UTC';
+      const { dayOfWeek } = getTomorrowInTimezone(tz);
+      return ts.day_of_week === dayOfWeek;
+    });
+
+    if (timeslots.length === 0) {
+      return new Response(JSON.stringify({ message: 'No timeslots to match for tomorrow in any timezone', matches_created: 0 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -107,6 +135,10 @@ serve(async (req) => {
 
     for (const timeslot of timeslots) {
       const groupId = timeslot.group_id;
+      const groupTz = (timeslot as any).groups?.timezone || 'UTC';
+      const { dateStr: tomorrowDateStr } = getTomorrowInTimezone(groupTz);
+      const tomorrow = new Date(tomorrowDateStr + 'T00:00:00Z');
+      const weekOf = getWeekOf(tomorrow);
 
       // Get confirmed users for this timeslot and week
       const { data: confirmations, error: confError } = await supabaseAdmin

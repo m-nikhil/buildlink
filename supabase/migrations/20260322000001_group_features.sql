@@ -92,14 +92,20 @@ ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check
   CHECK (type IN ('confirm_reminder', 'match_created', 'match_feedback', 'all_pairs_done', 'join_request'));
 
 -- ============================================================
--- 6. Weekly scheduler: invoke group-match edge function daily
---    The edge function checks which timeslots happen tomorrow
---    and creates matches for confirmed users.
---    Runs every day at 20:00 UTC (evening before match day).
+-- 6. Add timezone to groups (IANA timezone, e.g. 'America/New_York')
+--    Timeslot times are interpreted in the group's timezone.
+-- ============================================================
+ALTER TABLE public.groups ADD COLUMN IF NOT EXISTS timezone text NOT NULL DEFAULT 'UTC';
+
+-- ============================================================
+-- 7. Weekly scheduler: invoke group-match edge function every 2 hours
+--    Runs 12x/day to cover all timezones correctly.
+--    The edge function itself determines which timeslots are "tomorrow"
+--    in each group's own timezone.
 -- ============================================================
 SELECT cron.schedule(
-  'daily-group-matching',
-  '0 20 * * *',
+  'group-matching-every-2h',
+  '0 */2 * * *',
   $$
   SELECT net.http_post(
     url := current_setting('app.settings.supabase_url') || '/functions/v1/group-match',

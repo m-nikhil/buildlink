@@ -8,6 +8,7 @@ export interface Group {
   owner_id: string;
   invite_code: string;
   approval_required: boolean;
+  timezone: string;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +86,47 @@ export interface GroupMatch {
   status: 'scheduled' | 'completed' | 'skipped';
   created_at: string;
 }
+
+export const COMMON_TIMEZONES = [
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+  'America/Toronto',
+  'America/Vancouver',
+  'America/Sao_Paulo',
+  'America/Argentina/Buenos_Aires',
+  'America/Mexico_City',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Europe/Amsterdam',
+  'Europe/Madrid',
+  'Europe/Rome',
+  'Europe/Zurich',
+  'Europe/Stockholm',
+  'Europe/Moscow',
+  'Europe/Istanbul',
+  'Africa/Cairo',
+  'Africa/Johannesburg',
+  'Africa/Lagos',
+  'Asia/Dubai',
+  'Asia/Kolkata',
+  'Asia/Shanghai',
+  'Asia/Hong_Kong',
+  'Asia/Singapore',
+  'Asia/Tokyo',
+  'Asia/Seoul',
+  'Asia/Bangkok',
+  'Asia/Jakarta',
+  'Australia/Sydney',
+  'Australia/Melbourne',
+  'Australia/Perth',
+  'Pacific/Auckland',
+  'UTC',
+];
 
 export const MAX_GROUPS_PER_USER = 5;
 export const MAX_TIMESLOTS_PER_GROUP = 3;

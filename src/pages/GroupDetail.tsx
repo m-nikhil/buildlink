@@ -40,7 +40,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Check, Copy, Crown, ExternalLink, Globe, Linkedin, Lock, LogOut, Pencil, Trash2, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Copy, Crown, ExternalLink, Globe, Linkedin, Lock, LogOut, Pencil, Trash2, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GroupDetail() {
@@ -185,6 +185,10 @@ export default function GroupDetail() {
                 <Badge variant="secondary" className="gap-1">
                   <Users className="h-3 w-3" />
                   {members.length} member{members.length !== 1 ? 's' : ''}
+                </Badge>
+                <Badge variant="secondary" className="gap-1">
+                  <Clock className="h-3 w-3" />
+                  {group.timezone?.replace(/_/g, ' ') ?? 'UTC'}
                 </Badge>
               </div>
             </div>

@@ -14,7 +14,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
+import { COMMON_TIMEZONES } from '@/types/group';
 
 export function CreateGroupDialog() {
   const [open, setOpen] = useState(false);
@@ -22,6 +24,10 @@ export function CreateGroupDialog() {
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [approvalRequired, setApprovalRequired] = useState(true);
+  const [timezone, setTimezone] = useState(() => {
+    const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return COMMON_TIMEZONES.includes(local) ? local : 'UTC';
+  });
   const createGroup = useCreateGroup();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,6 +40,7 @@ export function CreateGroupDialog() {
         description: description.trim(),
         visibility: isPublic ? 'public' : 'private',
         approvalRequired: isPublic ? approvalRequired : false,
+        timezone,
       },
       {
         onSuccess: () => {
@@ -42,6 +49,7 @@ export function CreateGroupDialog() {
           setDescription('');
           setIsPublic(false);
           setApprovalRequired(true);
+          setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
         },
       }
     );
@@ -83,6 +91,22 @@ export function CreateGroupDialog() {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Timezone</Label>
+              <p className="text-xs text-muted-foreground">
+                Timeslot times will be in this timezone
+              </p>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger id="timezone">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>{tz.replace(/_/g, ' ')}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between">
               <div>

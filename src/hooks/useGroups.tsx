@@ -218,7 +218,7 @@ export function useCreateGroup() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ name, description, visibility, approvalRequired }: { name: string; description?: string; visibility: 'public' | 'private'; approvalRequired?: boolean }) => {
+    mutationFn: async ({ name, description, visibility, approvalRequired, timezone }: { name: string; description?: string; visibility: 'public' | 'private'; approvalRequired?: boolean; timezone?: string }) => {
       if (!user) throw new Error('Not authenticated');
 
       // Check group limit
@@ -233,7 +233,7 @@ export function useCreateGroup() {
 
       const { data: group, error } = await supabase
         .from('groups')
-        .insert({ name, description: description || null, visibility, owner_id: user.id, approval_required: approvalRequired ?? false })
+        .insert({ name, description: description || null, visibility, owner_id: user.id, approval_required: approvalRequired ?? false, timezone: timezone ?? 'UTC' })
         .select()
         .single();
 

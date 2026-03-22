@@ -264,6 +264,14 @@ export default function Groups() {
                           <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
                         )}
 
+                        {/* Timezone badge */}
+                        {group.timezone && group.timezone !== 'UTC' && (
+                          <Badge variant="outline" className="gap-1 text-xs w-fit">
+                            <Clock className="h-3 w-3" />
+                            {group.timezone.replace(/_/g, ' ')}
+                          </Badge>
+                        )}
+
                         {/* Owner info */}
                         {group.ownerProfile && (
                           <div className="flex items-center gap-2">
