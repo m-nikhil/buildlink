@@ -126,7 +126,22 @@ export function TimeslotManager({ groupId, timeslots, subscriptions, confirmatio
             </div>
             <div>
               <Label>Start Time (30-min slot)</Label>
-              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              <Select value={startTime} onValueChange={setStartTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 48 }, (_, i) => {
+                    const h = String(Math.floor(i / 2)).padStart(2, '0');
+                    const m = i % 2 === 0 ? '00' : '30';
+                    return (
+                      <SelectItem key={`${h}:${m}`} value={`${h}:${m}`}>
+                        {`${h}:${m}`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAdd} disabled={addTimeslot.isPending}>

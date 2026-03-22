@@ -158,8 +158,8 @@ export default function GroupDetail() {
                       value={descriptionDraft}
                       onChange={(e) => setDescriptionDraft(e.target.value)}
                       placeholder="What's this group about? Who should join?"
-                      rows={4}
-                      className="resize-none"
+                      rows={8}
+                      className="resize-y min-h-[200px]"
                       maxLength={500}
                     />
                     <p className="text-xs text-muted-foreground mt-1 text-right">

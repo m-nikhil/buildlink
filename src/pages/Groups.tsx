@@ -208,12 +208,22 @@ export default function Groups() {
                     </div>
                     <div className="flex-1">
                       <Label className="text-xs">Time</Label>
-                      <Input
-                        type="time"
-                        value={availTime}
-                        onChange={(e) => setAvailTime(e.target.value)}
-                        className="h-8 text-xs"
-                      />
+                      <Select value={availTime} onValueChange={setAvailTime}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 48 }, (_, i) => {
+                            const h = String(Math.floor(i / 2)).padStart(2, '0');
+                            const m = i % 2 === 0 ? '00' : '30';
+                            return (
+                              <SelectItem key={`${h}:${m}`} value={`${h}:${m}`}>
+                                {`${h}:${m}`}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <Button
                       size="sm"

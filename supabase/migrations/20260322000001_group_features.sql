@@ -90,3 +90,24 @@ CREATE POLICY "Authenticated users can create notifications" ON public.notificat
 ALTER TABLE public.notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
 ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check
   CHECK (type IN ('confirm_reminder', 'match_created', 'match_feedback', 'all_pairs_done', 'join_request'));
+
+-- ============================================================
+-- 6. Weekly scheduler: invoke group-match edge function daily
+--    The edge function checks which timeslots happen tomorrow
+--    and creates matches for confirmed users.
+--    Runs every day at 20:00 UTC (evening before match day).
+-- ============================================================
+SELECT cron.schedule(
+  'daily-group-matching',
+  '0 20 * * *',
+  $$
+  SELECT net.http_post(
+    url := current_setting('app.settings.supabase_url') || '/functions/v1/group-match',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);
