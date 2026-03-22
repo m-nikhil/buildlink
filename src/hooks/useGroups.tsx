@@ -522,17 +522,53 @@ export function useUpdateMatchStatus() {
 
   return useMutation({
     mutationFn: async ({ matchId, status, groupId }: { matchId: string; status: 'completed' | 'skipped'; groupId: string }) => {
+      // Update the match
       const { error } = await supabase
         .from('group_matches')
         .update({ status })
         .eq('id', matchId);
 
       if (error) throw error;
-      return groupId;
+
+      // Check if all matches for this group this week are now done
+      const thisWeek = getWeekOf(new Date());
+      const nextWeekDate = new Date();
+      nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+      const nextWeek = getWeekOf(nextWeekDate);
+
+      const { data: allMatches } = await supabase
+        .from('group_matches')
+        .select('id, status')
+        .eq('group_id', groupId)
+        .in('week_of', [thisWeek, nextWeek]);
+
+      const allDone = allMatches && allMatches.length > 0 && allMatches.every((m: any) => m.status !== 'scheduled');
+
+      // If all done, notify the owner
+      if (allDone) {
+        const { data: group } = await supabase.from('groups').select('owner_id, name').eq('id', groupId).single();
+        if (group) {
+          const completed = allMatches.filter((m: any) => m.status === 'completed').length;
+          const skipped = allMatches.filter((m: any) => m.status === 'skipped').length;
+          await supabase.from('notifications').insert({
+            user_id: group.owner_id,
+            type: 'match_feedback',
+            title: `All matches done in ${group.name}`,
+            body: `${completed} completed, ${skipped} skipped out of ${allMatches.length} total matches this week.`,
+            link: `/groups/${groupId}`,
+          });
+        }
+      }
+
+      return { groupId, allDone };
     },
-    onSuccess: (groupId) => {
+    onSuccess: ({ groupId, allDone }) => {
       queryClient.invalidateQueries({ queryKey: ['group-detail', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast.success('Match updated');
+      if (allDone) {
+        toast.info('All matches for this week are complete!');
+      }
     },
   });
 }

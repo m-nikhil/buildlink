@@ -76,3 +76,17 @@ CREATE POLICY "Users can delete availability" ON public.user_availability
 
 CREATE INDEX idx_user_availability_user ON public.user_availability(user_id);
 CREATE INDEX idx_user_availability_day ON public.user_availability(day_of_week, start_time);
+
+-- ============================================================
+-- 4. Allow authenticated users to insert notifications
+--    (needed for owner notifications when all pairs complete)
+-- ============================================================
+CREATE POLICY "Authenticated users can create notifications" ON public.notifications
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- 5. Add notification type for all_pairs_done
+-- ============================================================
+ALTER TABLE public.notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check
+  CHECK (type IN ('confirm_reminder', 'match_created', 'match_feedback', 'all_pairs_done', 'join_request'));

@@ -13,6 +13,7 @@ import { Header } from '@/components/Header';
 import { MobileNav } from '@/components/MobileNav';
 import { TimeslotManager } from '@/components/TimeslotManager';
 import { MatchesList } from '@/components/MatchesList';
+import { GroupAnalytics } from '@/components/GroupAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { ArrowLeft, Check, Copy, Crown, ExternalLink, Globe, Linkedin, Lock, LogOut, Pencil, Trash2, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -44,7 +54,7 @@ export default function GroupDetail() {
   const approveRequest = useApproveJoinRequest();
   const rejectRequest = useRejectJoinRequest();
 
-  const [editingDescription, setEditingDescription] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState('');
 
   useEffect(() => {
@@ -94,15 +104,15 @@ export default function GroupDetail() {
   const ownerMember = members.find((m) => m.role === 'owner');
   const ownerProfile = profiles.find((p: any) => p.user_id === ownerMember?.user_id);
 
-  const startEditDescription = () => {
+  const openEditDialog = () => {
     setDescriptionDraft(group.description ?? '');
-    setEditingDescription(true);
+    setEditDialogOpen(true);
   };
 
   const saveDescription = () => {
     updateGroup.mutate(
       { groupId: group.id, description: descriptionDraft.trim() },
-      { onSuccess: () => setEditingDescription(false) }
+      { onSuccess: () => setEditDialogOpen(false) }
     );
   };
 
@@ -120,41 +130,52 @@ export default function GroupDetail() {
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold">{group.name}</h1>
 
-              {/* Description: editable for owner */}
-              {editingDescription ? (
-                <div className="mt-2 space-y-2">
-                  <Textarea
-                    value={descriptionDraft}
-                    onChange={(e) => setDescriptionDraft(e.target.value)}
-                    placeholder="Group description..."
-                    rows={3}
-                    className="text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" className="gap-1" onClick={saveDescription} disabled={updateGroup.isPending}>
-                      <Check className="h-3 w-3" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="ghost" className="gap-1" onClick={() => setEditingDescription(false)}>
-                      <X className="h-3 w-3" />
+              {/* Description with edit button for owner */}
+              <div className="flex items-start gap-1 mt-1">
+                {group.description ? (
+                  <p className="text-muted-foreground">{group.description}</p>
+                ) : isOwner ? (
+                  <p className="text-muted-foreground italic">Add a description...</p>
+                ) : null}
+                {isOwner && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={openEditDialog}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Edit Description Dialog */}
+              <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Description</DialogTitle>
+                    <DialogDescription>
+                      Update what this group is about. This is visible to all members{group.visibility === 'public' ? ' and anyone browsing' : ''}.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Textarea
+                      value={descriptionDraft}
+                      onChange={(e) => setDescriptionDraft(e.target.value)}
+                      placeholder="What's this group about? Who should join?"
+                      rows={4}
+                      className="resize-none"
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1 text-right">
+                      {descriptionDraft.length}/500
+                    </p>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                       Cancel
                     </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-1 mt-1">
-                  {group.description ? (
-                    <p className="text-muted-foreground">{group.description}</p>
-                  ) : isOwner ? (
-                    <p className="text-muted-foreground italic">No description</p>
-                  ) : null}
-                  {isOwner && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={startEditDescription}>
-                      <Pencil className="h-3 w-3" />
+                    <Button onClick={saveDescription} disabled={updateGroup.isPending}>
+                      {updateGroup.isPending ? 'Saving...' : 'Save'}
                     </Button>
-                  )}
-                </div>
-              )}
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="gap-1">
@@ -349,6 +370,11 @@ export default function GroupDetail() {
           isOwner={isOwner}
           profiles={profiles}
         />
+
+        {/* Analytics (owner only) */}
+        {isOwner && (
+          <GroupAnalytics groupId={group.id} profiles={profiles} />
+        )}
 
         {/* Members */}
         <Card>

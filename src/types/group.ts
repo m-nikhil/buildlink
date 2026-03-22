@@ -87,7 +87,7 @@ export interface GroupMatch {
 }
 
 export const MAX_GROUPS_PER_USER = 5;
-export const MAX_TIMESLOTS_PER_GROUP = 5;
+export const MAX_TIMESLOTS_PER_GROUP = 3;
 export const TIMESLOT_DURATION_MINUTES = 30;
 
 // Confirmation window: opens 3 days before, closes 1 day before
