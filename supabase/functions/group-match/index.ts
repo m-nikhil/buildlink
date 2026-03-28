@@ -75,30 +75,58 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const targetTimeslotId = body.timeslot_id; // optional: match only this timeslot
 
-    // Determine the week we're matching for.
-    // The scheduler runs 1 day before the timeslot, so we figure out which
-    // timeslots happen tomorrow.
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowDayOfWeek = tomorrow.getDay(); // 0=Sun..6=Sat
-    const weekOf = getWeekOf(tomorrow);
+    // Helper: get "tomorrow" in a specific IANA timezone
+    function getTomorrowInTimezone(tz: string): { dayOfWeek: number; dateStr: string } {
+      const now = new Date();
+      // Get tomorrow's date in the group's timezone
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        weekday: 'short',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      const parts = formatter.formatToParts(tomorrow);
+      const weekdayStr = parts.find(p => p.type === 'weekday')?.value ?? '';
+      const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      const dayOfWeek = dayMap[weekdayStr] ?? tomorrow.getUTCDay();
 
-    // Find timeslots happening tomorrow (or a specific one)
+      // Build a Date object representing tomorrow in that timezone (for getWeekOf)
+      const month = parts.find(p => p.type === 'month')?.value ?? '';
+      const day = parts.find(p => p.type === 'day')?.value ?? '';
+      const year = parts.find(p => p.type === 'year')?.value ?? '';
+      const dateStr = `${year}-${month}-${day}`;
+      return { dayOfWeek, dateStr };
+    }
+
+    // Fetch all timeslots with their group info (including timezone)
     let timeslotQuery = supabaseAdmin
       .from('group_timeslots')
-      .select('*, groups!inner(id, name, owner_id)');
+      .select('*, groups!inner(id, name, owner_id, timezone)');
 
     if (targetTimeslotId) {
       timeslotQuery = timeslotQuery.eq('id', targetTimeslotId);
-    } else {
-      timeslotQuery = timeslotQuery.eq('day_of_week', tomorrowDayOfWeek);
     }
 
-    const { data: timeslots, error: tsError } = await timeslotQuery;
+    const { data: allTimeslots, error: tsError } = await timeslotQuery;
     if (tsError) throw tsError;
-    if (!timeslots || timeslots.length === 0) {
-      return new Response(JSON.stringify({ message: 'No timeslots to match for tomorrow', matches_created: 0 }), {
+    if (!allTimeslots || allTimeslots.length === 0) {
+      return new Response(JSON.stringify({ message: 'No timeslots found', matches_created: 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Filter timeslots to only those whose day_of_week matches "tomorrow"
+    // in the group's timezone (skip this filter if targeting a specific timeslot)
+    const timeslots = targetTimeslotId ? allTimeslots : allTimeslots.filter((ts: any) => {
+      const tz = (ts as any).groups?.timezone || 'UTC';
+      const { dayOfWeek } = getTomorrowInTimezone(tz);
+      return ts.day_of_week === dayOfWeek;
+    });
+
+    if (timeslots.length === 0) {
+      return new Response(JSON.stringify({ message: 'No timeslots to match for tomorrow in any timezone', matches_created: 0 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -107,6 +135,10 @@ serve(async (req) => {
 
     for (const timeslot of timeslots) {
       const groupId = timeslot.group_id;
+      const groupTz = (timeslot as any).groups?.timezone || 'UTC';
+      const { dateStr: tomorrowDateStr } = getTomorrowInTimezone(groupTz);
+      const tomorrow = new Date(tomorrowDateStr + 'T00:00:00Z');
+      const weekOf = getWeekOf(tomorrow);
 
       // Get confirmed users for this timeslot and week
       const { data: confirmations, error: confError } = await supabaseAdmin
@@ -159,16 +191,22 @@ serve(async (req) => {
         continue;
       }
 
-      // Get past matches in this group to avoid repeats
-      const { data: pastMatches } = await supabaseAdmin
+      // Get LAST WEEK's matches in this group to enforce cooldown
+      // (don't match the same pair two weeks in a row)
+      const lastWeekDate = new Date(tomorrow);
+      lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+      const lastWeekOf = getWeekOf(lastWeekDate);
+
+      const { data: lastWeekMatches } = await supabaseAdmin
         .from('group_matches')
         .select('user_a_id, user_b_id')
-        .eq('group_id', groupId);
+        .eq('group_id', groupId)
+        .eq('week_of', lastWeekOf);
 
-      const pastPairs = new Set<string>();
-      pastMatches?.forEach((m: any) => {
-        pastPairs.add(`${m.user_a_id}_${m.user_b_id}`);
-        pastPairs.add(`${m.user_b_id}_${m.user_a_id}`);
+      const recentPairs = new Set<string>();
+      lastWeekMatches?.forEach((m: any) => {
+        recentPairs.add(`${m.user_a_id}_${m.user_b_id}`);
+        recentPairs.add(`${m.user_b_id}_${m.user_a_id}`);
       });
 
       // Use AI to generate optimal pairings
@@ -189,7 +227,7 @@ User ${i + 1} (user_id: ${p.user_id}):
 - Location: ${p.location || 'Not specified'}
 `).join('\n');
 
-      const pastPairsList = Array.from(pastPairs)
+      const pastPairsList = Array.from(recentPairs)
         .filter(pair => {
           const [a, b] = pair.split('_');
           return unmatchedUserIds.includes(a) && unmatchedUserIds.includes(b);
@@ -209,11 +247,11 @@ Given a list of users who confirmed availability for a weekly 1:1, create optima
 Rules:
 1. Each user can only be in ONE pair
 2. If odd number of users, one person is left out (pick the one who would have the weakest match)
-3. AVOID repeating past pairings listed below
+3. NEVER repeat pairings from last week (listed below) - this is a HARD REQUIREMENT
 4. Prioritize: shared interests > complementary skills > industry overlap > experience level compatibility
 5. Provide a short reason for each pairing
 
-${pastPairsList.length > 0 ? `\nPast pairings to AVOID repeating:\n${pastPairsList.join('\n')}` : ''}`;
+${pastPairsList.length > 0 ? `\nLast week's pairings (MUST NOT repeat):\n${pastPairsList.join('\n')}` : ''}`;
 
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -263,23 +301,33 @@ ${pastPairsList.length > 0 ? `\nPast pairings to AVOID repeating:\n${pastPairsLi
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`AI error for timeslot ${timeslot.id}:`, response.status, errorText);
-        // Fallback: random pairing
+        // Fallback: random pairing with cooldown check
         const shuffled = [...unmatchedUserIds].sort(() => Math.random() - 0.5);
-        for (let i = 0; i + 1 < shuffled.length; i += 2) {
-          const matchId = crypto.randomUUID();
-          await supabaseAdmin.from('group_matches').insert({
-            id: matchId,
-            group_id: groupId,
-            timeslot_id: timeslot.id,
-            user_a_id: shuffled[i],
-            user_b_id: shuffled[i + 1],
-            week_of: weekOf,
-            match_reason: 'Randomly paired (AI unavailable)',
-            video_call_url: generateVideoCallUrl(matchId),
-            status: 'scheduled',
-          });
-          await notifyMatch(supabaseAdmin, shuffled[i], shuffled[i + 1], groupId, (timeslot as any).groups?.name || 'your group', 'Randomly paired', profiles);
-          totalMatchesCreated++;
+        const usedFallback = new Set<string>();
+        for (let i = 0; i < shuffled.length; i++) {
+          if (usedFallback.has(shuffled[i])) continue;
+          for (let j = i + 1; j < shuffled.length; j++) {
+            if (usedFallback.has(shuffled[j])) continue;
+            // Skip if this pair was matched last week
+            if (recentPairs.has(`${shuffled[i]}_${shuffled[j]}`)) continue;
+            const matchId = crypto.randomUUID();
+            await supabaseAdmin.from('group_matches').insert({
+              id: matchId,
+              group_id: groupId,
+              timeslot_id: timeslot.id,
+              user_a_id: shuffled[i],
+              user_b_id: shuffled[j],
+              week_of: weekOf,
+              match_reason: 'Randomly paired (AI unavailable)',
+              video_call_url: generateVideoCallUrl(matchId),
+              status: 'scheduled',
+            });
+            await notifyMatch(supabaseAdmin, shuffled[i], shuffled[j], groupId, (timeslot as any).groups?.name || 'your group', 'Randomly paired', profiles);
+            usedFallback.add(shuffled[i]);
+            usedFallback.add(shuffled[j]);
+            totalMatchesCreated++;
+            break;
+          }
         }
         continue;
       }

@@ -7,8 +7,28 @@ export interface Group {
   visibility: GroupVisibility;
   owner_id: string;
   invite_code: string;
+  approval_required: boolean;
+  timezone: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface GroupJoinRequest {
+  id: string;
+  group_id: string;
+  user_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface UserAvailability {
+  id: string;
+  user_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  created_at: string;
 }
 
 export interface GroupMember {
@@ -67,8 +87,50 @@ export interface GroupMatch {
   created_at: string;
 }
 
+export const COMMON_TIMEZONES = [
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+  'America/Toronto',
+  'America/Vancouver',
+  'America/Sao_Paulo',
+  'America/Argentina/Buenos_Aires',
+  'America/Mexico_City',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Europe/Amsterdam',
+  'Europe/Madrid',
+  'Europe/Rome',
+  'Europe/Zurich',
+  'Europe/Stockholm',
+  'Europe/Moscow',
+  'Europe/Istanbul',
+  'Africa/Cairo',
+  'Africa/Johannesburg',
+  'Africa/Lagos',
+  'Asia/Dubai',
+  'Asia/Kolkata',
+  'Asia/Shanghai',
+  'Asia/Hong_Kong',
+  'Asia/Singapore',
+  'Asia/Tokyo',
+  'Asia/Seoul',
+  'Asia/Bangkok',
+  'Asia/Jakarta',
+  'Australia/Sydney',
+  'Australia/Melbourne',
+  'Australia/Perth',
+  'Pacific/Auckland',
+  'UTC',
+];
+
 export const MAX_GROUPS_PER_USER = 5;
-export const MAX_TIMESLOTS_PER_GROUP = 10;
+export const MAX_TIMESLOTS_PER_GROUP = 3;
+export const TIMESLOT_DURATION_MINUTES = 30;
 
 // Confirmation window: opens 3 days before, closes 1 day before
 export const CONFIRM_WINDOW_OPEN_DAYS = 3;

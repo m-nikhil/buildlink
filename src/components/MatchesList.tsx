@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Video, CheckCircle, XCircle, Calendar, Star, MessageSquare } from 'lucide-react';
+import { Video, CheckCircle, XCircle, Calendar, Star, MessageSquare, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GroupMatch } from '@/types/group';
 import { DAY_LABELS } from '@/types/group';
@@ -21,13 +21,18 @@ interface MatchesListProps {
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <button key={star} type="button" onClick={() => onChange(star)} className="p-0.5">
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          className="p-0.5 rounded hover:scale-110 transition-transform"
+        >
           <Star
             className={cn(
               'h-5 w-5 transition-colors',
-              star <= value ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'
+              star <= value ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/20 hover:text-amber-300'
             )}
           />
         </button>
@@ -77,11 +82,17 @@ export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesLi
     );
   };
 
+  const statusConfig = {
+    scheduled: { label: 'Upcoming', className: 'bg-amber-500/15 text-amber-600 border-amber-300' },
+    completed: { label: 'Completed', className: 'bg-green-500/15 text-green-600 border-green-300' },
+    skipped: { label: 'Skipped', className: 'bg-muted text-muted-foreground border-border' },
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
+          <Sparkles className="h-5 w-5 text-accent" />
           Your Matches
         </CardTitle>
       </CardHeader>
@@ -90,130 +101,138 @@ export function MatchesList({ groupId, matches, timeslots, profiles }: MatchesLi
           const partner = getPartnerProfile(match);
           const slot = getTimeslot(match.timeslot_id);
           const showFeedbackForm = feedbackOpen === match.id;
+          const config = statusConfig[match.status];
 
           return (
-            <Card key={match.id} className="border-primary/20">
-              <CardContent className="py-3 space-y-3">
-                {/* Partner info */}
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={partner?.avatar_url ?? undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {getInitials(partner?.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{partner?.full_name ?? 'Unknown'}</p>
-                    {partner?.headline && (
-                      <p className="text-sm text-muted-foreground truncate">{partner.headline}</p>
-                    )}
-                  </div>
-                  <Badge
-                    variant={match.status === 'completed' ? 'default' : match.status === 'skipped' ? 'secondary' : 'outline'}
-                    className={match.status === 'scheduled' ? 'border-amber-400 text-amber-600' : ''}
-                  >
-                    {match.status === 'scheduled' ? 'Upcoming' : match.status === 'completed' ? 'Done' : 'Skipped'}
-                  </Badge>
+            <div
+              key={match.id}
+              className={cn(
+                'rounded-lg border p-4 transition-all',
+                match.status === 'scheduled' && 'border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5',
+                match.status === 'completed' && 'border-green-200 bg-green-50/30',
+                match.status === 'skipped' && 'opacity-60'
+              )}
+            >
+              {/* Partner + status */}
+              <div className="flex items-center gap-3 mb-3">
+                <Avatar className="h-11 w-11 ring-2 ring-background shadow-sm">
+                  <AvatarImage src={partner?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-semibold">
+                    {getInitials(partner?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{partner?.full_name ?? getInitials(partner?.full_name)}</p>
+                  {partner?.headline && (
+                    <p className="text-xs text-muted-foreground truncate">{partner.headline}</p>
+                  )}
                 </div>
+                <Badge className={cn('text-[11px] hover:bg-transparent', config.className)}>
+                  {config.label}
+                </Badge>
+              </div>
 
-                {/* Timeslot info */}
+              {/* Timeslot + reason */}
+              <div className="space-y-1.5 mb-3">
                 {slot && (
-                  <p className="text-sm text-muted-foreground">
-                    {DAY_LABELS[slot.day_of_week]} {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
-                    {' '}(week of {match.week_of})
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    <span>{DAY_LABELS[slot.day_of_week]} {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}</span>
+                    <span className="text-muted-foreground/50">|</span>
+                    <span>Week of {match.week_of}</span>
+                  </div>
+                )}
+                {match.match_reason && (
+                  <p className="text-xs text-muted-foreground/80 italic leading-relaxed pl-0.5">
+                    "{match.match_reason}"
                   </p>
                 )}
+              </div>
 
-                {/* Match reason */}
-                {match.match_reason && (
-                  <p className="text-sm italic text-muted-foreground">"{match.match_reason}"</p>
-                )}
-
-                {/* Actions for scheduled */}
-                {match.status === 'scheduled' && (
-                  <div className="flex items-center gap-2">
-                    {match.video_call_url && (
-                      <Button
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => window.open(match.video_call_url!, '_blank')}
-                      >
-                        <Video className="h-4 w-4" />
-                        Join Call
-                      </Button>
-                    )}
+              {/* Actions */}
+              {match.status === 'scheduled' && (
+                <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                  {match.video_call_url && (
                     <Button
-                      variant="outline"
                       size="sm"
-                      className="gap-1 text-green-600"
-                      onClick={() => updateStatus.mutate({ matchId: match.id, status: 'completed', groupId })}
-                      disabled={updateStatus.isPending}
+                      className="gap-1.5 h-8 text-xs gradient-primary text-white hover:opacity-90"
+                      onClick={() => window.open(match.video_call_url!, '_blank')}
                     >
-                      <CheckCircle className="h-4 w-4" />
-                      Done
+                      <Video className="h-3.5 w-3.5" />
+                      Join Call
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-1 text-muted-foreground"
-                      onClick={() => updateStatus.mutate({ matchId: match.id, status: 'skipped', groupId })}
-                      disabled={updateStatus.isPending}
-                    >
-                      <XCircle className="h-4 w-4" />
-                      Skip
-                    </Button>
-                  </div>
-                )}
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-8 text-xs text-green-600 border-green-300 hover:bg-green-50"
+                    onClick={() => updateStatus.mutate({ matchId: match.id, status: 'completed', groupId })}
+                    disabled={updateStatus.isPending}
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Done
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 h-8 text-xs text-muted-foreground"
+                    onClick={() => updateStatus.mutate({ matchId: match.id, status: 'skipped', groupId })}
+                    disabled={updateStatus.isPending}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    Skip
+                  </Button>
+                </div>
+              )}
 
-                {/* Feedback for completed */}
-                {match.status === 'completed' && (
-                  <>
-                    {showFeedbackForm ? (
-                      <div className="space-y-2 pt-2 border-t">
-                        <p className="text-xs font-medium">How was the conversation?</p>
-                        <StarRating value={rating} onChange={setRating} />
-                        <Textarea
-                          placeholder="Optional note..."
-                          value={note}
-                          onChange={(e) => setNote(e.target.value)}
-                          className="text-sm h-16"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleSubmitFeedback(match.id)}
-                            disabled={rating === 0 || submitFeedback.isPending}
-                          >
-                            Submit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setFeedbackOpen(null);
-                              setRating(0);
-                              setNote('');
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
+              {/* Feedback */}
+              {match.status === 'completed' && (
+                <>
+                  {showFeedbackForm ? (
+                    <div className="space-y-3 pt-3 border-t border-border/50">
+                      <p className="text-xs font-medium text-foreground">How was the conversation?</p>
+                      <StarRating value={rating} onChange={setRating} />
+                      <Textarea
+                        placeholder="Optional note..."
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="text-sm h-16 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={() => handleSubmitFeedback(match.id)}
+                          disabled={rating === 0 || submitFeedback.isPending}
+                        >
+                          Submit Feedback
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-xs"
+                          onClick={() => { setFeedbackOpen(null); setRating(0); setNote(''); }}
+                        >
+                          Cancel
+                        </Button>
                       </div>
-                    ) : (
+                    </div>
+                  ) : (
+                    <div className="pt-2 border-t border-border/50">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs gap-1"
+                        className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
                         onClick={() => setFeedbackOpen(match.id)}
                       >
                         <MessageSquare className="h-3 w-3" />
                         Leave feedback
                       </Button>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           );
         })}
       </CardContent>

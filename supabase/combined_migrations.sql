@@ -554,6 +554,9 @@ ALTER TABLE public.profiles DROP COLUMN IF EXISTS linkedin_access_token;
 -- Migration: 20260321000000_create_groups.sql
 -- ============================================
 
+-- Enable pgcrypto for gen_random_bytes()
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 -- Groups table
 CREATE TABLE IF NOT EXISTS public.groups (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -561,7 +564,7 @@ CREATE TABLE IF NOT EXISTS public.groups (
   description text,
   visibility text NOT NULL DEFAULT 'private' CHECK (visibility IN ('public', 'private')),
   owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  invite_code text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(6), 'hex'),
+  invite_code text NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(6), 'hex'),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

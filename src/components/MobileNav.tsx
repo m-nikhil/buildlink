@@ -1,13 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, UserPlus, Settings, Download, UsersRound } from 'lucide-react';
+import { UserPlus, Download, UsersRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/groups', icon: UsersRound, label: 'Groups' },
-  { href: '/connections', icon: Users, label: 'Connections' },
   { href: '/invite', icon: UserPlus, label: 'Invite' },
   { href: '/install', icon: Download, label: 'Install' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function MobileNav() {
